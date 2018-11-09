@@ -1,3 +1,10 @@
+package main
+
+using import    "core:fmt"
+using import    "core:math"
+	  import wb "shared:workbench"
+	  import    "core:mem"
+
 Entity :: int;
 
 last_entity_id: Entity;
