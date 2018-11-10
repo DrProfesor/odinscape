@@ -72,6 +72,25 @@ update_spinner :: inline proc(using spinner: ^Spinner_Component) {
 }
 
 //
+// Mesh Renderer
+//
+Mesh_Renderer :: struct {
+	entity : Entity,
+	mesh_ids : [dynamic]wb.MeshID,
+}
+
+all_mesh_renderers: [dynamic]Mesh_Renderer;
+
+render_mesh_renderer :: inline proc(using meshComp: ^Mesh_Renderer) {
+
+	tf := get_component(entity, Transform);
+
+	for meshId in mesh_ids {
+		wb.draw_mesh(meshId, tf.position);
+	}
+}
+
+//
 // Entities Internal
 //
 
@@ -80,16 +99,16 @@ _Entity_Data :: struct {
 }
 
 init_entities :: proc() {
-	// do test things
-	{
-		NUM_THINGS :: 50;
-		for i in 0..NUM_THINGS {
-			thing := new_entity();
-			add_component(thing, Transform);
-			add_component(thing, Sprite_Renderer);
-			add_component(thing, Spinner_Component);
-		}
-	}
+	// // do test things
+	// {
+	// 	NUM_THINGS :: 50;
+	// 	for i in 0..NUM_THINGS {
+	// 		thing := new_entity();
+	// 		add_component(thing, Transform);
+	// 		add_component(thing, Sprite_Renderer);
+	// 		add_component(thing, Spinner_Component);
+	// 	}
+	// }
 }
 
 update_entities :: proc() {

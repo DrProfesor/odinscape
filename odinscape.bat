@@ -1,2 +1,2 @@
 @odin run prebuild/
-@odin %1 .
+@odin run %1 .

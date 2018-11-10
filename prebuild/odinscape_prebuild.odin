@@ -71,6 +71,7 @@ using import "core:fmt"
 			for c in components {
 				procedure_line(tprint("when Type == ", c.type_name, " {")); {
 					defer procedure_line("}");
+					// TODO return not found instead of defaulting to panic
 					indent_level += 1;
 					defer indent_level -= 1;
 					procedure_line(tprint("for _, i in ", c.storage_variable, " {")); {
