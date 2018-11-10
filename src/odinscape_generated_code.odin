@@ -2,15 +2,11 @@ package main
 
 using import "core:fmt"
 
-
-Invalid :: struct {}
-
 Component_Type :: union {
 	Transform,
 	Sprite_Renderer,
 	Spinner_Component,
 	Mesh_Renderer,
-	Invalid,
 }
 
 add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
@@ -47,25 +43,21 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		for _, i in all_transforms {
 			c := &all_transforms[i]; if c.entity == entity do return c;
 		}
-	return Invalid;
 	}
 	when Type == Sprite_Renderer {
 		for _, i in all_sprite_renderers {
 			c := &all_sprite_renderers[i]; if c.entity == entity do return c;
 		}
-	return Invalid;
 	}
 	when Type == Spinner_Component {
 		for _, i in all_spinners {
 			c := &all_spinners[i]; if c.entity == entity do return c;
 		}
-	return Invalid;
 	}
 	when Type == Mesh_Renderer {
 		for _, i in all_mesh_renderers {
 			c := &all_mesh_renderers[i]; if c.entity == entity do return c;
 		}
-	return Invalid;
 	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml")); return nil;
 }
@@ -90,4 +82,6 @@ call_component_renders :: proc() {
 
 call_component_destroys :: proc() {
 }
+
+
 
