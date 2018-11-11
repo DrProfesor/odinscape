@@ -125,6 +125,9 @@ using import "core:fmt"
 									procedure_line(tprint("comp := &all_", c.type_name, "[i];"));
 									procedure_line_indent("if comp.entity == entity_id {"); {
 										defer procedure_line_outdent("}");
+										if c.destroy_proc != "" {
+											procedure_line(tprint(c.destroy_proc, "(comp);"));
+										}
 										procedure_line(tprint("unordered_remove(&all_", c.type_name, ", i);"));
 										procedure_line("break;");
 									}

@@ -14,5 +14,6 @@
 	{
 		type_name "Mesh_Renderer"
 		render_proc "render_mesh_renderer"
+		destroy_proc "destroy_mesh_renderer"
 	}
 ]

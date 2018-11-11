@@ -94,6 +94,11 @@ render_mesh_renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	}
 }
 
+destroy_mesh_renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
+	// todo: the Mesh_Renderer probably shouldn't own the `mesh_ids` memory
+	delete(mesh_ids);
+}
+
 //
 // Entities Internal
 //
