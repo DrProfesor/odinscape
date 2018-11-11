@@ -2,9 +2,10 @@ package main
 
 using import    "core:fmt"
 using import    "core:math"
+	  import    "core:mem"
+
 	  import wb "shared:workbench"
-	  import ai "shared:odin-assimp"
-	  import        "core:mem"
+	  import ai "shared:workbench/external/assimp"
 
 logln :: wb.logln;
 

@@ -2,9 +2,10 @@ package main
 
 using import       "core:fmt"
 using import       "core:math"
-	  import imgui "shared:odin-imgui"
-	  import wb    "shared:workbench"
 	  import       "core:mem"
+
+	  import wb    "shared:workbench"
+	  import imgui "shared:workbench/external/imgui"
 
 Entity :: distinct int;
 

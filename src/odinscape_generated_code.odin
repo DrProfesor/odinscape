@@ -99,7 +99,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Sprite_Renderer:
 				for _, i in all_Sprite_Renderer {
 					comp := &all_Sprite_Renderer[i];
@@ -108,7 +108,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Spinner_Component:
 				for _, i in all_Spinner_Component {
 					comp := &all_Spinner_Component[i];
@@ -117,7 +117,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Mesh_Renderer:
 				for _, i in all_Mesh_Renderer {
 					comp := &all_Mesh_Renderer[i];
@@ -127,7 +127,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			}
 		}
 		clear(&entity.component_types);
