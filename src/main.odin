@@ -45,7 +45,6 @@ main_update :: proc(dt: f32) {
 main_render :: proc(dt: f32) {
 	wb.use_program(wb.shader_rgba_3d);
 	render_entities();
-	//wb.draw_mesh(meshId, Vec3{0.0, 0.0, 0.0});
 }
 
 main_end :: proc() {

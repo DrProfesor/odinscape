@@ -1,22 +1,18 @@
 [
 	{
 		type_name "Transform"
-		storage_variable "all_transforms"
 	}
 	{
 		type_name "Sprite_Renderer"
-		storage_variable "all_sprite_renderers"
 		render_proc "render_sprite_renderer"
 	}
 	{
 		type_name "Spinner_Component"
-		storage_variable "all_spinners"
 		init_proc "init_spinner"
 		update_proc "update_spinner"
 	}
 	{
 		type_name "Mesh_Renderer"
-		storage_variable "all_mesh_renderers"
 		render_proc "render_mesh_renderer"
 	}
 ]

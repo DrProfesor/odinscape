@@ -1,23 +1,36 @@
 package main
 
-using import    "core:fmt"
-using import    "core:math"
-	  import wb "shared:workbench"
-	  import    "core:mem"
+using import       "core:fmt"
+using import       "core:math"
+	  import imgui "shared:odin-imgui"
+	  import wb    "shared:workbench"
+	  import       "core:mem"
 
-Entity :: int;
+Entity :: distinct int;
 
 last_entity_id: Entity;
 all_entities: map[Entity]_Entity_Data;
+entities_to_destroy: [dynamic]Entity;
+available_component_lists: [dynamic][dynamic]Component_Type;
 
 new_entity :: proc() -> Entity {
 	last_entity_id += 1;
+	e: _Entity_Data;
+	if len(available_component_lists) > 0 {
+		e.component_types = pop(&available_component_lists);
+		assert(len(e.component_types) == 0, "list wasn't cleared before returning to available_component_lists");
+	}
+	all_entities[last_entity_id] = e;
 	return last_entity_id;
 }
 
-get_all_components :: proc(entity: Entity) -> []Component_Type {
+get_all_component_types :: proc(entity: Entity) -> []Component_Type {
 	e := all_entities[entity];
-	return e.components[:];
+	return e.component_types[:];
+}
+
+destroy_entity :: proc(entity_id: Entity) {
+	append(&entities_to_destroy, entity_id);
 }
 
 //
@@ -29,8 +42,6 @@ Transform :: struct {
 	position: Vec3,
 }
 
-all_transforms: [dynamic]Transform;
-
 //
 // Sprite_Renderer
 //
@@ -39,8 +50,6 @@ Sprite_Renderer :: struct {
 	entity: Entity,
 	color: wb.Colorf,
 }
-
-all_sprite_renderers: [dynamic]Sprite_Renderer;
 
 render_sprite_renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 	tf := get_component(entity, Transform);
@@ -56,8 +65,6 @@ Spinner_Component :: struct {
 	speed: f32,
 	radius: f32,
 }
-
-all_spinners: [dynamic]Spinner_Component;
 
 init_spinner :: inline proc(using spinner: ^Spinner_Component) {
 	speed = wb.random_range(0.35, 1);
@@ -79,14 +86,11 @@ Mesh_Renderer :: struct {
 	mesh_ids : [dynamic]wb.MeshID,
 }
 
-all_mesh_renderers: [dynamic]Mesh_Renderer;
-
-render_mesh_renderer :: inline proc(using meshComp: ^Mesh_Renderer) {
-
+render_mesh_renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 
-	for meshId in mesh_ids {
-		wb.draw_mesh(meshId, tf.position);
+	for mesh_id in mesh_ids {
+		wb.draw_mesh(mesh_id, tf.position);
 	}
 }
 
@@ -95,23 +99,14 @@ render_mesh_renderer :: inline proc(using meshComp: ^Mesh_Renderer) {
 //
 
 _Entity_Data :: struct {
-	components: [dynamic]Component_Type
+	component_types: [dynamic]Component_Type,
 }
 
 init_entities :: proc() {
-	// // do test things
-	// {
-	// 	NUM_THINGS :: 50;
-	// 	for i in 0..NUM_THINGS {
-	// 		thing := new_entity();
-	// 		add_component(thing, Transform);
-	// 		add_component(thing, Sprite_Renderer);
-	// 		add_component(thing, Spinner_Component);
-	// 	}
-	// }
 }
 
 update_entities :: proc() {
+	destroy_marked_entities();
 	call_component_updates();
 }
 
@@ -120,4 +115,9 @@ render_entities :: proc() {
 }
 
 shutdown_entities :: proc() {
+	for id, data in all_entities {
+		destroy_entity(id);
+	}
+	destroy_marked_entities();
+	assert(len(all_entities) == 0);
 }

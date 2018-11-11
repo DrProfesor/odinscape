@@ -1,32 +1,36 @@
 @echo off
 
-odin run prebuild/
+rem echo Running prebuild...
+odin run builder -out=builder.exe
+if exist builder.exe del builder.exe
 
-rmdir /S/Q tmp
+if exist tmp rmdir /S/Q tmp
 mkdir tmp
 
-rmdir /S/Q out
+if exist out rmdir /S/Q out
 mkdir out
 
-xcopy /s/e/q includes\windows\libs tmp
-xcopy /s/e/q includes\windows\runtime out
-xcopy /s/e/q src tmp
+rem echo Copying libs and dlls...
+xcopy /s/e/q includes\windows\libs tmp > NUL
+xcopy /s/e/q includes\windows\runtime out > NUL
+xcopy /s/e/q src tmp > NUL
 
+rem echo Copying resources...
 cd out
 mkdir fonts
 mkdir Resources
 cd ..
 
-xcopy /s/e fonts out\fonts
-xcopy /s/e Resources out\Resources
+xcopy /s/e/q fonts out\fonts > NUL
+xcopy /s/e/q Resources out\Resources > NUL
 
 cd tmp
 odin build .
 
 ren tmp.exe odinscape.exe
-xcopy odinscape.exe ..\out
+xcopy /q odinscape.exe ..\out > NUL
 
-cd ..\out 
+cd ..\out
 .\odinscape.exe
 cd ..
 rmdir /s/q tmp
