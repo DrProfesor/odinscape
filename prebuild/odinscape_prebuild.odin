@@ -10,7 +10,7 @@ using import "core:fmt"
 
 import    "shared:workbench/wbml"
 
-ODINSCAPE_DIRECTORY :: "../src/";
+ODINSCAPE_DIRECTORY :: "./src/";
 
 generated_code: String_Buffer;
 indent_level: int = 0;
@@ -145,7 +145,7 @@ using import "core:fmt"
 		}
 	}
 
-	os.write_entire_file("../src/odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
+	os.write_entire_file("./src/odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
 	delete(generated_code);
 }
 

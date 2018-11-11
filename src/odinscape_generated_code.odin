@@ -83,5 +83,3 @@ call_component_renders :: proc() {
 call_component_destroys :: proc() {
 }
 
-
-
