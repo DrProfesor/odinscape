@@ -4,8 +4,8 @@ echo Running prebuild...
 odin run builder -out=builder.exe
 if exist builder.exe del builder.exe
 
-if exist *.dll del *.dll
-if exist *.exe del *.exe
+del *.dll > NUL
+del *.exe > NUL
 
 echo Copying dlls...
 xcopy /s/q/y src\includes\windows . > NUL
@@ -29,5 +29,5 @@ if "%1" == "release" (
 	xcopy /s/q "resources" "release/resources" > NUL
 )
 
-del *.dll
-del *.exe
+del .\*.dll
+del .\*.exe
