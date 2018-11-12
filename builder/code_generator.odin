@@ -120,32 +120,6 @@ using import "core:fmt"
 			}
 			line("clear(&entities_to_destroy);");
 		}
-
-		// procedure_begin("destroy_component", "", Parameter{"component", "$Type"}); {
-		// 	defer procedure_end();
-		// 	for component_name in components {
-		// 		if c.destroy_proc == "" do continue;
-		// 		line_indent(tprint("when Type == ", component_name, " {")); {
-		// 			defer line_outdent("}");
-		// 			line_indent(tprint("for _, i in all__", component_name, " {")); {
-		// 				defer line_outdent("}");
-		// 				line(tprint("c := &all__", component_name, "[i]; if c.entity == entity do return c;"));
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		// copy paste from above call_component_updates
-		// procedure_begin("call_component_destroys"); {
-		// 	defer procedure_end();
-		// 	for component_name in components {
-		// 		if c.destroy_proc == "" do continue;
-		// 		line_indent(tprint("for _, i in all__", component_name, " {")); {
-		// 			defer line_outdent("}");
-		// 			line(tprint("c := &all__", component_name, "[i]; ", c.destroy_proc, "(c);"));
-		// 		}
-		// 	}
-		// }
 	}
 
 	os.write_entire_file("./src/odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
