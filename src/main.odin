@@ -27,7 +27,7 @@ main_init :: proc() {
 	add_component(mesh_entity, Spinner_Component);
 
 	mesh_comp := get_component(mesh_entity, Mesh_Renderer);
-	mesh_comp.mesh_ids = wb.load_asset("Resources/Models/cube.fbx");
+	mesh_comp.mesh_ids = wb.load_asset("resources/Models/cube.fbx");
 }
 
 main_update :: proc(dt: f32) {
