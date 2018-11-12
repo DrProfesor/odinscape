@@ -5,3 +5,4 @@ imgui.ini
 *.bc
 .vscode/
 .DS_Store
+release/
