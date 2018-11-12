@@ -23,25 +23,48 @@ add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&all_Transform, _t);
 		t := &all_Transform[len(all_Transform)-1];
 		append(&entity_data.component_types, Component_Type.Transform);
+		when #defined(init__Transform) {
+			for _, i in all_Transform {
+				c := &all_Transform[i];
+				init__Transform(c);
+			}
+		}
 		return t;
 	}
 	when Type == Sprite_Renderer {
 		append(&all_Sprite_Renderer, _t);
 		t := &all_Sprite_Renderer[len(all_Sprite_Renderer)-1];
 		append(&entity_data.component_types, Component_Type.Sprite_Renderer);
+		when #defined(init__Sprite_Renderer) {
+			for _, i in all_Sprite_Renderer {
+				c := &all_Sprite_Renderer[i];
+				init__Sprite_Renderer(c);
+			}
+		}
 		return t;
 	}
 	when Type == Spinner_Component {
 		append(&all_Spinner_Component, _t);
 		t := &all_Spinner_Component[len(all_Spinner_Component)-1];
 		append(&entity_data.component_types, Component_Type.Spinner_Component);
-		init_spinner(t);
+		when #defined(init__Spinner_Component) {
+			for _, i in all_Spinner_Component {
+				c := &all_Spinner_Component[i];
+				init__Spinner_Component(c);
+			}
+		}
 		return t;
 	}
 	when Type == Mesh_Renderer {
 		append(&all_Mesh_Renderer, _t);
 		t := &all_Mesh_Renderer[len(all_Mesh_Renderer)-1];
 		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
+		when #defined(init__Mesh_Renderer) {
+			for _, i in all_Mesh_Renderer {
+				c := &all_Mesh_Renderer[i];
+				init__Mesh_Renderer(c);
+			}
+		}
 		return t;
 	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml")); return nil;
@@ -72,17 +95,56 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 }
 
 call_component_updates :: proc() {
-	for _, i in all_Spinner_Component {
-		c := &all_Spinner_Component[i]; update_spinner(c);
+	when #defined(update__Transform) {
+		for _, i in all_Transform {
+			c := &all_Transform[i];
+			update__Transform(c);
+		}
+	}
+	when #defined(update__Sprite_Renderer) {
+		for _, i in all_Sprite_Renderer {
+			c := &all_Sprite_Renderer[i];
+			update__Sprite_Renderer(c);
+		}
+	}
+	when #defined(update__Spinner_Component) {
+		for _, i in all_Spinner_Component {
+			c := &all_Spinner_Component[i];
+			update__Spinner_Component(c);
+		}
+	}
+	when #defined(update__Mesh_Renderer) {
+		for _, i in all_Mesh_Renderer {
+			c := &all_Mesh_Renderer[i];
+			update__Mesh_Renderer(c);
+		}
 	}
 }
 
 call_component_renders :: proc() {
-	for _, i in all_Sprite_Renderer {
-		c := &all_Sprite_Renderer[i]; render_sprite_renderer(c);
+	when #defined(render__Transform) {
+		for _, i in all_Transform {
+			c := &all_Transform[i];
+			render__Transform(c);
+		}
 	}
-	for _, i in all_Mesh_Renderer {
-		c := &all_Mesh_Renderer[i]; render_mesh_renderer(c);
+	when #defined(render__Sprite_Renderer) {
+		for _, i in all_Sprite_Renderer {
+			c := &all_Sprite_Renderer[i];
+			render__Sprite_Renderer(c);
+		}
+	}
+	when #defined(render__Spinner_Component) {
+		for _, i in all_Spinner_Component {
+			c := &all_Spinner_Component[i];
+			render__Spinner_Component(c);
+		}
+	}
+	when #defined(render__Mesh_Renderer) {
+		for _, i in all_Mesh_Renderer {
+			c := &all_Mesh_Renderer[i];
+			render__Mesh_Renderer(c);
+		}
 	}
 }
 
@@ -95,6 +157,12 @@ destroy_marked_entities :: proc() {
 				for _, i in all_Transform {
 					comp := &all_Transform[i];
 					if comp.entity == entity_id {
+						when #defined(destroy__Transform) {
+							for _, i in all_Transform {
+								c := &all_Transform[i];
+								destroy__Transform(c);
+							}
+						}
 						unordered_remove(&all_Transform, i);
 						break;
 					}
@@ -104,6 +172,12 @@ destroy_marked_entities :: proc() {
 				for _, i in all_Sprite_Renderer {
 					comp := &all_Sprite_Renderer[i];
 					if comp.entity == entity_id {
+						when #defined(destroy__Sprite_Renderer) {
+							for _, i in all_Sprite_Renderer {
+								c := &all_Sprite_Renderer[i];
+								destroy__Sprite_Renderer(c);
+							}
+						}
 						unordered_remove(&all_Sprite_Renderer, i);
 						break;
 					}
@@ -113,6 +187,12 @@ destroy_marked_entities :: proc() {
 				for _, i in all_Spinner_Component {
 					comp := &all_Spinner_Component[i];
 					if comp.entity == entity_id {
+						when #defined(destroy__Spinner_Component) {
+							for _, i in all_Spinner_Component {
+								c := &all_Spinner_Component[i];
+								destroy__Spinner_Component(c);
+							}
+						}
 						unordered_remove(&all_Spinner_Component, i);
 						break;
 					}
@@ -122,7 +202,12 @@ destroy_marked_entities :: proc() {
 				for _, i in all_Mesh_Renderer {
 					comp := &all_Mesh_Renderer[i];
 					if comp.entity == entity_id {
-						destroy_mesh_renderer(comp);
+						when #defined(destroy__Mesh_Renderer) {
+							for _, i in all_Mesh_Renderer {
+								c := &all_Mesh_Renderer[i];
+								destroy__Mesh_Renderer(c);
+							}
+						}
 						unordered_remove(&all_Mesh_Renderer, i);
 						break;
 					}

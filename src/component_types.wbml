@@ -1,19 +1,6 @@
 [
-	{
-		type_name "Transform"
-	}
-	{
-		type_name "Sprite_Renderer"
-		render_proc "render_sprite_renderer"
-	}
-	{
-		type_name "Spinner_Component"
-		init_proc "init_spinner"
-		update_proc "update_spinner"
-	}
-	{
-		type_name "Mesh_Renderer"
-		render_proc "render_mesh_renderer"
-		destroy_proc "destroy_mesh_renderer"
-	}
+	"Transform"
+	"Sprite_Renderer"
+	"Spinner_Component"
+	"Mesh_Renderer"
 ]

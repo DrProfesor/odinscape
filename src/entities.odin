@@ -52,7 +52,7 @@ Sprite_Renderer :: struct {
 	color: wb.Colorf,
 }
 
-render_sprite_renderer :: inline proc(using sprite: ^Sprite_Renderer) {
+render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 	tf := get_component(entity, Transform);
 	wb.im_quad(wb.rendermode_world, wb.shader_rgba, tf.position-Vec3{1, 1, 0}, tf.position+Vec3{1, 1, 0}, color);
 }
@@ -67,14 +67,14 @@ Spinner_Component :: struct {
 	radius: f32,
 }
 
-init_spinner :: inline proc(using spinner: ^Spinner_Component) {
+init__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	speed = wb.random_range(0.35, 1);
 	radius = wb.random01() * 5;
 	sprite := get_component(entity, Sprite_Renderer);
 	sprite.color = wb.Colorf{wb.random01(), wb.random01(), wb.random01(), 1};
 }
 
-update_spinner :: inline proc(using spinner: ^Spinner_Component) {
+update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	tf := get_component(entity, Transform);
 	tf.position = Vec3{sin(wb.time * speed) * radius, cos(wb.time * speed) * radius, 0};
 }
@@ -87,7 +87,7 @@ Mesh_Renderer :: struct {
 	mesh_ids : [dynamic]wb.MeshID,
 }
 
-render_mesh_renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
+render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 
 	for mesh_id in mesh_ids {
@@ -95,7 +95,7 @@ render_mesh_renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	}
 }
 
-destroy_mesh_renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
+destroy__Mesh_Renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
 	// todo: the Mesh_Renderer probably shouldn't own the `mesh_ids` memory
 	delete(mesh_ids);
 }
