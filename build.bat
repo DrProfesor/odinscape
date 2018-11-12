@@ -1,29 +1,33 @@
 @echo off
 
-rem echo Running prebuild...
+echo Running prebuild...
 odin run builder -out=builder.exe
 if exist builder.exe del builder.exe
 
-if exist out rmdir /S/Q out
-mkdir out
+if exist *.dll del *.dll
+if exist *.exe del *.exe
 
-rem echo Copying libs and dlls...
-xcopy /s/e/q includes\windows\runtime out > NUL
+echo Copying dlls...
+xcopy /s/q/y includes\windows . > NUL
 
-rem echo Copying resources...
-cd out
-mkdir fonts
-mkdir Resources
-cd ..
+echo Building src...
+odin build src -out=odinscape.exe
 
-xcopy /s/e/q fonts out\fonts > NUL
-xcopy /s/e/q Resources out\Resources > NUL
+if "%1" == "run" (
+	echo Running odinscape.exe...
+	odinscape.exe
+)
+if "%1" == "release" (
+	echo Making release folder...
+	if exist release rmdir /S/Q release
+	mkdir release
+	mkdir "release/resources"
 
-cd src
-odin build . -out=odinscape.exe
+	echo Copying exe and resources...
+	copy "odinscape.exe" "release/odinscape.exe" > NUL
+	xcopy /s/q "resources" "release/resources" > NUL
+	xcopy "*.dll" "release" /c/y/q > NUL
+)
 
-xcopy /q odinscape.exe ..\out > NUL
-
-cd ..\out
-.\odinscape.exe
-cd ..
+del *.dll
+del *.exe
