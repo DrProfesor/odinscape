@@ -8,7 +8,7 @@ if exist *.dll del *.dll
 if exist *.exe del *.exe
 
 echo Copying dlls...
-xcopy /s/q/y includes\windows . > NUL
+xcopy /s/q/y src\includes\windows . > NUL
 
 echo Building src...
 odin build src -out=odinscape.exe
@@ -24,9 +24,9 @@ if "%1" == "release" (
 	mkdir "release/resources"
 
 	echo Copying exe and resources...
+	xcopy "*.dll" "release" /c/y/q > NUL
 	copy "odinscape.exe" "release/odinscape.exe" > NUL
 	xcopy /s/q "resources" "release/resources" > NUL
-	xcopy "*.dll" "release" /c/y/q > NUL
 )
 
 del *.dll
