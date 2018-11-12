@@ -1,8 +1,10 @@
-*.exe
-out/
+/*.dll
+/*.obj
+/*.exe
+release/
+
 imgui.ini
 *.ll
 *.bc
 .vscode/
 .DS_Store
-release/
