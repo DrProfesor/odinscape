@@ -36,7 +36,7 @@ using import "core:fmt"
 		}
 
 		for component_name in components {
-			line(tprint("all_", component_name, ": [dynamic]", component_name, ";"));
+			line(tprint("all__", component_name, ": [dynamic]", component_name, ";"));
 		}
 
 		line("");
@@ -49,8 +49,8 @@ using import "core:fmt"
 			for component_name in components {
 				line_indent(tprint("when Type == ", component_name, " {")); {
 					defer line_outdent("}");
-					line(tprint("append(&all_", component_name, ", _t);"));
-					line(tprint("t := &all_", component_name, "[len(all_", component_name, ")-1];"));
+					line(tprint("append(&all__", component_name, ", _t);"));
+					line(tprint("t := &all__", component_name, "[len(all__", component_name, ")-1];"));
 					line(tprint("append(&entity_data.component_types, Component_Type.", component_name, ");"));
 					emit_component_proc_call(tprint("init__", component_name), component_name);
 					line(tprint("return t;"));
@@ -65,9 +65,9 @@ using import "core:fmt"
 				line_indent(tprint("when Type == ", component_name, " {")); {
 					defer line_outdent("}");
 					// TODO return not found instead of defaulting to panic
-					line_indent(tprint("for _, i in all_", component_name, " {")); {
+					line_indent(tprint("for _, i in all__", component_name, " {")); {
 						defer line_outdent("}");
-						line(tprint("c := &all_", component_name, "[i]; if c.entity == entity do return c;"));
+						line(tprint("c := &all__", component_name, "[i]; if c.entity == entity do return c;"));
 					}
 				}
 			}
@@ -100,13 +100,13 @@ using import "core:fmt"
 						for component_name in components {
 							line_indent(tprint("case Component_Type.", component_name, ":")); {
 								defer line_outdent("");
-								line_indent(tprint("for _, i in all_", component_name, " {")); {
+								line_indent(tprint("for _, i in all__", component_name, " {")); {
 									defer line_outdent("}");
-									line(tprint("comp := &all_", component_name, "[i];"));
+									line(tprint("comp := &all__", component_name, "[i];"));
 									line_indent("if comp.entity == entity_id {"); {
 										defer line_outdent("}");
 										emit_component_proc_call(tprint("destroy__", component_name), component_name);
-										line(tprint("unordered_remove(&all_", component_name, ", i);"));
+										line(tprint("unordered_remove(&all__", component_name, ", i);"));
 										line("break;");
 									}
 								}
@@ -127,9 +127,9 @@ using import "core:fmt"
 		// 		if c.destroy_proc == "" do continue;
 		// 		line_indent(tprint("when Type == ", component_name, " {")); {
 		// 			defer line_outdent("}");
-		// 			line_indent(tprint("for _, i in all_", component_name, " {")); {
+		// 			line_indent(tprint("for _, i in all__", component_name, " {")); {
 		// 				defer line_outdent("}");
-		// 				line(tprint("c := &all_", component_name, "[i]; if c.entity == entity do return c;"));
+		// 				line(tprint("c := &all__", component_name, "[i]; if c.entity == entity do return c;"));
 		// 			}
 		// 		}
 		// 	}
@@ -140,9 +140,9 @@ using import "core:fmt"
 		// 	defer procedure_end();
 		// 	for component_name in components {
 		// 		if c.destroy_proc == "" do continue;
-		// 		line_indent(tprint("for _, i in all_", component_name, " {")); {
+		// 		line_indent(tprint("for _, i in all__", component_name, " {")); {
 		// 			defer line_outdent("}");
-		// 			line(tprint("c := &all_", component_name, "[i]; ", c.destroy_proc, "(c);"));
+		// 			line(tprint("c := &all__", component_name, "[i]; ", c.destroy_proc, "(c);"));
 		// 		}
 		// 	}
 		// }
@@ -168,9 +168,9 @@ Component_Definition :: struct {
 emit_component_proc_call :: proc(proc_name: string, comp_name: string) {
 	line_indent(tprint("when #defined(", proc_name, ") {")); {
 		defer line_outdent("}");
-		line_indent(tprint("for _, i in all_", comp_name, " {")); {
+		line_indent(tprint("for _, i in all__", comp_name, " {")); {
 			defer line_outdent("}");
-			line(tprint("c := &all_", comp_name, "[i];"));
+			line(tprint("c := &all__", comp_name, "[i];"));
 			line(tprint(proc_name, "(c);"));
 		}
 	}
