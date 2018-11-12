@@ -20,8 +20,8 @@ add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 	defer all_entities[entity] = entity_data;
 	_t: Type; _t.entity = entity;
 	when Type == Transform {
-		append(&all__Transform, _t);
-		t := &all__Transform[len(all__Transform)-1];
+		new_length := append(&all__Transform, _t);
+		t := &all__Transform[new_length-1];
 		append(&entity_data.component_types, Component_Type.Transform);
 		when #defined(init__Transform) {
 			for _, i in all__Transform {
@@ -32,8 +32,8 @@ add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		return t;
 	}
 	when Type == Sprite_Renderer {
-		append(&all__Sprite_Renderer, _t);
-		t := &all__Sprite_Renderer[len(all__Sprite_Renderer)-1];
+		new_length := append(&all__Sprite_Renderer, _t);
+		t := &all__Sprite_Renderer[new_length-1];
 		append(&entity_data.component_types, Component_Type.Sprite_Renderer);
 		when #defined(init__Sprite_Renderer) {
 			for _, i in all__Sprite_Renderer {
@@ -44,8 +44,8 @@ add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		return t;
 	}
 	when Type == Spinner_Component {
-		append(&all__Spinner_Component, _t);
-		t := &all__Spinner_Component[len(all__Spinner_Component)-1];
+		new_length := append(&all__Spinner_Component, _t);
+		t := &all__Spinner_Component[new_length-1];
 		append(&entity_data.component_types, Component_Type.Spinner_Component);
 		when #defined(init__Spinner_Component) {
 			for _, i in all__Spinner_Component {
@@ -56,8 +56,8 @@ add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		return t;
 	}
 	when Type == Mesh_Renderer {
-		append(&all__Mesh_Renderer, _t);
-		t := &all__Mesh_Renderer[len(all__Mesh_Renderer)-1];
+		new_length := append(&all__Mesh_Renderer, _t);
+		t := &all__Mesh_Renderer[new_length-1];
 		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
 		when #defined(init__Mesh_Renderer) {
 			for _, i in all__Mesh_Renderer {
@@ -67,31 +67,41 @@ add_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return t;
 	}
-	panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml")); return nil;
+	panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));
+	return nil;
 }
 
 get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 	when Type == Transform {
 		for _, i in all__Transform {
-			c := &all__Transform[i]; if c.entity == entity do return c;
+			c := &all__Transform[i];
+			if c.entity == entity do return c;
+			return nil;
 		}
 	}
 	when Type == Sprite_Renderer {
 		for _, i in all__Sprite_Renderer {
-			c := &all__Sprite_Renderer[i]; if c.entity == entity do return c;
+			c := &all__Sprite_Renderer[i];
+			if c.entity == entity do return c;
+			return nil;
 		}
 	}
 	when Type == Spinner_Component {
 		for _, i in all__Spinner_Component {
-			c := &all__Spinner_Component[i]; if c.entity == entity do return c;
+			c := &all__Spinner_Component[i];
+			if c.entity == entity do return c;
+			return nil;
 		}
 	}
 	when Type == Mesh_Renderer {
 		for _, i in all__Mesh_Renderer {
-			c := &all__Mesh_Renderer[i]; if c.entity == entity do return c;
+			c := &all__Mesh_Renderer[i];
+			if c.entity == entity do return c;
+			return nil;
 		}
 	}
-	panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml")); return nil;
+	panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml"));
+	return nil;
 }
 
 call_component_updates :: proc() {
@@ -167,7 +177,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Sprite_Renderer:
 				for _, i in all__Sprite_Renderer {
 					comp := &all__Sprite_Renderer[i];
@@ -182,7 +192,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Spinner_Component:
 				for _, i in all__Spinner_Component {
 					comp := &all__Spinner_Component[i];
@@ -197,7 +207,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Mesh_Renderer:
 				for _, i in all__Mesh_Renderer {
 					comp := &all__Mesh_Renderer[i];
@@ -212,7 +222,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			}
 		}
 		clear(&entity.component_types);
