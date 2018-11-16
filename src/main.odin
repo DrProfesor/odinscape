@@ -28,10 +28,9 @@ main_init :: proc() {
 	add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
 	add_component(mesh_entity, Spinner_Component{{}, 5, 2, wb.random_vec3() * 1});
 
-	other_entity := new_entity();
-	add_component(other_entity, identity_transform());
-	add_component(other_entity, Mesh_Renderer{{}, cube_mesh_ids});
-	add_component(other_entity, Spinner_Component{{}, 0, 0, wb.random_vec3() * 0.5});
+	terrain := new_entity();
+	add_component(terrain, Transform{{}, {0, -5, 0}, {10, 1, 10}, {}});
+	add_component(terrain, Mesh_Renderer{{}, cube_mesh_ids});
 }
 
 last_mouse_pos: Vec2;
