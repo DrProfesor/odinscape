@@ -13,28 +13,25 @@ main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Scene{"Main", main_init, main_update, main_render, main_end});
 }
 
-mesh_entity : Entity;
+cube_mesh_ids: [dynamic]wb.MeshID;
 
 main_init :: proc() {
 	wb.perspective_camera(85);
 	init_entities();
 	wb.camera_position = Vec3{0, 0, -10};
 
-	mesh_entity = new_entity();
-	add_component(mesh_entity, Transform{{}, {}, Vec3{1, 1, 1}});
-	add_component(mesh_entity, Mesh_Renderer);
-	add_component(mesh_entity, Sprite_Renderer);
-	add_component(mesh_entity, Spinner_Component);
+	cube_mesh_ids = wb.load_asset("resources/Models/cube.fbx");
 
-	mesh_comp := get_component(mesh_entity, Mesh_Renderer);
-	mesh_comp.mesh_ids = wb.load_asset("resources/Models/cube.fbx");
+	mesh_entity := new_entity();
+	add_component(mesh_entity, identity_transform());
+	add_component(mesh_entity, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
+	add_component(mesh_entity, Spinner_Component{{}, 5, 2, wb.random_vec3() * 1});
 
-	// terrain
-	{
-		terrain_entity := new_entity();
-		add_component(terrain_entity, Transform{{}, {}, Vec3{1, 1, 1}});
-		add_component(terrain_entity, Mesh_Renderer);
-	}
+	other_entity := new_entity();
+	add_component(other_entity, identity_transform());
+	add_component(other_entity, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(other_entity, Spinner_Component{{}, 0, 0, wb.random_vec3() * 0.5});
 }
 
 last_mouse_pos: Vec2;

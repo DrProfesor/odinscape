@@ -40,12 +40,14 @@ destroy_entity :: proc(entity_id: Entity) {
 
 Transform :: struct {
 	entity: Entity,
+
 	position: Vec3,
 	scale: Vec3,
+	rotation: Vec3,
 }
 
-update__Transform :: inline proc(using tf: ^Transform) {
-	// tf.scale = Vec3{1, 1, 1} * wb.sin01(wb.time);
+identity_transform :: inline proc() -> Transform {
+	return Transform{{}, {}, Vec3{1, 1, 1}, {}};
 }
 
 //
@@ -54,6 +56,7 @@ update__Transform :: inline proc(using tf: ^Transform) {
 
 Sprite_Renderer :: struct {
 	entity: Entity,
+
 	color: wb.Colorf,
 }
 
@@ -68,20 +71,17 @@ render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 
 Spinner_Component :: struct {
 	entity: Entity,
-	speed: f32,
-	radius: f32,
-}
 
-init__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
-	speed = wb.random_range(0.35, 1);
-	radius = wb.random01() * 5;
-	sprite := get_component(entity, Sprite_Renderer);
-	sprite.color = wb.Colorf{wb.random01(), wb.random01(), wb.random01(), 1};
+	orbit_distance: f32,
+	orbit_speed: f32,
+	torque: Vec3,
 }
 
 update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	tf := get_component(entity, Transform);
-	tf.position = Vec3{sin(wb.time * speed) * radius, cos(wb.time * speed) * radius, 0};
+	tf.position = Vec3{sin(wb.time * orbit_speed) * orbit_distance, cos(wb.time * orbit_speed) * orbit_distance, 0};
+	tf.rotation += torque;
+	tf.scale = Vec3{1, 1, 1} * (wb.sin01(wb.time)/2+0.5);
 }
 
 //
@@ -90,6 +90,7 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 //
 Mesh_Renderer :: struct {
 	entity : Entity,
+
 	mesh_ids : [dynamic]wb.MeshID,
 }
 
@@ -97,7 +98,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 	for mesh_id in mesh_ids {
-		wb.draw_mesh(mesh_id, tf.position, tf.scale);
+		wb.draw_mesh(mesh_id, tf.position, tf.scale, tf.rotation);
 	}
 }
 
