@@ -41,6 +41,11 @@ destroy_entity :: proc(entity_id: Entity) {
 Transform :: struct {
 	entity: Entity,
 	position: Vec3,
+	scale: Vec3,
+}
+
+update__Transform :: inline proc(using tf: ^Transform) {
+	// tf.scale = Vec3{1, 1, 1} * wb.sin01(wb.time);
 }
 
 //
@@ -80,6 +85,7 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 }
 
 //
+
 // Mesh Renderer
 //
 Mesh_Renderer :: struct {
@@ -89,9 +95,9 @@ Mesh_Renderer :: struct {
 
 render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
-
+	assert(tf != nil);
 	for mesh_id in mesh_ids {
-		wb.draw_mesh(mesh_id, tf.position);
+		wb.draw_mesh(mesh_id, tf.position, tf.scale);
 	}
 }
 

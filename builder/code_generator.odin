@@ -39,9 +39,13 @@ using import "core:fmt"
 			line(tprint("all__", component_name, ": [dynamic]", component_name, ";"));
 		}
 
+
+
+		line("");
+		line("add_component :: proc[add_component_type, add_component_value];");
 		line("");
 
-		procedure_begin("add_component", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
+		procedure_begin("add_component_type", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
 			line("entity_data, ok := all_entities[entity]; assert(ok);");
 			line("defer all_entities[entity] = entity_data;");
@@ -52,13 +56,42 @@ using import "core:fmt"
 					line(tprint("new_length := append(&all__", component_name, ", _t);"));
 					line(tprint("t := &all__", component_name, "[new_length-1];"));
 					line(tprint("append(&entity_data.component_types, Component_Type.", component_name, ");"));
-					emit_component_proc_call(tprint("init__", component_name), component_name);
+					init_proc_name := tprint("init__", component_name);
+					line_indent(tprint("when #defined(", init_proc_name, ") {")); {
+						defer line_outdent("}");
+						line(tprint(init_proc_name, "(t);"));
+					}
 					line(tprint("return t;"));
 				}
 			}
 			line(`panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));`);
 			line("return nil;");
 		}
+
+		procedure_begin("add_component_value", "^Type", Parameter{"entity", "Entity"}, Parameter{"component", "$Type"}); {
+			defer procedure_end();
+			line("entity_data, ok := all_entities[entity]; assert(ok);");
+			line("defer all_entities[entity] = entity_data;");
+			line("component.entity = entity;");
+			for component_name in components {
+				line_indent(tprint("when Type == ", component_name, " {")); {
+					defer line_outdent("}");
+					line(tprint("new_length := append(&all__", component_name, ", component);"));
+					line(tprint("t := &all__", component_name, "[new_length-1];"));
+					line(tprint("append(&entity_data.component_types, Component_Type.", component_name, ");"));
+					init_proc_name := tprint("init__", component_name);
+					line_indent(tprint("when #defined(", init_proc_name, ") {")); {
+						defer line_outdent("}");
+						line(tprint(init_proc_name, "(t);"));
+					}
+					line(tprint("return t;"));
+				}
+			}
+			line(`panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));`);
+			line("return nil;");
+		}
+
+
 
 		procedure_begin("get_component", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
@@ -69,8 +102,8 @@ using import "core:fmt"
 						defer line_outdent("}");
 						line(tprint("c := &all__", component_name, "[i];"));
 						line("if c.entity == entity do return c;");
-						line("return nil;");
 					}
+					line("return nil;");
 				}
 			}
 			line(`panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml"));`);

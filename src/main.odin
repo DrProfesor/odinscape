@@ -21,15 +21,23 @@ main_init :: proc() {
 	wb.camera_position = Vec3{0, 0, -10};
 
 	mesh_entity = new_entity();
-	add_component(mesh_entity, Transform);
+	add_component(mesh_entity, Transform{{}, {}, Vec3{1, 1, 1}});
 	add_component(mesh_entity, Mesh_Renderer);
 	add_component(mesh_entity, Sprite_Renderer);
 	add_component(mesh_entity, Spinner_Component);
 
 	mesh_comp := get_component(mesh_entity, Mesh_Renderer);
 	mesh_comp.mesh_ids = wb.load_asset("resources/Models/cube.fbx");
+
+	// terrain
+	{
+		terrain_entity := new_entity();
+		add_component(terrain_entity, Transform{{}, {}, Vec3{1, 1, 1}});
+		add_component(terrain_entity, Mesh_Renderer);
+	}
 }
 
+last_mouse_pos: Vec2;
 main_update :: proc(dt: f32) {
     if wb.get_key_down(wb.Key.Escape) do wb.exit();
 
@@ -39,6 +47,15 @@ main_update :: proc(dt: f32) {
 	if wb.get_key(wb.Key.S) do wb.camera_position.z -= 0.1;
 	if wb.get_key(wb.Key.A) do wb.camera_position.x += 0.1;
 	if wb.get_key(wb.Key.D) do wb.camera_position.x -= 0.1;
+
+	if wb.get_mouse(wb.Mouse.Right)
+	{
+		mouse_delta := wb.cursor_screen_position - last_mouse_pos;
+		sensitivity : f32 = 0.1;
+		mouse_delta *= sensitivity;
+		wb.camera_rotation += Vec3{-mouse_delta.y, mouse_delta.x,0};
+	}
+	last_mouse_pos = wb.cursor_screen_position;
 
 	update_entities();
 }
