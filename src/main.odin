@@ -38,12 +38,13 @@ main_update :: proc(dt: f32) {
     if wb.get_key_down(wb.Key.Escape) do wb.exit();
 
     camera_orientation := wb.degrees_to_quaternion(wb.camera_rotation);
+    logln(camera_orientation);
 
     up      := Vec3{0,  1, 0};
     down    := Vec3{0, -1, 0};
-    forward := wb.quaternion_forward(camera_orientation); // wb.quat_mul_vec3(camera_orientation, Vec3{0, 0, 1}); forward.y = 0; forward = norm(forward);
+    forward := wb.quaternion_forward(camera_orientation);
     back    := -forward;
-    right   := wb.quaternion_right(camera_orientation); //wb.quat_mul_vec3(camera_orientation, Vec3{1, 0, 0}); right.y = 0; right = norm(right);
+    right   := wb.quaternion_right(camera_orientation);
     left    := -right;
 
     SPEED :: 10;
@@ -63,7 +64,7 @@ main_update :: proc(dt: f32) {
 		mouse_delta := wb.cursor_screen_position - last_mouse_pos;
 		sensitivity : f32 = 0.1;
 		mouse_delta *= sensitivity;
-		wb.camera_rotation += Vec3{-mouse_delta.y, mouse_delta.x,0};
+		wb.camera_rotation += Vec3{-mouse_delta.y, mouse_delta.x, 0};
 	}
 	last_mouse_pos = wb.cursor_screen_position;
 

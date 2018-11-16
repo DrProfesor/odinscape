@@ -84,7 +84,8 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	tf.scale = Vec3{1, 1, 1} * (wb.sin01(wb.time)/2+0.5);
 
 	q := wb.degrees_to_quaternion(tf.rotation);
-	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quat_mul_vec3(q, Vec3{0, 0, 1}) * 10, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_forward(q) * 10, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_right(q) * 10, wb.COLOR_BLUE);
 }
 
 //
