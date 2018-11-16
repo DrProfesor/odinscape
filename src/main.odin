@@ -38,7 +38,6 @@ main_update :: proc(dt: f32) {
     if wb.get_key_down(wb.Key.Escape) do wb.exit();
 
     camera_orientation := wb.degrees_to_quaternion(wb.camera_rotation);
-    logln(camera_orientation);
 
     up      := Vec3{0,  1, 0};
     down    := Vec3{0, -1, 0};
