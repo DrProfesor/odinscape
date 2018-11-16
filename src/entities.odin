@@ -82,6 +82,9 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	tf.position = Vec3{sin(wb.time * orbit_speed) * orbit_distance, cos(wb.time * orbit_speed) * orbit_distance, 0};
 	tf.rotation += torque;
 	tf.scale = Vec3{1, 1, 1} * (wb.sin01(wb.time)/2+0.5);
+
+	q := wb.degrees_to_quaternion(tf.rotation);
+	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quat_mul_vec3(q, Vec3{0, 0, 1}) * 10, wb.COLOR_GREEN);
 }
 
 //
