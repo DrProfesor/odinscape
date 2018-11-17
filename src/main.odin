@@ -61,8 +61,8 @@ main_update :: proc(dt: f32) {
 	if wb.get_mouse(wb.Mouse.Right)
 	{
 		mouse_delta := wb.cursor_screen_position - last_mouse_pos;
-		sensitivity : f32 = 0.1;
-		mouse_delta *= sensitivity;
+		SENSITIVITY :: 0.1;
+		mouse_delta *= SENSITIVITY;
 		wb.camera_rotation += Vec3{-mouse_delta.y, mouse_delta.x, 0};
 	}
 	last_mouse_pos = wb.cursor_screen_position;
