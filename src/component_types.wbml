@@ -3,4 +3,5 @@
 	"Sprite_Renderer"
 	"Spinner_Component"
 	"Mesh_Renderer"
+	"Texture_Component"
 ]

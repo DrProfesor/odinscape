@@ -13,20 +13,21 @@ main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Scene{"Main", main_init, main_update, main_render, main_end});
 }
 
-cube_mesh_ids: [dynamic]wb.MeshID;
-
 main_init :: proc() {
 	wb.perspective_camera(85);
 	init_entities();
 	wb.camera_position = Vec3{0, 0, -10};
 
-	cube_mesh_ids = wb.load_asset("resources/Models/cube.fbx");
+	cube_mesh_ids := wb.load_asset("resources/Models/cube.fbx");
+	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.fbx");
 
 	mesh_entity := new_entity();
 	tf := add_component(mesh_entity, identity_transform());
-	add_component(mesh_entity, Mesh_Renderer{{}, cube_mesh_ids});
+	tf.scale = Vec3{0.5, 0.5, 0.5};
+	add_component(mesh_entity, Mesh_Renderer{{}, gronk_mesh_ids});
+	add_component(mesh_entity, Texture_Component{{}, wb.load_texture("resources/Textures/OrcGreen_Debug.png")});
 	// add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
-	add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
+	// add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
 
 	terrain := new_entity();
 	add_component(terrain, Transform{{}, {0, -7, 0}, {10, 1, 10}, {}});
@@ -71,7 +72,7 @@ main_update :: proc(dt: f32) {
 }
 
 main_render :: proc(dt: f32) {
-	wb.use_program(wb.shader_rgba_3d);
+	wb.use_program(wb.shader_texture);
 	render_entities();
 }
 

@@ -8,12 +8,14 @@ Component_Type :: enum {
 	Sprite_Renderer,
 	Spinner_Component,
 	Mesh_Renderer,
+	Texture_Component,
 }
 
 all__Transform: [dynamic]Transform;
 all__Sprite_Renderer: [dynamic]Sprite_Renderer;
 all__Spinner_Component: [dynamic]Spinner_Component;
 all__Mesh_Renderer: [dynamic]Mesh_Renderer;
+all__Texture_Component: [dynamic]Texture_Component;
 
 add_component :: proc[add_component_type, add_component_value];
 
@@ -54,6 +56,15 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
 		when #defined(init__Mesh_Renderer) {
 			init__Mesh_Renderer(t);
+		}
+		return t;
+	}
+	when Type == Texture_Component {
+		new_length := append(&all__Texture_Component, _t);
+		t := &all__Texture_Component[new_length-1];
+		append(&entity_data.component_types, Component_Type.Texture_Component);
+		when #defined(init__Texture_Component) {
+			init__Texture_Component(t);
 		}
 		return t;
 	}
@@ -101,6 +112,15 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
+	when Type == Texture_Component {
+		new_length := append(&all__Texture_Component, component);
+		t := &all__Texture_Component[new_length-1];
+		append(&entity_data.component_types, Component_Type.Texture_Component);
+		when #defined(init__Texture_Component) {
+			init__Texture_Component(t);
+		}
+		return t;
+	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));
 	return nil;
 }
@@ -134,6 +154,13 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
+	when Type == Texture_Component {
+		for _, i in all__Texture_Component {
+			c := &all__Texture_Component[i];
+			if c.entity == entity do return c;
+		}
+		return nil;
+	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml"));
 	return nil;
 }
@@ -163,6 +190,12 @@ call_component_updates :: proc() {
 			update__Mesh_Renderer(c);
 		}
 	}
+	when #defined(update__Texture_Component) {
+		for _, i in all__Texture_Component {
+			c := &all__Texture_Component[i];
+			update__Texture_Component(c);
+		}
+	}
 }
 
 call_component_renders :: proc() {
@@ -188,6 +221,12 @@ call_component_renders :: proc() {
 		for _, i in all__Mesh_Renderer {
 			c := &all__Mesh_Renderer[i];
 			render__Mesh_Renderer(c);
+		}
+	}
+	when #defined(render__Texture_Component) {
+		for _, i in all__Texture_Component {
+			c := &all__Texture_Component[i];
+			render__Texture_Component(c);
 		}
 	}
 }
@@ -253,6 +292,21 @@ destroy_marked_entities :: proc() {
 							}
 						}
 						unordered_remove(&all__Mesh_Renderer, i);
+						break;
+					}
+				}
+			
+			case Component_Type.Texture_Component:
+				for _, i in all__Texture_Component {
+					comp := &all__Texture_Component[i];
+					if comp.entity == entity_id {
+						when #defined(destroy__Texture_Component) {
+							for _, i in all__Texture_Component {
+								c := &all__Texture_Component[i];
+								destroy__Texture_Component(c);
+							}
+						}
+						unordered_remove(&all__Texture_Component, i);
 						break;
 					}
 				}
