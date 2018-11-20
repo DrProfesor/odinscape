@@ -19,19 +19,21 @@ main_init :: proc() {
 	wb.camera_position = Vec3{0, 0, -10};
 
 	cube_mesh_ids := wb.load_asset("resources/Models/cube.fbx");
-	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.fbx");
+	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.obj");
 
 	mesh_entity := new_entity();
 	tf := add_component(mesh_entity, identity_transform());
 	tf.scale = Vec3{0.5, 0.5, 0.5};
 	add_component(mesh_entity, Mesh_Renderer{{}, gronk_mesh_ids});
-	add_component(mesh_entity, Texture_Component{{}, wb.load_texture("resources/Textures/OrcGreen_Debug.png")});
+	gronk_tex := wb.load_texture("resources/Textures/OrcGreen_Debug.png");
+	logln("Loaded: ", gronk_tex);
+	add_component(mesh_entity, Texture_Component{{}, gronk_tex});
 	// add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
 	// add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
 
-	terrain := new_entity();
-	add_component(terrain, Transform{{}, {0, -7, 0}, {10, 1, 10}, {}});
-	add_component(terrain, Mesh_Renderer{{}, cube_mesh_ids});
+	// terrain := new_entity();
+	// add_component(terrain, Transform{{}, {0, -7, 0}, {10, 1, 10}, {}});
+	// add_component(terrain, Mesh_Renderer{{}, cube_mesh_ids});
 }
 
 last_mouse_pos: Vec2;
