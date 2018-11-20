@@ -112,9 +112,9 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 		wb.use_program(wb.shader_texture);
 		texture_id = texture.texture_id;
 	}
-	else do 
+	else do
 		wb.use_program(wb.shader_rgba_3d);
-		
+
 	for mesh_id in mesh_ids {
 		wb.draw_mesh(mesh_id, tf.position + offset_from_transform, tf.scale, tf.rotation, texture_id);
 	}
