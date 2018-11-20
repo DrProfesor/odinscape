@@ -31,7 +31,7 @@ main_init :: proc() {
 	gronk_tex := wb.load_texture("resources/Textures/OrcGreen.png");
 
 	mesh_entity := new_entity();
-	add_component(mesh_entity, Transform{{}, {0,0,0}, {0.5,0.5,0.5}, {}});
+	add_component(mesh_entity, Transform{{}, {0,0,0}, {0.5,0.5,0.5}, {}, {}});
 	add_component(mesh_entity, Mesh_Renderer{{}, gronk_mesh_ids, Vec3{0, 0.5, 0}});
 	add_component(mesh_entity, Texture_Component{{}, gronk_tex});
 
@@ -42,7 +42,7 @@ main_init :: proc() {
 
 make_terrain_entity :: proc(position: Vec3) -> Entity {
 	e := new_entity();
-	add_component(e, Transform{{}, position, {10, 1, 10}, {}});
+	add_component(e, Transform{{}, position, {10, 1, 10}, {}, {}});
 	add_component(e, Mesh_Renderer{{}, cube_mesh_ids, {}});
 	add_component(e, box_collider_identity());
 	return e;
@@ -50,7 +50,7 @@ make_terrain_entity :: proc(position: Vec3) -> Entity {
 
 make_guy_entity :: proc(position: Vec3) -> Entity {
 	e := new_entity();
-	add_component(e, Transform{{}, position, {1, 1, 1}, {}});
+	add_component(e, Transform{{}, position, {1, 1, 1}, {}, {}});
 	add_component(e, Mesh_Renderer{{}, cube_mesh_ids, Vec3{0, 0.5, 0}});
 	add_component(e, Unit_Component{{}, 10, {}});
  	return e;
@@ -91,9 +91,9 @@ main_update :: proc(dt: f32) {
 		}
 	}
 
-    SPEED :: 10;
+	SPEED :: 10;
 
-    if wb.get_key(wb.Key.Space)        do wb.camera_position += up      * SPEED * dt;
+	if wb.get_key(wb.Key.Space)        do wb.camera_position += up      * SPEED * dt;
 	if wb.get_key(wb.Key.Left_Control) do wb.camera_position += down    * SPEED * dt;
 	if wb.get_key(wb.Key.W)            do wb.camera_position += forward * SPEED * dt;
 	if wb.get_key(wb.Key.S)            do wb.camera_position += back    * SPEED * dt;

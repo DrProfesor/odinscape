@@ -45,10 +45,12 @@ Transform :: struct {
 	position: Vec3,
 	scale: Vec3,
 	rotation: Vec3,
+
+	velocity: Vec3,
 }
 
 identity_transform :: inline proc() -> Transform {
-	return Transform{{}, {}, Vec3{1, 1, 1}, {}};
+	return Transform{{}, {}, Vec3{1, 1, 1}, {}, {}};
 }
 
 //

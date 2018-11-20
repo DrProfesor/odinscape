@@ -1,9 +1,9 @@
 [
-	"Transform"
 	"Sprite_Renderer"
-	"Spinner_Component"
 	"Mesh_Renderer"
 	"Texture_Component"
-	"Box_Collider"
 	"Unit_Component"
+	"Spinner_Component"
+	"Transform"
+	"Box_Collider"
 ]

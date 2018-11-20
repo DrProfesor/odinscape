@@ -36,7 +36,7 @@ using import "core:fmt"
 		}
 
 		for component_name in components {
-			line(tprint("all__", component_name, ": [dynamic]", component_name, ";"));
+			line("all__", component_name, ": [dynamic]", component_name, ";");
 		}
 
 
@@ -51,17 +51,17 @@ using import "core:fmt"
 			line("defer all_entities[entity] = entity_data;");
 			line("_t: Type; _t.entity = entity;");
 			for component_name in components {
-				line_indent(tprint("when Type == ", component_name, " {")); {
+				line_indent("when Type == ", component_name, " {"); {
 					defer line_outdent("}");
-					line(tprint("new_length := append(&all__", component_name, ", _t);"));
-					line(tprint("t := &all__", component_name, "[new_length-1];"));
-					line(tprint("append(&entity_data.component_types, Component_Type.", component_name, ");"));
+					line("new_length := append(&all__", component_name, ", _t);");
+					line("t := &all__", component_name, "[new_length-1];");
+					line("append(&entity_data.component_types, Component_Type.", component_name, ");");
 					init_proc_name := tprint("init__", component_name);
-					line_indent(tprint("when #defined(", init_proc_name, ") {")); {
+					line_indent("when #defined(", init_proc_name, ") {"); {
 						defer line_outdent("}");
-						line(tprint(init_proc_name, "(t);"));
+						line(init_proc_name, "(t);");
 					}
-					line(tprint("return t;"));
+					line("return t;");
 				}
 			}
 			line(`panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));`);
@@ -74,17 +74,17 @@ using import "core:fmt"
 			line("defer all_entities[entity] = entity_data;");
 			line("component.entity = entity;");
 			for component_name in components {
-				line_indent(tprint("when Type == ", component_name, " {")); {
+				line_indent("when Type == ", component_name, " {"); {
 					defer line_outdent("}");
-					line(tprint("new_length := append(&all__", component_name, ", component);"));
-					line(tprint("t := &all__", component_name, "[new_length-1];"));
-					line(tprint("append(&entity_data.component_types, Component_Type.", component_name, ");"));
+					line("new_length := append(&all__", component_name, ", component);");
+					line("t := &all__", component_name, "[new_length-1];");
+					line("append(&entity_data.component_types, Component_Type.", component_name, ");");
 					init_proc_name := tprint("init__", component_name);
-					line_indent(tprint("when #defined(", init_proc_name, ") {")); {
+					line_indent("when #defined(", init_proc_name, ") {"); {
 						defer line_outdent("}");
-						line(tprint(init_proc_name, "(t);"));
+						line(init_proc_name, "(t);");
 					}
-					line(tprint("return t;"));
+					line("return t;");
 				}
 			}
 			line(`panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));`);
@@ -96,11 +96,11 @@ using import "core:fmt"
 		procedure_begin("get_component", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
 			for component_name in components {
-				line_indent(tprint("when Type == ", component_name, " {")); {
+				line_indent("when Type == ", component_name, " {"); {
 					defer line_outdent("}");
-					line_indent(tprint("for _, i in all__", component_name, " {")); {
+					line_indent("for _, i in all__", component_name, " {"); {
 						defer line_outdent("}");
-						line(tprint("c := &all__", component_name, "[i];"));
+						line("c := &all__", component_name, "[i];");
 						line("if c.entity == entity do return c;");
 					}
 					line("return nil;");
@@ -134,15 +134,18 @@ using import "core:fmt"
 					line("switch comp_type {"); {
 						defer line("}");
 						for component_name in components {
-							line_indent(tprint("case Component_Type.", component_name, ":")); {
+							line_indent("case Component_Type.", component_name, ":"); {
 								defer line_outdent("");
-								line_indent(tprint("for _, i in all__", component_name, " {")); {
+								line_indent("for _, i in all__", component_name, " {"); {
 									defer line_outdent("}");
-									line(tprint("comp := &all__", component_name, "[i];"));
+									line("comp := &all__", component_name, "[i];");
 									line_indent("if comp.entity == entity_id {"); {
 										defer line_outdent("}");
-										emit_component_proc_call(tprint("destroy__", component_name), component_name);
-										line(tprint("unordered_remove(&all__", component_name, ", i);"));
+										line_indent("when #defined(destroy__", component_name, ") {"); {
+											defer line_outdent("}");
+											line("destroy__", component_name, "(comp);");
+										}
+										line("unordered_remove(&all__", component_name, ", i);");
 										line("break;");
 									}
 								}
@@ -176,12 +179,12 @@ Component_Definition :: struct {
 
 
 emit_component_proc_call :: proc(proc_name: string, comp_name: string) {
-	line_indent(tprint("when #defined(", proc_name, ") {")); {
+	line_indent("when #defined(", proc_name, ") {"); {
 		defer line_outdent("}");
-		line_indent(tprint("for _, i in all__", comp_name, " {")); {
+		line_indent("for _, i in all__", comp_name, " {"); {
 			defer line_outdent("}");
-			line(tprint("c := &all__", comp_name, "[i];"));
-			line(tprint(proc_name, "(c);"));
+			line("c := &all__", comp_name, "[i];");
+			line(proc_name, "(c);");
 		}
 	}
 }
@@ -267,17 +270,28 @@ procedure_begin :: proc(name: string, return_type: string = nil, params: ..Param
 	sbprint(&generated_code, "{\n");
 	indent_level += 1;
 }
-line :: inline proc(code: string) {
+line :: inline proc(args: ..any) {
 	print_indents();
-	sbprint(&generated_code, code, "\n");
+	for arg in args {
+		sbprint(&generated_code, arg);
+	}
+	sbprint(&generated_code, "\n");
 }
-line_indent :: inline proc(code: string) {
-	line(code);
+line_indent :: inline proc(args: ..any) {
+	print_indents();
+	for arg in args {
+		sbprint(&generated_code, arg);
+	}
+	sbprint(&generated_code, "\n");
 	indent_level += 1;
 }
-line_outdent :: inline proc(code: string) {
+line_outdent :: inline proc(args: ..any) {
 	indent_level -= 1;
-	line(code);
+	print_indents();
+	for arg in args {
+		sbprint(&generated_code, arg);
+	}
+	sbprint(&generated_code, "\n");
 }
 procedure_end :: proc() {
 	indent_level -= 1;
