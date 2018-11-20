@@ -96,13 +96,14 @@ Mesh_Renderer :: struct {
 	entity : Entity,
 
 	mesh_ids : [dynamic]wb.MeshID,
+	offset_from_transform: Vec3,
 }
 
 render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 	for mesh_id in mesh_ids {
-		wb.draw_mesh(mesh_id, tf.position, tf.scale, tf.rotation);
+		wb.draw_mesh(mesh_id, tf.position + offset_from_transform, tf.scale, tf.rotation);
 	}
 }
 

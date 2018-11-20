@@ -30,18 +30,19 @@ main_init :: proc() {
 
 	mesh_entity := new_entity();
 	tf := add_component(mesh_entity, identity_transform());
-	add_component(mesh_entity, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(mesh_entity, Mesh_Renderer{{}, cube_mesh_ids, Vec3{0, 0.5, 0}});
 	// add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
 	add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
 
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_guy_entity(Vec3{0, -6, 0});
+	make_guy_entity(Vec3{1, -6, 0});
 }
 
 make_terrain_entity :: proc(position: Vec3) -> Entity {
 	e := new_entity();
 	add_component(e, Transform{{}, position, {10, 1, 10}, {}});
-	add_component(e, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(e, Mesh_Renderer{{}, cube_mesh_ids, {}});
 	add_component(e, box_collider_identity());
 	return e;
 }
@@ -49,7 +50,7 @@ make_terrain_entity :: proc(position: Vec3) -> Entity {
 make_guy_entity :: proc(position: Vec3) -> Entity {
 	e := new_entity();
 	add_component(e, Transform{{}, position, {1, 1, 1}, {}});
-	add_component(e, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(e, Mesh_Renderer{{}, cube_mesh_ids, Vec3{0, 0.5, 0}});
 	add_component(e, Unit_Component{{}, 10, {}});
  	return e;
 }
