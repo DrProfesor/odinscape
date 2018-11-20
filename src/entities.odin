@@ -101,9 +101,14 @@ Mesh_Renderer :: struct {
 
 render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
+	texture := get_component(entity, Texture_Component);
+	texture_id : wb.Texture = 0;
+	if texture != nil do texture_id = texture.texture_id;
 	assert(tf != nil);
+
 	for mesh_id in mesh_ids {
 		wb.draw_mesh(mesh_id, tf.position + offset_from_transform, tf.scale, tf.rotation);
+		wb.draw_mesh(mesh_id, tf.position, tf.scale, tf.rotation, texture_id);
 	}
 }
 
@@ -183,6 +188,15 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 			tf.position += norm(current_target - tf.position) * move_speed * wb.fixed_delta_time;
 		}
 	}
+}
+
+//
+//Texture
+//
+
+Texture_Component :: struct {
+	entity : Entity,
+	texture_id : wb.Texture,
 }
 
 //

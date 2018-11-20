@@ -26,13 +26,14 @@ main_init :: proc() {
 	wb.camera_position = Vec3{0, 7.25, -8.5};
 	wb.camera_rotation = Vec3{300, 180, 0};
 
-	cube_mesh_ids = wb.load_asset("resources/Models/cube.fbx");
+	cube_mesh_ids := wb.load_asset("resources/Models/cube.fbx");
+	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.obj");
 
 	mesh_entity := new_entity();
 	tf := add_component(mesh_entity, identity_transform());
 	add_component(mesh_entity, Mesh_Renderer{{}, cube_mesh_ids, Vec3{0, 0.5, 0}});
 	// add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
-	add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
+	// add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
 
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_guy_entity(Vec3{0, -6, 0});
@@ -106,7 +107,7 @@ main_update :: proc(dt: f32) {
 }
 
 main_render :: proc(dt: f32) {
-	wb.use_program(wb.shader_rgba_3d);
+	wb.use_program(wb.shader_texture);
 	render_entities();
 }
 
