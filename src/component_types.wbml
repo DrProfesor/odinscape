@@ -3,4 +3,6 @@
 	"Sprite_Renderer"
 	"Spinner_Component"
 	"Mesh_Renderer"
+	"Box_Collider"
+	"Unit_Component"
 ]

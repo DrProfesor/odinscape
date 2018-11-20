@@ -6,6 +6,7 @@ using import    "core:math"
 
 	  import wb "shared:workbench"
 	  import ai "shared:workbench/external/assimp"
+	  import coll "shared:workbench/collision"
 
 logln :: wb.logln;
 
@@ -15,10 +16,15 @@ main :: proc() {
 
 cube_mesh_ids: [dynamic]wb.MeshID;
 
+main_collision_scene: coll.Collision_Scene;
+
+guy_entity: Entity;
+
 main_init :: proc() {
 	wb.perspective_camera(85);
 	init_entities();
-	wb.camera_position = Vec3{0, 0, -10};
+	wb.camera_position = Vec3{0, 7.25, -8.5};
+	wb.camera_rotation = Vec3{300, 180, 0};
 
 	cube_mesh_ids = wb.load_asset("resources/Models/cube.fbx");
 
@@ -28,9 +34,24 @@ main_init :: proc() {
 	// add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
 	add_component(mesh_entity, Spinner_Component{{}, 0, 0, wb.random_vec3()*0.2});
 
-	terrain := new_entity();
-	add_component(terrain, Transform{{}, {0, -7, 0}, {10, 1, 10}, {}});
-	add_component(terrain, Mesh_Renderer{{}, cube_mesh_ids});
+	make_terrain_entity(Vec3{0, -7, 0});
+	guy_entity = make_guy_entity(Vec3{0, -6, 0});
+}
+
+make_terrain_entity :: proc(position: Vec3) -> Entity {
+	e := new_entity();
+	add_component(e, Transform{{}, position, {10, 1, 10}, {}});
+	add_component(e, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(e, box_collider_identity());
+	return e;
+}
+
+make_guy_entity :: proc(position: Vec3) -> Entity {
+	e := new_entity();
+	add_component(e, Transform{{}, position, {1, 1, 1}, {}});
+	add_component(e, Mesh_Renderer{{}, cube_mesh_ids});
+	add_component(e, Unit_Component{{}, 10, {}});
+ 	return e;
 }
 
 last_mouse_pos: Vec2;
@@ -46,6 +67,28 @@ main_update :: proc(dt: f32) {
     right   := wb.quaternion_right(camera_orientation);
     left    := -right;
 
+	if wb.get_mouse(wb.Mouse.Right)
+	{
+		mouse_delta := wb.cursor_screen_position - last_mouse_pos;
+		SENSITIVITY :: 0.1;
+		mouse_delta *= SENSITIVITY;
+		wb.camera_rotation += Vec3{mouse_delta.y, -mouse_delta.x, 0};
+	}
+	last_mouse_pos = wb.cursor_screen_position;
+
+	if wb.get_mouse(wb.Mouse.Left) {
+		hits: [dynamic]coll.Hit_Info;
+		defer delete(hits);
+
+		cursor_direction := wb.get_cursor_direction_from_camera();
+		coll.linecast(&main_collision_scene, wb.camera_position, wb.camera_position + cursor_direction * 1000, &hits);
+		for hit in hits {
+			unit := get_component(guy_entity, Unit_Component);
+			unit.has_target = true;
+			unit.current_target = hit.point0;
+		}
+	}
+
     SPEED :: 10;
 
     if wb.get_key(wb.Key.Space)        do wb.camera_position += up      * SPEED * dt;
@@ -57,15 +100,6 @@ main_update :: proc(dt: f32) {
 
 	if wb.get_key(wb.Key.Q)            do wb.camera_rotation.y -= 100 * dt;
 	if wb.get_key(wb.Key.E)            do wb.camera_rotation.y += 100 * dt;
-
-	if wb.get_mouse(wb.Mouse.Right)
-	{
-		mouse_delta := wb.cursor_screen_position - last_mouse_pos;
-		SENSITIVITY :: 0.1;
-		mouse_delta *= SENSITIVITY;
-		wb.camera_rotation += Vec3{-mouse_delta.y, mouse_delta.x, 0};
-	}
-	last_mouse_pos = wb.cursor_screen_position;
 
 	update_entities();
 }

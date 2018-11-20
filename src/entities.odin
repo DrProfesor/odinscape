@@ -6,6 +6,7 @@ using import       "core:math"
 
 	  import wb    "shared:workbench"
 	  import imgui "shared:workbench/external/imgui"
+	  import coll  "shared:workbench/collision"
 
 Entity :: distinct int;
 
@@ -89,7 +90,6 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 }
 
 //
-
 // Mesh Renderer
 //
 Mesh_Renderer :: struct {
@@ -109,6 +109,79 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 destroy__Mesh_Renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
 	// todo: the Mesh_Renderer probably shouldn't own the `mesh_ids` memory
 	delete(mesh_ids);
+}
+
+//
+// Box Collider
+//
+
+Box_Collider :: struct {
+	entity: Entity,
+
+	offset_from_transform: Vec3,
+	size: Vec3,
+	handle: coll.Handle,
+}
+
+box_collider_identity :: proc() -> Box_Collider {
+	return Box_Collider{
+		{},
+		{},
+		Vec3{1, 1, 1},
+		{},
+	};
+}
+
+init__Box_Collider :: inline proc(using box: ^Box_Collider) {
+	tf := get_component(entity, Transform);
+	assert(tf != nil);
+	handle = coll.add_collider_to_scene(&main_collision_scene, coll.Collider{tf.position + offset_from_transform, coll.Box{size * tf.scale}});
+}
+
+update__Box_Collider :: inline proc(using box: ^Box_Collider) {
+	tf := get_component(entity, Transform);
+	assert(tf != nil);
+
+	collider, ok := coll.get_collider(&main_collision_scene, handle);
+	assert(ok);
+
+	collider.position = tf.position + offset_from_transform;
+
+	b := &collider.kind.(coll.Box);
+	b.size = size * tf.scale;
+
+	coll.update_collider(&main_collision_scene, handle, collider);
+}
+
+destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {
+	coll.remove_collider(&main_collision_scene, handle);
+}
+
+//
+// Units
+//
+
+Unit_Component :: struct {
+	entity: Entity,
+
+	move_speed: f32,
+
+	using runtime_values: struct {
+		has_target: bool,
+		current_target: Vec3,
+	}
+}
+
+update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
+	if has_target {
+		tf := get_component(entity, Transform);
+		if wb.sqr_magnitude(tf.position - current_target) < 0.01 {
+			has_target = false;
+		}
+		else {
+			tf.position += norm(current_target - tf.position) * move_speed * wb.fixed_delta_time;
+		}
+	}
 }
 
 //
