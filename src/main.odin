@@ -25,7 +25,7 @@ main_init :: proc() {
 	tf := add_component(mesh_entity, identity_transform());
 	tf.scale = Vec3{0.5, 0.5, 0.5};
 	add_component(mesh_entity, Mesh_Renderer{{}, gronk_mesh_ids});
-	gronk_tex := wb.load_texture("resources/Textures/OrcGreen_Debug.png");
+	gronk_tex := wb.load_texture("resources/Textures/OrcGreen.png");
 	logln("Loaded: ", gronk_tex);
 	add_component(mesh_entity, Texture_Component{{}, gronk_tex});
 	// add_component(mesh_entity, Sprite_Renderer{{}, wb.random_color()});
