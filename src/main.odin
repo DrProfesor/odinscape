@@ -54,7 +54,7 @@ make_unit_entity :: proc(position: Vec3, meshes: [dynamic]wb.MeshID, texture: wb
 	add_component(e, Transform{{}, position, {1, 1, 1}, {}, {}});
 	add_component(e, Mesh_Renderer{{}, meshes, Vec3{0, 0.5, 0}});
 	add_component(e, Texture_Component{{}, texture});
-	add_component(e, Unit_Component{{}, 10, {}});
+	add_component(e, Unit_Component{{}, 5, {}});
  	return e;
 }
 
