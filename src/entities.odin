@@ -101,14 +101,20 @@ Mesh_Renderer :: struct {
 
 render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
-	texture := get_component(entity, Texture_Component);
-	texture_id : wb.Texture = 0;
-	if texture != nil do texture_id = texture.texture_id;
 	assert(tf != nil);
 
+	texture := get_component(entity, Texture_Component);
+	texture_id : wb.Texture = 0;
+	if texture != nil
+	{
+		wb.use_program(wb.shader_texture);
+		texture_id = texture.texture_id;
+	}
+	else do 
+		wb.use_program(wb.shader_rgba_3d);
+		
 	for mesh_id in mesh_ids {
-		wb.draw_mesh(mesh_id, tf.position + offset_from_transform, tf.scale, tf.rotation);
-		wb.draw_mesh(mesh_id, tf.position, tf.scale, tf.rotation, texture_id);
+		wb.draw_mesh(mesh_id, tf.position + offset_from_transform, tf.scale, tf.rotation, texture_id);
 	}
 }
 
