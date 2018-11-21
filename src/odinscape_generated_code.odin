@@ -2,6 +2,7 @@ package main
 
 using import "core:fmt"
       import wb "shared:workbench"
+      import imgui "shared:workbench/external/imgui"
 
 Component_Type :: enum {
 	Sprite_Renderer,
@@ -405,5 +406,91 @@ destroy_marked_entities :: proc() {
 		delete_key(&all_entities, entity_id);
 	}
 	clear(&entities_to_destroy);
+}
+
+update_inspector_window :: proc() {
+	if imgui.begin("Scene") {
+		defer imgui.end();
+		for entity, entity_data in all_entities {
+			if imgui.collapsing_header(tprint(entity)) {
+				for comp_type in entity_data.component_types {
+					imgui.indent();
+						switch comp_type {
+						case Component_Type.Sprite_Renderer:
+							for _, i in all__Sprite_Renderer {
+								comp := &all__Sprite_Renderer[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Sprite_Renderer"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Mesh_Renderer:
+							for _, i in all__Mesh_Renderer {
+								comp := &all__Mesh_Renderer[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Mesh_Renderer"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Texture_Component:
+							for _, i in all__Texture_Component {
+								comp := &all__Texture_Component[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Texture_Component"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Unit_Component:
+							for _, i in all__Unit_Component {
+								comp := &all__Unit_Component[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Unit_Component"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Spinner_Component:
+							for _, i in all__Spinner_Component {
+								comp := &all__Spinner_Component[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Spinner_Component"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Transform:
+							for _, i in all__Transform {
+								comp := &all__Transform[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Transform"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Box_Collider:
+							for _, i in all__Box_Collider {
+								comp := &all__Box_Collider[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Box_Collider"));
+									break;
+								}
+							}
+							break;
+						
+					}
+					imgui.unindent();
+				}
+			}
+		}
+	}
 }
 
