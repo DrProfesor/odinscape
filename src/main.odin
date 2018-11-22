@@ -29,11 +29,6 @@ main_init :: proc() {
 	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.obj");
 	gronk_tex := wb.load_texture("resources/Textures/OrcGreen.png");
 
-	// mesh_entity := new_entity();
-	// add_component(mesh_entity, Transform{{}, {0,0,0}, {0.5,0.5,0.5}, {}, {}});
-	// add_component(mesh_entity, Mesh_Renderer{{}, gronk_mesh_ids, Vec3{0, 0.5, 0}});
-	// add_component(mesh_entity, Texture_Component{{}, gronk_tex});
-
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_mesh_ids, gronk_tex);
 
@@ -74,6 +69,7 @@ main_update :: proc(dt: f32) {
 
 	update_entities();
     update_camera();
+    update_inspector_window();
 }
 
 free_camera: bool;

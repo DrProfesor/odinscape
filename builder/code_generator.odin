@@ -18,6 +18,7 @@ run_code_generator :: proc() {
 
 using import "core:fmt"
       import wb "shared:workbench"
+      import imgui "shared:workbench/external/imgui"
 
 `);
 
@@ -158,6 +159,51 @@ using import "core:fmt"
 				line("delete_key(&all_entities, entity_id);");
 			}
 			line("clear(&entities_to_destroy);");
+		}
+
+		procedure_begin("update_inspector_window");{
+			defer procedure_end();
+
+			line_indent("if imgui.begin(\"Scene\") {"); {
+				defer line_outdent("}");
+				line("defer imgui.end();");
+
+				line_indent("for entity, entity_data in all_entities {"); {
+					defer line_outdent("}");
+
+					line_indent("if imgui.collapsing_header(tprint(entity)) {"); {
+						defer line_outdent("}");
+						line_indent("for comp_type in entity_data.component_types {"); {
+							defer line_outdent("}");
+
+							line_indent("imgui.indent();");
+							defer line("imgui.unindent();");
+
+							line("switch comp_type {"); {
+								defer line_outdent("}");
+								for component_name in components {
+									line_indent("case Component_Type.", component_name, ":"); {
+										defer line_outdent("");
+
+										line_indent("for _, i in all__", component_name, " {"); {
+											defer line_outdent("}");
+											line("comp := &all__", component_name, "[i];");
+											line_indent("if comp.entity == entity {"); {
+												defer line_outdent("}");
+												line("wb.imgui_struct(comp, tprint(entity, \": ", component_name,"\"));");
+												line("break;");
+											}
+										}
+
+
+										line("break;");
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
