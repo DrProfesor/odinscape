@@ -65,7 +65,7 @@ focus_camera_on_guy :: proc(e: Entity) {
 
 last_mouse_pos: Vec2;
 main_update :: proc(dt: f32) {
-    if wb.get_key_down(wb.Key.Escape) do wb.exit();
+    if wb.get_input_down(wb.Input.Escape) do wb.exit();
 
 	update_entities();
     update_camera();
@@ -75,11 +75,11 @@ main_update :: proc(dt: f32) {
 free_camera: bool;
 
 update_camera :: proc() {
-	if wb.get_mouse_down(wb.Mouse.Middle) {
+	if wb.get_input_down(wb.Input.Mouse_Middle) {
 		focus_camera_on_guy(guy_entity);
 	}
 
-	if wb.get_key_down(wb.Key.Tab) {
+	if wb.get_input_down(wb.Input.Tab) {
 		free_camera = true;
 	}
 
@@ -100,17 +100,17 @@ update_camera :: proc() {
 
 	SPEED :: 10;
 
-	if wb.get_key(wb.Key.Space)        { gameplay_camera.position += up       * SPEED * wb.fixed_delta_time; }
-	if wb.get_key(wb.Key.Left_Control) { gameplay_camera.position += down     * SPEED * wb.fixed_delta_time; }
-	if wb.get_key(wb.Key.W)            { gameplay_camera.position += forward  * SPEED * wb.fixed_delta_time; }
-	if wb.get_key(wb.Key.S)            { gameplay_camera.position += back     * SPEED * wb.fixed_delta_time; }
-	if wb.get_key(wb.Key.A)            { gameplay_camera.position += left     * SPEED * wb.fixed_delta_time; }
-	if wb.get_key(wb.Key.D)            { gameplay_camera.position += right    * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(wb.Input.Space)        { gameplay_camera.position += up       * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(wb.Input.Left_Control) { gameplay_camera.position += down     * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(wb.Input.W)            { gameplay_camera.position += forward  * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(wb.Input.S)            { gameplay_camera.position += back     * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(wb.Input.A)            { gameplay_camera.position += left     * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(wb.Input.D)            { gameplay_camera.position += right    * SPEED * wb.fixed_delta_time; }
 
 	wb.update_view_matrix(&gameplay_camera);
 
 	if !free_camera {
-		if wb.get_mouse_down(wb.Mouse.Right) {
+		if wb.get_input_down(wb.Input.Mouse_Right) {
 			hits: [dynamic]coll.Hit_Info;
 			defer delete(hits);
 
@@ -124,7 +124,7 @@ update_camera :: proc() {
 		}
 	}
 	else {
-		if wb.get_mouse(wb.Mouse.Right) {
+		if wb.get_input(wb.Input.Mouse_Right) {
 			mouse_delta := wb.cursor_screen_position - last_mouse_pos;
 			SENSITIVITY :: 0.1;
 			mouse_delta *= SENSITIVITY;
