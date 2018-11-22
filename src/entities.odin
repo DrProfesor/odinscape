@@ -172,34 +172,7 @@ destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {
 }
 
 //
-// Units
-//
-
-Unit_Component :: struct {
-	entity: Entity,
-
-	move_speed: f32,
-
-	using runtime_values: struct {
-		has_target: bool,
-		current_target: Vec3,
-	}
-}
-
-update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
-	if has_target {
-		tf := get_component(entity, Transform);
-		if wb.sqr_magnitude(tf.position - current_target) < 0.01 {
-			has_target = false;
-		}
-		else {
-			tf.position += norm(current_target - tf.position) * move_speed * wb.fixed_delta_time;
-		}
-	}
-}
-
-//
-//Texture
+// Texture
 //
 
 Texture_Component :: struct {

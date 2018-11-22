@@ -11,7 +11,7 @@ using import    "core:math"
 logln :: wb.logln;
 
 main :: proc() {
-    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Scene{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
+    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Stage{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
 cube_mesh_ids: [dynamic]wb.MeshID;
@@ -36,7 +36,6 @@ main_init :: proc() {
 
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_mesh_ids, gronk_tex);
-	make_unit_entity(Vec3{1, -6, 0}, cube_mesh_ids, {});
 
 	focus_camera_on_guy(guy_entity);
 }
