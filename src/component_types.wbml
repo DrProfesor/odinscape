@@ -1,7 +1,6 @@
 [
 	"Sprite_Renderer"
 	"Mesh_Renderer"
-	"Texture_Component"
 	"Unit_Component"
 	"Spinner_Component"
 	"Transform"
