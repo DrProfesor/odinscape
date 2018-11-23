@@ -16,6 +16,7 @@ Key_Config :: struct {
 
 	camera_snap_to_unit: wb.Input,
 	free_camera: wb.Input,
+	camera_enable_mouse_rotation: wb.Input,
 
 	move_command: wb.Input,
 }
@@ -59,6 +60,7 @@ default_key_config :: proc() -> Key_Config {
 
 		camera_snap_to_unit = Mouse_Middle,
 		free_camera = Tab,
+		camera_enable_mouse_rotation = Mouse_Right,
 
 		move_command = Mouse_Right,
 	};

@@ -113,7 +113,7 @@ update_camera :: proc() {
 	wb.update_view_matrix(&gameplay_camera);
 
 	if !free_camera {
-		if wb.get_input_down(wb.Input.Mouse_Right) {
+		if wb.get_input_down(key_config.camera_enable_mouse_rotation) {
 			hits: [dynamic]coll.Hit_Info;
 			defer delete(hits);
 
@@ -127,7 +127,7 @@ update_camera :: proc() {
 		}
 	}
 	else {
-		if wb.get_input(wb.Input.Mouse_Right) {
+		if wb.get_input(key_config.move_command) {
 			mouse_delta := wb.cursor_screen_position - last_mouse_pos;
 			SENSITIVITY :: 0.1;
 			mouse_delta *= SENSITIVITY;
