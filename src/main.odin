@@ -13,7 +13,7 @@ using import _ "key_config";
 logln :: wb.logln;
 
 main :: proc() {
-    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Update_Loop{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
+    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
 cube_mesh_ids: [dynamic]wb.MeshID;
@@ -68,7 +68,7 @@ focus_camera_on_guy :: proc(e: Entity) {
 
 last_mouse_pos: Vec2;
 main_update :: proc(dt: f32) {
-    if wb.get_input_down(wb.Input.Escape) do wb.end_update_loop(wb.current_update_loop);
+    if wb.get_input_down(wb.Input.Escape) do wb.end_workspace(wb.current_workspace);
 
 	update_entities();
     update_camera();
