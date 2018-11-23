@@ -4,6 +4,8 @@ using import    "core:fmt"
 using import    "core:math"
 	  import    "core:mem"
 
+using import _ "key_config";
+
 	  import wb "shared:workbench"
 	  import ai "shared:workbench/external/assimp"
 	  import coll "shared:workbench/collision"
@@ -11,7 +13,7 @@ using import    "core:math"
 logln :: wb.logln;
 
 main :: proc() {
-    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Stage{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
+    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Update_Loop{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
 cube_mesh_ids: [dynamic]wb.MeshID;
@@ -24,6 +26,7 @@ gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
 
 main_init :: proc() {
 	init_entities();
+	init_key_config();
 
 	cube_mesh_ids = wb.load_asset("resources/Models/cube.fbx");
 	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.obj");
@@ -65,7 +68,7 @@ focus_camera_on_guy :: proc(e: Entity) {
 
 last_mouse_pos: Vec2;
 main_update :: proc(dt: f32) {
-    if wb.get_input_down(wb.Input.Escape) do wb.exit();
+    if wb.get_input_down(wb.Input.Escape) do wb.end_update_loop(wb.current_update_loop);
 
 	update_entities();
     update_camera();
@@ -75,11 +78,11 @@ main_update :: proc(dt: f32) {
 free_camera: bool;
 
 update_camera :: proc() {
-	if wb.get_input_down(wb.Input.Mouse_Middle) {
+	if wb.get_input_down(key_config.camera_snap_to_unit) {
 		focus_camera_on_guy(guy_entity);
 	}
 
-	if wb.get_input_down(wb.Input.Tab) {
+	if wb.get_input_down(key_config.free_camera) {
 		free_camera = true;
 	}
 
@@ -100,12 +103,12 @@ update_camera :: proc() {
 
 	SPEED :: 10;
 
-	if wb.get_input(wb.Input.Space)        { gameplay_camera.position += up       * SPEED * wb.fixed_delta_time; }
-	if wb.get_input(wb.Input.Left_Control) { gameplay_camera.position += down     * SPEED * wb.fixed_delta_time; }
-	if wb.get_input(wb.Input.W)            { gameplay_camera.position += forward  * SPEED * wb.fixed_delta_time; }
-	if wb.get_input(wb.Input.S)            { gameplay_camera.position += back     * SPEED * wb.fixed_delta_time; }
-	if wb.get_input(wb.Input.A)            { gameplay_camera.position += left     * SPEED * wb.fixed_delta_time; }
-	if wb.get_input(wb.Input.D)            { gameplay_camera.position += right    * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(key_config.camera_up)      { gameplay_camera.position += up      * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(key_config.camera_down)    { gameplay_camera.position += down    * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(key_config.camera_forward) { gameplay_camera.position += forward * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(key_config.camera_back)    { gameplay_camera.position += back    * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(key_config.camera_left)    { gameplay_camera.position += left    * SPEED * wb.fixed_delta_time; }
+	if wb.get_input(key_config.camera_right)   { gameplay_camera.position += right   * SPEED * wb.fixed_delta_time; }
 
 	wb.update_view_matrix(&gameplay_camera);
 
@@ -142,4 +145,5 @@ main_render :: proc(dt: f32) {
 
 main_end :: proc() {
 	shutdown_entities();
+	key_config_save();
 }

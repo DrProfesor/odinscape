@@ -1,0 +1,12 @@
+{
+	camera_up Space
+	camera_down Left_Control
+	camera_forward W
+	camera_back S
+	camera_left A
+	camera_right D
+	camera_snap_to_unit Mouse_Button_3
+	free_camera Tab
+	move_command Mouse_Button_2
+}
+
