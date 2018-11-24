@@ -9,6 +9,7 @@ using import _ "key_config";
 	  import wb "shared:workbench"
 	  import ai "shared:workbench/external/assimp"
 	  import coll "shared:workbench/collision"
+	  import imgui "shared:workbench/external/imgui"
 
 logln :: wb.logln;
 
@@ -16,11 +17,12 @@ main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
-cube_mesh_ids: [dynamic]wb.MeshID;
+cube_model: wb.Model;
 
 main_collision_scene: coll.Collision_Scene;
 
 guy_entity: Entity;
+gronk_tex: wb.Texture;
 
 gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
 
@@ -28,29 +30,27 @@ main_init :: proc() {
 	init_entities();
 	init_key_config();
 
-	cube_mesh_ids = wb.load_asset("resources/Models/cube.fbx");
-	gronk_mesh_ids := wb.load_asset("resources/Models/gronk.obj");
-	gronk_tex := wb.load_texture("resources/Textures/OrcGreen.png");
+	cube_model = wb.load_asset("resources/Models/cube.fbx");
+	gronk_model := wb.load_asset("resources/Models/gronk.obj");
+	gronk_tex = wb.load_texture("resources/Textures/OrcGreen.png");
 
 	make_terrain_entity(Vec3{0, -7, 0});
-	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_mesh_ids, gronk_tex);
-
+	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_model, gronk_tex);
 	focus_camera_on_guy(guy_entity);
 }
 
 make_terrain_entity :: proc(position: Vec3) -> Entity {
 	e := new_entity();
 	add_component(e, Transform{{}, position, {10, 1, 10}, {}, {}});
-	add_component(e, Mesh_Renderer{{}, cube_mesh_ids, {}});
+	add_component(e, Mesh_Renderer{{}, cube_model, {}, 0, wb.shader_rgba_3d});
 	add_component(e, box_collider_identity());
 	return e;
 }
 
-make_unit_entity :: proc(position: Vec3, meshes: [dynamic]wb.MeshID, texture: wb.Texture) -> Entity {
+make_unit_entity :: proc(position: Vec3, model: wb.Model, texture: wb.Texture) -> Entity {
 	e := new_entity();
 	add_component(e, Transform{{}, position, {1, 1, 1}, {}, {}});
-	add_component(e, Mesh_Renderer{{}, meshes, Vec3{0, 0.5, 0}});
-	add_component(e, Texture_Component{{}, texture});
+	add_component(e, Mesh_Renderer{{}, model, Vec3{0, 0.5, 0}, texture, wb.shader_texture});
 	add_component(e, Unit_Component{{}, 5, {}});
  	return e;
 }
@@ -139,7 +139,6 @@ update_camera :: proc() {
 }
 
 main_render :: proc(dt: f32) {
-	wb.use_program(wb.shader_rgba_3d);
 	render_entities();
 }
 

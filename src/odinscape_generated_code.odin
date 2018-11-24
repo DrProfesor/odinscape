@@ -7,7 +7,6 @@ using import "core:fmt"
 Component_Type :: enum {
 	Sprite_Renderer,
 	Mesh_Renderer,
-	Texture_Component,
 	Unit_Component,
 	Spinner_Component,
 	Transform,
@@ -16,7 +15,6 @@ Component_Type :: enum {
 
 all__Sprite_Renderer: [dynamic]Sprite_Renderer;
 all__Mesh_Renderer: [dynamic]Mesh_Renderer;
-all__Texture_Component: [dynamic]Texture_Component;
 all__Unit_Component: [dynamic]Unit_Component;
 all__Spinner_Component: [dynamic]Spinner_Component;
 all__Transform: [dynamic]Transform;
@@ -43,15 +41,6 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
 		when #defined(init__Mesh_Renderer) {
 			init__Mesh_Renderer(t);
-		}
-		return t;
-	}
-	when Type == Texture_Component {
-		new_length := append(&all__Texture_Component, _t);
-		t := &all__Texture_Component[new_length-1];
-		append(&entity_data.component_types, Component_Type.Texture_Component);
-		when #defined(init__Texture_Component) {
-			init__Texture_Component(t);
 		}
 		return t;
 	}
@@ -117,15 +106,6 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
-	when Type == Texture_Component {
-		new_length := append(&all__Texture_Component, component);
-		t := &all__Texture_Component[new_length-1];
-		append(&entity_data.component_types, Component_Type.Texture_Component);
-		when #defined(init__Texture_Component) {
-			init__Texture_Component(t);
-		}
-		return t;
-	}
 	when Type == Unit_Component {
 		new_length := append(&all__Unit_Component, component);
 		t := &all__Unit_Component[new_length-1];
@@ -181,13 +161,6 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
-	when Type == Texture_Component {
-		for _, i in all__Texture_Component {
-			c := &all__Texture_Component[i];
-			if c.entity == entity do return c;
-		}
-		return nil;
-	}
 	when Type == Unit_Component {
 		for _, i in all__Unit_Component {
 			c := &all__Unit_Component[i];
@@ -233,12 +206,6 @@ call_component_updates :: proc() {
 			update__Mesh_Renderer(c);
 		}
 	}
-	when #defined(update__Texture_Component) {
-		for _, i in all__Texture_Component {
-			c := &all__Texture_Component[i];
-			update__Texture_Component(c);
-		}
-	}
 	when #defined(update__Unit_Component) {
 		for _, i in all__Unit_Component {
 			c := &all__Unit_Component[i];
@@ -276,12 +243,6 @@ call_component_renders :: proc() {
 		for _, i in all__Mesh_Renderer {
 			c := &all__Mesh_Renderer[i];
 			render__Mesh_Renderer(c);
-		}
-	}
-	when #defined(render__Texture_Component) {
-		for _, i in all__Texture_Component {
-			c := &all__Texture_Component[i];
-			render__Texture_Component(c);
 		}
 	}
 	when #defined(render__Unit_Component) {
@@ -335,18 +296,6 @@ destroy_marked_entities :: proc() {
 							destroy__Mesh_Renderer(comp);
 						}
 						unordered_remove(&all__Mesh_Renderer, i);
-						break;
-					}
-				}
-			
-			case Component_Type.Texture_Component:
-				for _, i in all__Texture_Component {
-					comp := &all__Texture_Component[i];
-					if comp.entity == entity_id {
-						when #defined(destroy__Texture_Component) {
-							destroy__Texture_Component(comp);
-						}
-						unordered_remove(&all__Texture_Component, i);
 						break;
 					}
 				}
@@ -431,16 +380,6 @@ update_inspector_window :: proc() {
 								comp := &all__Mesh_Renderer[i];
 								if comp.entity == entity {
 									wb.imgui_struct(comp, tprint(entity, ": Mesh_Renderer"));
-									break;
-								}
-							}
-							break;
-						
-						case Component_Type.Texture_Component:
-							for _, i in all__Texture_Component {
-								comp := &all__Texture_Component[i];
-								if comp.entity == entity {
-									wb.imgui_struct(comp, tprint(entity, ": Texture_Component"));
 									break;
 								}
 							}

@@ -95,34 +95,31 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 // Mesh Renderer
 //
 Mesh_Renderer :: struct {
-	entity : Entity,
-
-	mesh_ids : [dynamic]wb.MeshID,
-	offset_from_transform: Vec3,
+	entity                : Entity,
+	model                 : wb.Model,
+	offset_from_transform : Vec3,
+	texture_handle        : wb.Texture,
+	shader_handle         : wb.Shader_Program,
 }
 
 render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 
-	texture := get_component(entity, Texture_Component);
-	texture_id : wb.Texture = 0;
-	if texture != nil
-	{
-		wb.use_program(wb.shader_texture);
-		texture_id = texture.texture_id;
-	}
-	else do
-		wb.use_program(wb.shader_rgba_3d);
-
-	for mesh_id in mesh_ids {
-		wb.draw_mesh(mesh_id, tf.position + offset_from_transform, tf.scale, tf.rotation, texture_id);
+	for mesh_id in model.meshes {
+		wb.push_mesh(
+			mesh_id, 
+			tf.position + offset_from_transform, 
+			tf.scale, 
+			tf.rotation, 
+			texture_handle, 
+			shader_handle);
 	}
 }
 
 destroy__Mesh_Renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
 	// todo: the Mesh_Renderer probably shouldn't own the `mesh_ids` memory
-	delete(mesh_ids);
+	delete(model.meshes);
 }
 
 //
@@ -169,15 +166,6 @@ update__Box_Collider :: inline proc(using box: ^Box_Collider) {
 
 destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {
 	coll.remove_collider(&main_collision_scene, handle);
-}
-
-//
-// Texture
-//
-
-Texture_Component :: struct {
-	entity : Entity,
-	texture_id : wb.Texture,
 }
 
 //
