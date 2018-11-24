@@ -9,6 +9,7 @@ using import _ "key_config";
 	  import wb "shared:workbench"
 	  import ai "shared:workbench/external/assimp"
 	  import coll "shared:workbench/collision"
+	  import imgui "shared:workbench/external/imgui"
 
 logln :: wb.logln;
 
@@ -21,6 +22,7 @@ cube_model: wb.Model;
 main_collision_scene: coll.Collision_Scene;
 
 guy_entity: Entity;
+gronk_tex: wb.Texture;
 
 gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
 
@@ -30,7 +32,7 @@ main_init :: proc() {
 
 	cube_model = wb.load_asset("resources/Models/cube.fbx");
 	gronk_model := wb.load_asset("resources/Models/gronk.obj");
-	gronk_tex := wb.load_texture("resources/Textures/OrcGreen.png");
+	gronk_tex = wb.load_texture("resources/Textures/OrcGreen.png");
 
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_model, gronk_tex);
@@ -138,7 +140,6 @@ update_camera :: proc() {
 
 main_render :: proc(dt: f32) {
 	render_entities();
-	wb.im_flush_3d();
 }
 
 main_end :: proc() {
