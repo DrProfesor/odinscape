@@ -171,7 +171,7 @@ using import "core:fmt"
 				line_indent("for entity, entity_data in all_entities {"); {
 					defer line_outdent("}");
 
-					line_indent("if imgui.collapsing_header(tprint(entity)) {"); {
+					line_indent("if imgui.collapsing_header(tprint((entity_data.name == \"\" ? \"<no_name>\" : entity_data.name), \" #\", entity)) {"); {
 						defer line_outdent("}");
 						line_indent("for comp_type in entity_data.component_types {"); {
 							defer line_outdent("}");

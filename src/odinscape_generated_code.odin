@@ -287,7 +287,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Mesh_Renderer:
 				for _, i in all__Mesh_Renderer {
 					comp := &all__Mesh_Renderer[i];
@@ -299,7 +299,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Unit_Component:
 				for _, i in all__Unit_Component {
 					comp := &all__Unit_Component[i];
@@ -311,7 +311,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Spinner_Component:
 				for _, i in all__Spinner_Component {
 					comp := &all__Spinner_Component[i];
@@ -323,7 +323,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Transform:
 				for _, i in all__Transform {
 					comp := &all__Transform[i];
@@ -335,7 +335,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			case Component_Type.Box_Collider:
 				for _, i in all__Box_Collider {
 					comp := &all__Box_Collider[i];
@@ -347,7 +347,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-			
+
 			}
 		}
 		clear(&entity.component_types);
@@ -361,7 +361,7 @@ update_inspector_window :: proc() {
 	if imgui.begin("Scene") {
 		defer imgui.end();
 		for entity, entity_data in all_entities {
-			if imgui.collapsing_header(tprint(entity)) {
+			if imgui.collapsing_header(tprint((entity_data.name == "" ? "<no_name>" : entity_data.name), " #", entity)) {
 				for comp_type in entity_data.component_types {
 					imgui.indent();
 						switch comp_type {
@@ -374,7 +374,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-						
+
 						case Component_Type.Mesh_Renderer:
 							for _, i in all__Mesh_Renderer {
 								comp := &all__Mesh_Renderer[i];
@@ -384,7 +384,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-						
+
 						case Component_Type.Unit_Component:
 							for _, i in all__Unit_Component {
 								comp := &all__Unit_Component[i];
@@ -394,7 +394,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-						
+
 						case Component_Type.Spinner_Component:
 							for _, i in all__Spinner_Component {
 								comp := &all__Spinner_Component[i];
@@ -404,7 +404,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-						
+
 						case Component_Type.Transform:
 							for _, i in all__Transform {
 								comp := &all__Transform[i];
@@ -414,7 +414,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-						
+
 						case Component_Type.Box_Collider:
 							for _, i in all__Box_Collider {
 								comp := &all__Box_Collider[i];
@@ -424,7 +424,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-						
+
 					}
 					imgui.unindent();
 				}

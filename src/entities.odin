@@ -15,9 +15,10 @@ all_entities: map[Entity]_Entity_Data;
 entities_to_destroy: [dynamic]Entity;
 available_component_lists: [dynamic][dynamic]Component_Type;
 
-new_entity :: proc() -> Entity {
+new_entity :: proc(name: string = "") -> Entity {
 	last_entity_id += 1;
 	e: _Entity_Data;
+	e.name = name;
 	if len(available_component_lists) > 0 {
 		e.component_types = pop(&available_component_lists);
 		assert(len(e.component_types) == 0, "list wasn't cleared before returning to available_component_lists");
@@ -35,12 +36,18 @@ destroy_entity :: proc(entity_id: Entity) {
 	append(&entities_to_destroy, entity_id);
 }
 
+
+
+Component_Base :: struct {
+	entity: Entity,
+}
+
 //
 // Transform
 //
 
 Transform :: struct {
-	entity: Entity,
+	using base: Component_Base,
 
 	position: Vec3,
 	scale: Vec3,
@@ -58,7 +65,7 @@ identity_transform :: inline proc() -> Transform {
 //
 
 Sprite_Renderer :: struct {
-	entity: Entity,
+	using base: Component_Base,
 
 	color: wb.Colorf,
 }
@@ -73,7 +80,7 @@ render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 //
 
 Spinner_Component :: struct {
-	entity: Entity,
+	using base: Component_Base,
 
 	orbit_distance: f32,
 	orbit_speed: f32,
@@ -108,11 +115,11 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 
 	for mesh_id in model.meshes {
 		wb.push_mesh(
-			mesh_id, 
-			tf.position + offset_from_transform, 
-			tf.scale, 
-			tf.rotation, 
-			texture_handle, 
+			mesh_id,
+			tf.position + offset_from_transform,
+			tf.scale,
+			tf.rotation,
+			texture_handle,
 			shader_handle);
 	}
 }
@@ -127,7 +134,7 @@ destroy__Mesh_Renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
 //
 
 Box_Collider :: struct {
-	entity: Entity,
+	using base: Component_Base,
 
 	offset_from_transform: Vec3,
 	size: Vec3,
@@ -173,6 +180,7 @@ destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {
 //
 
 _Entity_Data :: struct {
+	name: string,
 	component_types: [dynamic]Component_Type,
 }
 
@@ -180,8 +188,8 @@ init_entities :: proc() {
 }
 
 update_entities :: proc() {
-	destroy_marked_entities();
 	call_component_updates();
+	destroy_marked_entities();
 }
 
 render_entities :: proc() {
