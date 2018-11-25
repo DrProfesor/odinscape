@@ -10,9 +10,9 @@ using import       "core:math"
 
 Entity :: distinct int;
 
-last_entity_id: Entity;
-all_entities: map[Entity]_Entity_Data;
-entities_to_destroy: [dynamic]Entity;
+last_entity_id           : Entity;
+all_entities             : map[Entity]_Entity_Data;
+entities_to_destroy      : [dynamic]Entity;
 available_component_lists: [dynamic][dynamic]Component_Type;
 
 new_entity :: proc(name: string = "") -> Entity {

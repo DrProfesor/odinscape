@@ -28,8 +28,11 @@ main_init :: proc() {
 	init_entities();
 	init_key_config();
 
-	cube_model = wb.load_asset_to_gpu("resources/Models/cube.fbx");
-	gronk_model := wb.load_asset_to_gpu("resources/Models/gronk.obj");
+	cube_model_data := wb.load_model_from_file("resources/Models/cube.fbx");
+	gronk_model_data := wb.load_model_from_file("resources/Models/gronk.obj");
+
+	gronk_model := wb.buffer_model(gronk_model_data);
+	cube_model = wb.buffer_model(cube_model_data);
 
 	gronk_tex_data, ok := os.read_entire_file("resources/Textures/OrcGreen.png");
 	assert(ok);
