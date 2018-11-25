@@ -1,0 +1,11 @@
+{
+	manifest {
+		entries 
+		[
+			{
+				id "asset1"
+				path "asset/path"
+			}
+		]
+	}
+}

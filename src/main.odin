@@ -34,6 +34,8 @@ main_init :: proc() {
 	gronk_model := wb.buffer_model(gronk_model_data);
 	cube_model = wb.buffer_model(cube_model_data);
 
+	scene_init("main");
+
 	gronk_tex_data, ok := os.read_entire_file("resources/Textures/OrcGreen.png");
 	assert(ok);
 	defer delete(gronk_tex_data);
