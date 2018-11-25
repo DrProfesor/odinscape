@@ -26,14 +26,13 @@ new_entity :: proc(name: string = "") -> Entity {
 	all_entities[last_entity_id] = e;
 	return last_entity_id;
 }
+destroy_entity :: proc(entity_id: Entity) {
+	append(&entities_to_destroy, entity_id);
+}
 
 get_all_component_types :: proc(entity: Entity) -> []Component_Type {
 	e := all_entities[entity];
 	return e.component_types[:];
-}
-
-destroy_entity :: proc(entity_id: Entity) {
-	append(&entities_to_destroy, entity_id);
 }
 
 
