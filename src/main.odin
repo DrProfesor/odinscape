@@ -42,7 +42,7 @@ main_init :: proc() {
 make_terrain_entity :: proc(position: Vec3) -> Entity {
 	e := new_entity("Terrain");
 	add_component(e, Transform{{}, position, {10, 1, 10}, {}, {}});
-	add_component(e, Mesh_Renderer{{}, cube_model, {}, 0, wb.shader_rgba_3d});
+	add_component(e, Mesh_Renderer{{}, cube_model, {}, wb.COLOR_BLUE, 0, wb.shader_rgba_3d});
 	add_component(e, box_collider_identity());
 	return e;
 }
@@ -50,7 +50,7 @@ make_terrain_entity :: proc(position: Vec3) -> Entity {
 make_unit_entity :: proc(position: Vec3, model: wb.Model, texture: wb.Texture) -> Entity {
 	e := new_entity("Unit");
 	add_component(e, Transform{{}, position, {1, 1, 1}, {}, {}});
-	add_component(e, Mesh_Renderer{{}, model, Vec3{0, 0.5, 0}, texture, wb.shader_texture});
+	add_component(e, Mesh_Renderer{{}, model, Vec3{0, 0.5, 0}, wb.COLOR_WHITE, texture, wb.shader_texture});
 	add_component(e, Unit_Component{{}, 5, {}});
  	return e;
 }

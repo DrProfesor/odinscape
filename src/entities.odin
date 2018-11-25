@@ -101,9 +101,11 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 // Mesh Renderer
 //
 Mesh_Renderer :: struct {
-	entity                : Entity,
+	using base: Component_Base,
+
 	model                 : wb.Model,
 	offset_from_transform : Vec3,
+	color                 : wb.Colorf,
 	texture_handle        : wb.Texture,
 	shader_handle         : wb.Shader_Program,
 }
@@ -119,7 +121,9 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 			tf.scale,
 			tf.rotation,
 			texture_handle,
-			shader_handle);
+			shader_handle,
+			color,
+		);
 	}
 }
 
