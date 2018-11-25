@@ -27,19 +27,12 @@ gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
 main_init :: proc() {
 	init_entities();
 	init_key_config();
-
-	cube_model_data := wb.load_model_from_file("resources/Models/cube.fbx");
-	gronk_model_data := wb.load_model_from_file("resources/Models/gronk.obj");
-
-	gronk_model := wb.buffer_model(gronk_model_data);
-	cube_model = wb.buffer_model(cube_model_data);
-
 	scene_init("main");
 
-	gronk_tex_data, ok := os.read_entire_file("resources/Textures/OrcGreen.png");
-	assert(ok);
-	defer delete(gronk_tex_data);
-	gronk_tex := wb.load_texture(gronk_tex_data);
+	gronk_model := get_model("gronk");
+
+	cube_model = get_model("cube");
+	gronk_tex := get_texture("gronk_texture");
 
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_model, gronk_tex);
