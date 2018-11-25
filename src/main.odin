@@ -3,6 +3,7 @@ package main
 using import "core:fmt"
 using import "core:math"
 	  import "core:mem"
+	  import "core:os"
 
 using import _ "key_config";
 
@@ -27,9 +28,13 @@ main_init :: proc() {
 	init_entities();
 	init_key_config();
 
-	cube_model = wb.load_asset("resources/Models/cube.fbx");
-	gronk_model := wb.load_asset("resources/Models/gronk.obj");
-	gronk_tex := wb.load_texture("resources/Textures/OrcGreen.png");
+	cube_model = wb.load_asset_to_gpu("resources/Models/cube.fbx");
+	gronk_model := wb.load_asset_to_gpu("resources/Models/gronk.obj");
+
+	gronk_tex_data, ok := os.read_entire_file("resources/Textures/OrcGreen.png");
+	assert(ok);
+	defer delete(gronk_tex_data);
+	gronk_tex := wb.load_texture(gronk_tex_data);
 
 	make_terrain_entity(Vec3{0, -7, 0});
 	guy_entity = make_unit_entity(Vec3{0, -6, 0}, gronk_model, gronk_tex);
