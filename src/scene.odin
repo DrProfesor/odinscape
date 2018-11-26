@@ -49,6 +49,7 @@ scene_init :: proc(scene_file : string) -> Scene {
 							existing, ok := loaded_models[entry.id];
 							if ok {
 								path := strings.new_cstring(tprint(RESOURCES, entry.path));
+								defer delete(path);
 								new_model := wb.buffer_model(wb.load_model_from_file(path));
 								
 								wb.release_model(existing.asset);
@@ -59,6 +60,7 @@ scene_init :: proc(scene_file : string) -> Scene {
 								// TODO (jake): don't do this, use load_model_from_memory, same with #43 
 								// too lazy to figure it out now though
 								path := strings.new_cstring(tprint(RESOURCES, entry.path));
+								defer delete(path);
 								model := wb.buffer_model(wb.load_model_from_file(path));
 								// end of bad
 								
