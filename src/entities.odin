@@ -55,10 +55,13 @@ Transform :: struct {
 	velocity: Vec3,
 }
 
+debug_draw_entity_handles: bool;
 render__Transform :: inline proc(using tf: ^Transform) {
-	wb.push_debug_line(wb.rendermode_world, position, position + Vec3{1, 0, 0}, wb.COLOR_RED);
-	wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_BLUE);
-	wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_GREEN);
+	if debug_draw_entity_handles {
+		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{1, 0, 0}, wb.COLOR_RED);
+		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_BLUE);
+		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_GREEN);
+	}
 }
 
 identity_transform :: inline proc() -> Transform {
@@ -174,6 +177,7 @@ init__Box_Collider :: inline proc(using box: ^Box_Collider) {
 	assert(ok);
 }
 
+debugging_colliders: bool;
 update__Box_Collider :: inline proc(using box: ^Box_Collider) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
@@ -187,23 +191,37 @@ update__Box_Collider :: inline proc(using box: ^Box_Collider) {
 
 	coll.update_collider(&main_collision_scene, entity, collider);
 
-	origin := tf.position + offset_from_transform;
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	if debugging_colliders {
+		origin := tf.position + offset_from_transform;
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5,
+												origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5,
+												origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5,
+												origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5,
+												origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5,
+												origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5,
+												origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	}
 }
 
 destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {

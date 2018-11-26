@@ -43,6 +43,8 @@ main_init :: proc() {
 	make_unit_entity(Vec3{ 3, -6.5, -3}, gronk_model, gronk_tex);
 	make_unit_entity(Vec3{-3, -6.5,  3}, gronk_model, gronk_tex);
 	make_unit_entity(Vec3{ 3, -6.5,  3}, gronk_model, gronk_tex);
+
+	wb.client_debug_window_proc = debug_window_proc;
 }
 
 make_terrain_entity :: proc(position: Vec3) -> Entity {
@@ -82,4 +84,9 @@ main_render :: proc(dt: f32) {
 main_end :: proc() {
 	shutdown_entities();
 	key_config_save();
+}
+
+debug_window_proc :: proc() {
+	imgui.checkbox("Debug Colliders", &debugging_colliders);
+	imgui.checkbox("Entity Handles", &debug_draw_entity_handles);
 }
