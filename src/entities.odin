@@ -59,8 +59,8 @@ debug_draw_entity_handles: bool;
 render__Transform :: inline proc(using tf: ^Transform) {
 	if debug_draw_entity_handles {
 		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{1, 0, 0}, wb.COLOR_RED);
-		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_BLUE);
-		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_GREEN);
+		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_BLUE);
 	}
 }
 
@@ -142,11 +142,6 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 			color,
 		);
 	}
-}
-
-destroy__Mesh_Renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
-	// todo: the Mesh_Renderer probably shouldn't own the `mesh_ids` memory
-	delete(model.asset.meshes);
 }
 
 //
