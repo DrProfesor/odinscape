@@ -18,16 +18,17 @@ main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
-cube_model: wb.Model;
+cube_model: ^Model_Asset;
 
 main_collision_scene: coll.Collision_Scene;
+scene : Scene;
 
 gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
 
 main_init :: proc() {
 	init_entities();
 	init_key_config();
-	scene_init("main");
+	scene = scene_init("main");
 
 	gronk_model := get_model("gronk");
 
@@ -47,7 +48,7 @@ make_terrain_entity :: proc(position: Vec3) -> Entity {
 	return e;
 }
 
-make_unit_entity :: proc(position: Vec3, model: wb.Model, texture: wb.Texture) -> Entity {
+make_unit_entity :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Texture) -> Entity {
 	e := new_entity("Unit");
 	add_component(e, Transform{{}, position, {1, 1, 1}, {}, {}});
 	add_component(e, Mesh_Renderer{{}, model, Vec3{0, 0.5, 0}, wb.COLOR_WHITE, texture, wb.shader_texture});

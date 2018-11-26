@@ -103,7 +103,7 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 Mesh_Renderer :: struct {
 	using base: Component_Base,
 
-	model                 : wb.Model,
+	model                 : ^Model_Asset,
 	offset_from_transform : Vec3,
 	color                 : wb.Colorf,
 	texture_handle        : wb.Texture,
@@ -114,7 +114,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 
-	for mesh_id in model.meshes {
+	for mesh_id in model.asset.meshes {
 		wb.push_mesh(
 			mesh_id,
 			tf.position + offset_from_transform,
@@ -129,7 +129,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 
 destroy__Mesh_Renderer :: proc(using mesh_comp: ^Mesh_Renderer) {
 	// todo: the Mesh_Renderer probably shouldn't own the `mesh_ids` memory
-	delete(model.meshes);
+	delete(model.asset.meshes);
 }
 
 //
