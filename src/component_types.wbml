@@ -5,4 +5,5 @@
 	"Spinner_Component"
 	"Transform"
 	"Box_Collider"
+	"Terrain_Component"
 ]

@@ -1,8 +1,8 @@
 package main
 
-using import       "core:fmt"
-using import       "core:math"
-	  import       "core:mem"
+using import "core:fmt"
+using import "core:math"
+	  import "core:mem"
 
 	  import wb    "shared:workbench"
 	  import imgui "shared:workbench/external/imgui"
@@ -55,6 +55,12 @@ Transform :: struct {
 	velocity: Vec3,
 }
 
+render__Transform :: inline proc(using tf: ^Transform) {
+	wb.push_debug_line(wb.rendermode_world, position, position + Vec3{1, 0, 0}, wb.COLOR_RED);
+	wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_BLUE);
+	wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_GREEN);
+}
+
 identity_transform :: inline proc() -> Transform {
 	return Transform{{}, {}, Vec3{1, 1, 1}, {}, {}};
 }
@@ -95,6 +101,14 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	q := wb.degrees_to_quaternion(tf.rotation);
 	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_forward(q) * 10, wb.COLOR_GREEN);
 	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_right(q) * 10, wb.COLOR_BLUE);
+}
+
+//
+// Terrain
+//
+
+Terrain_Component :: struct {
+	using base: Component_Base,
 }
 
 //
@@ -141,7 +155,6 @@ Box_Collider :: struct {
 
 	offset_from_transform: Vec3,
 	size: Vec3,
-	handle: coll.Handle,
 }
 
 box_collider_identity :: proc() -> Box_Collider {
@@ -149,33 +162,52 @@ box_collider_identity :: proc() -> Box_Collider {
 		{},
 		{},
 		Vec3{1, 1, 1},
-		{},
 	};
 }
 
 init__Box_Collider :: inline proc(using box: ^Box_Collider) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
-	handle = coll.add_collider_to_scene(&main_collision_scene, coll.Collider{tf.position + offset_from_transform, coll.Box{size * tf.scale}});
+	coll.add_collider_to_scene(&main_collision_scene, coll.Collider{tf.position + offset_from_transform, coll.Box{size * tf.scale}}, entity);
+
+	collider, ok := coll.get_collider(&main_collision_scene, entity);
+	assert(ok);
 }
 
 update__Box_Collider :: inline proc(using box: ^Box_Collider) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 
-	collider, ok := coll.get_collider(&main_collision_scene, handle);
+	collider, ok := coll.get_collider(&main_collision_scene, entity);
 	assert(ok);
 
 	collider.position = tf.position + offset_from_transform;
 
-	b := &collider.kind.(coll.Box);
-	b.size = size * tf.scale;
+	collider.box.size = size * tf.scale;
 
-	coll.update_collider(&main_collision_scene, handle, collider);
+	coll.update_collider(&main_collision_scene, entity, collider);
+
+	origin := tf.position + offset_from_transform;
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+	wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 }
 
 destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {
-	coll.remove_collider(&main_collision_scene, handle);
+	coll.remove_collider(&main_collision_scene, entity);
 }
 
 //

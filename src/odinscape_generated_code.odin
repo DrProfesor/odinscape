@@ -11,6 +11,7 @@ Component_Type :: enum {
 	Spinner_Component,
 	Transform,
 	Box_Collider,
+	Terrain_Component,
 }
 
 all__Sprite_Renderer: [dynamic]Sprite_Renderer;
@@ -19,6 +20,7 @@ all__Unit_Component: [dynamic]Unit_Component;
 all__Spinner_Component: [dynamic]Spinner_Component;
 all__Transform: [dynamic]Transform;
 all__Box_Collider: [dynamic]Box_Collider;
+all__Terrain_Component: [dynamic]Terrain_Component;
 
 add_component :: proc[add_component_type, add_component_value];
 
@@ -77,6 +79,15 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Box_Collider);
 		when #defined(init__Box_Collider) {
 			init__Box_Collider(t);
+		}
+		return t;
+	}
+	when Type == Terrain_Component {
+		new_length := append(&all__Terrain_Component, _t);
+		t := &all__Terrain_Component[new_length-1];
+		append(&entity_data.component_types, Component_Type.Terrain_Component);
+		when #defined(init__Terrain_Component) {
+			init__Terrain_Component(t);
 		}
 		return t;
 	}
@@ -142,6 +153,15 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
+	when Type == Terrain_Component {
+		new_length := append(&all__Terrain_Component, component);
+		t := &all__Terrain_Component[new_length-1];
+		append(&entity_data.component_types, Component_Type.Terrain_Component);
+		when #defined(init__Terrain_Component) {
+			init__Terrain_Component(t);
+		}
+		return t;
+	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in add_component(). Make sure you add your new component types to component_types.wbml"));
 	return nil;
 }
@@ -189,6 +209,13 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
+	when Type == Terrain_Component {
+		for _, i in all__Terrain_Component {
+			c := &all__Terrain_Component[i];
+			if c.entity == entity do return c;
+		}
+		return nil;
+	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml"));
 	return nil;
 }
@@ -230,6 +257,12 @@ call_component_updates :: proc() {
 			update__Box_Collider(c);
 		}
 	}
+	when #defined(update__Terrain_Component) {
+		for _, i in all__Terrain_Component {
+			c := &all__Terrain_Component[i];
+			update__Terrain_Component(c);
+		}
+	}
 }
 
 call_component_renders :: proc() {
@@ -267,6 +300,12 @@ call_component_renders :: proc() {
 		for _, i in all__Box_Collider {
 			c := &all__Box_Collider[i];
 			render__Box_Collider(c);
+		}
+	}
+	when #defined(render__Terrain_Component) {
+		for _, i in all__Terrain_Component {
+			c := &all__Terrain_Component[i];
+			render__Terrain_Component(c);
 		}
 	}
 }
@@ -348,6 +387,18 @@ destroy_marked_entities :: proc() {
 					}
 				}
 			
+			case Component_Type.Terrain_Component:
+				for _, i in all__Terrain_Component {
+					comp := &all__Terrain_Component[i];
+					if comp.entity == entity_id {
+						when #defined(destroy__Terrain_Component) {
+							destroy__Terrain_Component(comp);
+						}
+						unordered_remove(&all__Terrain_Component, i);
+						break;
+					}
+				}
+			
 			}
 		}
 		clear(&entity.component_types);
@@ -420,6 +471,16 @@ update_inspector_window :: proc() {
 								comp := &all__Box_Collider[i];
 								if comp.entity == entity {
 									wb.imgui_struct(comp, tprint(entity, ": Box_Collider"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Terrain_Component:
+							for _, i in all__Terrain_Component {
+								comp := &all__Terrain_Component[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Terrain_Component"));
 									break;
 								}
 							}

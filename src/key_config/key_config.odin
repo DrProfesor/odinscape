@@ -18,6 +18,7 @@ Key_Config :: struct {
 	free_camera: wb.Input,
 	camera_enable_mouse_rotation: wb.Input,
 
+	select_unit: wb.Input,
 	move_command: wb.Input,
 }
 
@@ -62,6 +63,7 @@ default_key_config :: proc() -> Key_Config {
 		free_camera = Tab,
 		camera_enable_mouse_rotation = Mouse_Right,
 
+		select_unit = Mouse_Left,
 		move_command = Mouse_Right,
 	};
 }
