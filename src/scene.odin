@@ -118,6 +118,7 @@ scene_end :: proc(using scene: Scene) {
 					if asset.count <= 1 {
 						subscription, ok2 := catalog_subscriptions[entry.id];
 						if ok2 {
+							wb.release_model(asset.asset);
 							wb.catalog_unsubscribe(subscription);
 						}
 						delete_key(&loaded_models, entry.id);
@@ -134,6 +135,7 @@ scene_end :: proc(using scene: Scene) {
 					if asset.count <= 1 {
 						subscription, ok2 := catalog_subscriptions[entry.id];
 						if ok2 {
+							wb.release_texture(asset.asset);
 							wb.catalog_unsubscribe(subscription);
 						}
 						delete_key(&loaded_textures, entry.id);
