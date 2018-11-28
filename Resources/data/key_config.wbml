@@ -9,6 +9,8 @@
 	free_camera Tab
 	camera_enable_mouse_rotation Mouse_Button_2
 	select_unit Mouse_Button_1
+	add_unit_to_selection_modifier Left_Shift
+	queue_command_modifier Left_Shift
 	move_command Mouse_Button_2
 }
 

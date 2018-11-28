@@ -1,4 +1,4 @@
-package key_config
+package main
 
 import "core:os"
 import "core:mem"
@@ -19,6 +19,10 @@ Key_Config :: struct {
 	camera_enable_mouse_rotation: wb.Input,
 
 	select_unit: wb.Input,
+
+	add_unit_to_selection_modifier: wb.Input,
+
+	queue_command_modifier: wb.Input,
 	move_command: wb.Input,
 }
 
@@ -64,6 +68,9 @@ default_key_config :: proc() -> Key_Config {
 		camera_enable_mouse_rotation = Mouse_Right,
 
 		select_unit = Mouse_Left,
+		add_unit_to_selection_modifier = Left_Shift,
+
+		queue_command_modifier = Left_Shift,
 		move_command = Mouse_Right,
 	};
 }

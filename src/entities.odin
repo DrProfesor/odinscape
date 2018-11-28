@@ -55,8 +55,12 @@ Transform :: struct {
 	velocity: Vec3,
 }
 
-transform :: inline proc(position := Vec3{0, 0, 0}, rotation := Vec3{}, scale := Vec3{1, 1, 1}) -> Transform {
-	return Transform{{}, position, scale, rotation, {}};
+transform :: inline proc(position := Vec3{0, 0, 0}, scale := Vec3{1, 1, 1}, rotation := Vec3{}) -> Transform {
+	tf: Transform;
+	tf.position = position;
+	tf.scale = scale;
+	tf.rotation = rotation;
+	return tf;
 }
 
 debug_draw_entity_handles: bool;
@@ -156,11 +160,10 @@ Box_Collider :: struct {
 }
 
 box_collider :: proc(size := Vec3{1, 1, 1}, offset := Vec3{0, 0, 0}) -> Box_Collider {
-	return Box_Collider{
-		{},
-		offset,
-		Vec3{1, 1, 1},
-	};
+	b: Box_Collider;
+	b.size = size;
+	b.offset_from_transform = offset;
+	return b;
 }
 
 init__Box_Collider :: inline proc(using box: ^Box_Collider) {

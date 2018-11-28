@@ -5,8 +5,6 @@ using import "core:math"
 	  import "core:mem"
 	  import "core:os"
 
-using import _ "key_config";
-
 	  import wb "shared:workbench"
 	  import coll "shared:workbench/collision"
 	  import ai "shared:workbench/external/assimp"
@@ -35,33 +33,43 @@ main_init :: proc() {
 	cube_model = get_model("cube");
 	gronk_tex := get_texture("gronk_texture");
 
-	make_terrain_entity(Vec3{0, -7, 0});
-	player_entity = make_unit_entity(Vec3{-3, -6.5, -3}, gronk_model, gronk_tex);
+	make_entity_terrain(Vec3{0, -7, 0});
+	player_entity = make_entity_unit(Vec3{-3, -6.5, -3}, gronk_model, gronk_tex);
 	add_selected_unit(player_entity);
 	focus_camera_on_guy(player_entity);
 
-	make_unit_entity(Vec3{ 3, -6.5, -3}, gronk_model, gronk_tex);
-	make_unit_entity(Vec3{-3, -6.5,  3}, gronk_model, gronk_tex);
-	make_unit_entity(Vec3{ 3, -6.5,  3}, gronk_model, gronk_tex);
+	make_entity_unit(Vec3{ 3, -6.5, -3}, gronk_model, gronk_tex);
+	make_entity_unit(Vec3{-3, -6.5,  3}, gronk_model, gronk_tex);
+	make_entity_training_dummy(Vec3{ 3, -6.5,  3}, cube_model);
 
 	wb.client_debug_window_proc = debug_window_proc;
 }
 
-make_terrain_entity :: proc(position: Vec3) -> Entity {
+make_entity_terrain :: proc(position: Vec3) -> Entity {
 	e := new_entity("Terrain");
-	add_component(e, Transform{{}, position, {10, 1, 10}, {}, {}});
+	add_component(e, transform(position, {10, 1, 10}));
 	add_component(e, Mesh_Renderer{{}, cube_model, {}, wb.COLOR_BLUE, 0, wb.shader_rgba_3d});
 	add_component(e, Terrain_Component);
 	add_component(e, box_collider());
 	return e;
 }
 
-make_unit_entity :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Texture) -> Entity {
+make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Texture) -> Entity {
 	e := new_entity("Unit");
 	add_component(e, transform(position));
 	add_component(e, Mesh_Renderer{{}, model, {}, wb.COLOR_WHITE, texture, wb.shader_texture});
-	add_component(e, Unit_Component{{}, 5, {}});
-	add_component(e, box_collider({}, {0, 0.5, 0}));
+	add_component(e, unit_component(5, 1, 2, 0.5));
+	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
+ 	return e;
+}
+
+make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entity {
+	e := new_entity("Training Dummy");
+	add_component(e, transform(position));
+	add_component(e, Mesh_Renderer{{}, model, {}, wb.COLOR_WHITE, {}, wb.shader_texture});
+	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
+	add_component(e, Attack_Default_Command);
+	add_component(e, Health_Component{{}, 10});
  	return e;
 }
 

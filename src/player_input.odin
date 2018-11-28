@@ -2,13 +2,12 @@ package main
 
 using import   "core:fmt"
 using import   "core:math"
-using import _ "key_config";
 
 	  import coll "shared:workbench/collision"
 	  import wb "shared:workbench"
 
 player_entity: Entity;
-selected_units: [dynamic]Entity;
+selected_units: [dynamic]Entity; // has to be of type Entity because we aren't allowed storing pointers to components
 
 free_camera: bool;
 
@@ -50,20 +49,24 @@ update_player_input :: proc() {
 	wb.update_view_matrix(&gameplay_camera);
 
 	if !free_camera {
+		// Get the unit under the cursor
 		cursor_direction := wb.get_cursor_direction_from_camera(&gameplay_camera);
 		coll.linecast(&main_collision_scene, gameplay_camera.position, gameplay_camera.position + cursor_direction * 1000, &cursor_hit_infos);
+		thing_under_cursor: Entity;
+		if len(cursor_hit_infos) > 0 {
+			hit := cursor_hit_infos[0];
+			collider, ok := coll.get_collider(&main_collision_scene, hit.handle);
+			assert(ok);
+			thing_under_cursor = cast(Entity)hit.handle;
+		}
 
-		if wb.get_input_down(key_config.select_unit) {
-			for hit in cursor_hit_infos {
-				collider, ok := coll.get_collider(&main_collision_scene, hit.handle);
-				assert(ok);
-
-				unit := get_component(cast(Entity)hit.handle, Unit_Component);
-				if unit != nil {
+		if unit_under_cursor := get_component(thing_under_cursor, Unit_Component); unit_under_cursor != nil {
+			if wb.get_input_down(key_config.select_unit) {
+				holding_shift := wb.get_input(key_config.add_unit_to_selection_modifier);
+				if !holding_shift {
 					clear_selected_units();
-					add_selected_unit(unit.entity);
-					break;
 				}
+				add_selected_unit(unit_under_cursor.entity);
 			}
 		}
 
@@ -71,13 +74,17 @@ update_player_input :: proc() {
 			for hit in cursor_hit_infos {
 				collider, ok := coll.get_collider(&main_collision_scene, hit.handle);
 				assert(ok);
+				hit_entity := cast(Entity)hit.handle;
 				if get_component(cast(Entity)hit.handle, Terrain_Component) != nil {
-					for selected in selected_units {
-						unit := get_component(selected, Unit_Component);
-						unit.has_target = true;
-						unit.current_target = hit.point0;
-					}
-
+					issue_command(Move_Command{hit.point0});
+					break;
+				}
+				else if get_component(hit_entity, Attack_Default_Command) != nil {
+					issue_command(Attack_Command{hit_entity});
+					break;
+				}
+				else {
+					issue_command(Approach_Command{hit_entity});
 					break;
 				}
 			}
@@ -93,6 +100,19 @@ update_player_input :: proc() {
 		}
 	}
 	last_mouse_pos = wb.cursor_screen_position;
+}
+
+issue_command :: proc(command: $T) {
+	logln(command);
+	holding_shift := wb.get_input(key_config.queue_command_modifier);
+	for selected in selected_units {
+		unit := get_component(selected, Unit_Component);
+		assert(unit != nil);
+		if !holding_shift {
+			clear(&unit.queued_commands);
+		}
+		append(&unit.queued_commands, Unit_Command{command});
+	}
 }
 
 focus_camera_on_guy :: proc(e: Entity) {

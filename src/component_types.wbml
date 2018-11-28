@@ -3,6 +3,12 @@
 	"Mesh_Renderer"
 	"Unit_Component"
 	"Spinner_Component"
+	"Health_Component"
+	"Attack_Default_Command"
+
+
+
+
 	"Transform"
 	"Box_Collider"
 	"Terrain_Component"

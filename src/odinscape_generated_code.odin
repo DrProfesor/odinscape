@@ -9,6 +9,8 @@ Component_Type :: enum {
 	Mesh_Renderer,
 	Unit_Component,
 	Spinner_Component,
+	Health_Component,
+	Attack_Default_Command,
 	Transform,
 	Box_Collider,
 	Terrain_Component,
@@ -18,6 +20,8 @@ all__Sprite_Renderer: [dynamic]Sprite_Renderer;
 all__Mesh_Renderer: [dynamic]Mesh_Renderer;
 all__Unit_Component: [dynamic]Unit_Component;
 all__Spinner_Component: [dynamic]Spinner_Component;
+all__Health_Component: [dynamic]Health_Component;
+all__Attack_Default_Command: [dynamic]Attack_Default_Command;
 all__Transform: [dynamic]Transform;
 all__Box_Collider: [dynamic]Box_Collider;
 all__Terrain_Component: [dynamic]Terrain_Component;
@@ -61,6 +65,24 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Spinner_Component);
 		when #defined(init__Spinner_Component) {
 			init__Spinner_Component(t);
+		}
+		return t;
+	}
+	when Type == Health_Component {
+		new_length := append(&all__Health_Component, _t);
+		t := &all__Health_Component[new_length-1];
+		append(&entity_data.component_types, Component_Type.Health_Component);
+		when #defined(init__Health_Component) {
+			init__Health_Component(t);
+		}
+		return t;
+	}
+	when Type == Attack_Default_Command {
+		new_length := append(&all__Attack_Default_Command, _t);
+		t := &all__Attack_Default_Command[new_length-1];
+		append(&entity_data.component_types, Component_Type.Attack_Default_Command);
+		when #defined(init__Attack_Default_Command) {
+			init__Attack_Default_Command(t);
 		}
 		return t;
 	}
@@ -135,6 +157,24 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
+	when Type == Health_Component {
+		new_length := append(&all__Health_Component, component);
+		t := &all__Health_Component[new_length-1];
+		append(&entity_data.component_types, Component_Type.Health_Component);
+		when #defined(init__Health_Component) {
+			init__Health_Component(t);
+		}
+		return t;
+	}
+	when Type == Attack_Default_Command {
+		new_length := append(&all__Attack_Default_Command, component);
+		t := &all__Attack_Default_Command[new_length-1];
+		append(&entity_data.component_types, Component_Type.Attack_Default_Command);
+		when #defined(init__Attack_Default_Command) {
+			init__Attack_Default_Command(t);
+		}
+		return t;
+	}
 	when Type == Transform {
 		new_length := append(&all__Transform, component);
 		t := &all__Transform[new_length-1];
@@ -195,6 +235,20 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
+	when Type == Health_Component {
+		for _, i in all__Health_Component {
+			c := &all__Health_Component[i];
+			if c.entity == entity do return c;
+		}
+		return nil;
+	}
+	when Type == Attack_Default_Command {
+		for _, i in all__Attack_Default_Command {
+			c := &all__Attack_Default_Command[i];
+			if c.entity == entity do return c;
+		}
+		return nil;
+	}
 	when Type == Transform {
 		for _, i in all__Transform {
 			c := &all__Transform[i];
@@ -245,6 +299,18 @@ call_component_updates :: proc() {
 			update__Spinner_Component(c);
 		}
 	}
+	when #defined(update__Health_Component) {
+		for _, i in all__Health_Component {
+			c := &all__Health_Component[i];
+			update__Health_Component(c);
+		}
+	}
+	when #defined(update__Attack_Default_Command) {
+		for _, i in all__Attack_Default_Command {
+			c := &all__Attack_Default_Command[i];
+			update__Attack_Default_Command(c);
+		}
+	}
 	when #defined(update__Transform) {
 		for _, i in all__Transform {
 			c := &all__Transform[i];
@@ -290,6 +356,18 @@ call_component_renders :: proc() {
 			render__Spinner_Component(c);
 		}
 	}
+	when #defined(render__Health_Component) {
+		for _, i in all__Health_Component {
+			c := &all__Health_Component[i];
+			render__Health_Component(c);
+		}
+	}
+	when #defined(render__Attack_Default_Command) {
+		for _, i in all__Attack_Default_Command {
+			c := &all__Attack_Default_Command[i];
+			render__Attack_Default_Command(c);
+		}
+	}
 	when #defined(render__Transform) {
 		for _, i in all__Transform {
 			c := &all__Transform[i];
@@ -326,7 +404,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Mesh_Renderer:
 				for _, i in all__Mesh_Renderer {
 					comp := &all__Mesh_Renderer[i];
@@ -338,7 +416,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Unit_Component:
 				for _, i in all__Unit_Component {
 					comp := &all__Unit_Component[i];
@@ -350,7 +428,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Spinner_Component:
 				for _, i in all__Spinner_Component {
 					comp := &all__Spinner_Component[i];
@@ -362,7 +440,31 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
+			case Component_Type.Health_Component:
+				for _, i in all__Health_Component {
+					comp := &all__Health_Component[i];
+					if comp.entity == entity_id {
+						when #defined(destroy__Health_Component) {
+							destroy__Health_Component(comp);
+						}
+						unordered_remove(&all__Health_Component, i);
+						break;
+					}
+				}
+			
+			case Component_Type.Attack_Default_Command:
+				for _, i in all__Attack_Default_Command {
+					comp := &all__Attack_Default_Command[i];
+					if comp.entity == entity_id {
+						when #defined(destroy__Attack_Default_Command) {
+							destroy__Attack_Default_Command(comp);
+						}
+						unordered_remove(&all__Attack_Default_Command, i);
+						break;
+					}
+				}
+			
 			case Component_Type.Transform:
 				for _, i in all__Transform {
 					comp := &all__Transform[i];
@@ -374,7 +476,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Box_Collider:
 				for _, i in all__Box_Collider {
 					comp := &all__Box_Collider[i];
@@ -386,7 +488,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			case Component_Type.Terrain_Component:
 				for _, i in all__Terrain_Component {
 					comp := &all__Terrain_Component[i];
@@ -398,7 +500,7 @@ destroy_marked_entities :: proc() {
 						break;
 					}
 				}
-
+			
 			}
 		}
 		clear(&entity.component_types);
@@ -425,7 +527,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
 						case Component_Type.Mesh_Renderer:
 							for _, i in all__Mesh_Renderer {
 								comp := &all__Mesh_Renderer[i];
@@ -435,7 +537,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
 						case Component_Type.Unit_Component:
 							for _, i in all__Unit_Component {
 								comp := &all__Unit_Component[i];
@@ -445,7 +547,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
 						case Component_Type.Spinner_Component:
 							for _, i in all__Spinner_Component {
 								comp := &all__Spinner_Component[i];
@@ -455,7 +557,27 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
+						case Component_Type.Health_Component:
+							for _, i in all__Health_Component {
+								comp := &all__Health_Component[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Health_Component"));
+									break;
+								}
+							}
+							break;
+						
+						case Component_Type.Attack_Default_Command:
+							for _, i in all__Attack_Default_Command {
+								comp := &all__Attack_Default_Command[i];
+								if comp.entity == entity {
+									wb.imgui_struct(comp, tprint(entity, ": Attack_Default_Command"));
+									break;
+								}
+							}
+							break;
+						
 						case Component_Type.Transform:
 							for _, i in all__Transform {
 								comp := &all__Transform[i];
@@ -465,7 +587,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
 						case Component_Type.Box_Collider:
 							for _, i in all__Box_Collider {
 								comp := &all__Box_Collider[i];
@@ -475,7 +597,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
 						case Component_Type.Terrain_Component:
 							for _, i in all__Terrain_Component {
 								comp := &all__Terrain_Component[i];
@@ -485,7 +607,7 @@ update_inspector_window :: proc() {
 								}
 							}
 							break;
-
+						
 					}
 					imgui.unindent();
 				}
