@@ -33,14 +33,14 @@ main_init :: proc() {
 	cube_model = get_model("cube");
 	gronk_tex := get_texture("gronk_texture");
 
-	make_entity_terrain(Vec3{0, -7, 0});
-	player_entity = make_entity_unit(Vec3{-3, -6.5, -3}, gronk_model, gronk_tex);
+	make_entity_terrain(Vec3{0, -0.5, 0});
+	player_entity = make_entity_unit(Vec3{-3, 0, -3}, gronk_model, gronk_tex);
 	add_selected_unit(player_entity);
 	focus_camera_on_guy(player_entity);
 
-	make_entity_unit(Vec3{ 3, -6.5, -3}, gronk_model, gronk_tex);
-	make_entity_unit(Vec3{-3, -6.5,  3}, gronk_model, gronk_tex);
-	make_entity_training_dummy(Vec3{ 3, -6.5,  3}, cube_model);
+	make_entity_unit(Vec3{ 3, 0, -3}, gronk_model, gronk_tex);
+	make_entity_unit(Vec3{-3, 0,  3}, gronk_model, gronk_tex);
+	make_entity_training_dummy(Vec3{ 3, 0,  3}, cube_model);
 
 	wb.client_debug_window_proc = debug_window_proc;
 }
@@ -66,7 +66,7 @@ make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Textur
 make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entity {
 	e := new_entity("Training Dummy");
 	add_component(e, transform(position));
-	add_component(e, Mesh_Renderer{{}, model, {0, 0.5, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
+	add_component(e, Mesh_Renderer{{}, model, {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
 	add_component(e, Attack_Default_Command);
 	add_component(e, Health_Component{{}, 10});
