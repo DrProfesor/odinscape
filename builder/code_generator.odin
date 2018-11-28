@@ -17,6 +17,7 @@ run_code_generator :: proc() {
 `package main
 
 using import "core:fmt"
+using import "shared:workbench/pool"
       import wb "shared:workbench"
       import imgui "shared:workbench/external/imgui"
 
@@ -37,7 +38,7 @@ using import "core:fmt"
 		}
 
 		for component_name in components {
-			line("all__", component_name, ": [dynamic]", component_name, ";");
+			line("all__", component_name, ": Pool(", component_name, ", 64);");
 		}
 
 
@@ -50,12 +51,11 @@ using import "core:fmt"
 			defer procedure_end();
 			line("entity_data, ok := all_entities[entity]; assert(ok);");
 			line("defer all_entities[entity] = entity_data;");
-			line("_t: Type; _t.entity = entity;");
 			for component_name in components {
 				line_indent("when Type == ", component_name, " {"); {
 					defer line_outdent("}");
-					line("new_length := append(&all__", component_name, ", _t);");
-					line("t := &all__", component_name, "[new_length-1];");
+					line("t := pool_get(&all__", component_name, ");");
+					line("t.entity = entity;");
 					line("append(&entity_data.component_types, Component_Type.", component_name, ");");
 					init_proc_name := tprint("init__", component_name);
 					line_indent("when #defined(", init_proc_name, ") {"); {
@@ -77,8 +77,8 @@ using import "core:fmt"
 			for component_name in components {
 				line_indent("when Type == ", component_name, " {"); {
 					defer line_outdent("}");
-					line("new_length := append(&all__", component_name, ", component);");
-					line("t := &all__", component_name, "[new_length-1];");
+					line("t := pool_get(&all__", component_name, ");");
+					line("t^ = component;");
 					line("append(&entity_data.component_types, Component_Type.", component_name, ");");
 					init_proc_name := tprint("init__", component_name);
 					line_indent("when #defined(", init_proc_name, ") {"); {
@@ -94,16 +94,17 @@ using import "core:fmt"
 
 
 
+
 		procedure_begin("get_component", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
 			for component_name in components {
 				line_indent("when Type == ", component_name, " {"); {
 					defer line_outdent("}");
-					line_indent("for _, i in all__", component_name, " {"); {
-						defer line_outdent("}");
-						line("c := &all__", component_name, "[i];");
+					pool_foreach("c", component_name); {
+						defer end_pool_foreach();
 						line("if c.entity == entity do return c;");
 					}
+
 					line("return nil;");
 				}
 			}
@@ -135,19 +136,19 @@ using import "core:fmt"
 					line("switch comp_type {"); {
 						defer line("}");
 						for component_name in components {
-							line_indent("case Component_Type.", component_name, ":"); {
-								defer line_outdent("");
-								line_indent("for _, i in all__", component_name, " {"); {
-									defer line_outdent("}");
-									line("comp := &all__", component_name, "[i];");
+							line_indent("case Component_Type.", component_name, ": {"); {
+								defer line_outdent("}");
+								line("pool_loop__", component_name, ":");
+								pool_foreach("comp", component_name); {
+									defer end_pool_foreach();
 									line_indent("if comp.entity == entity_id {"); {
 										defer line_outdent("}");
 										line_indent("when #defined(destroy__", component_name, ") {"); {
 											defer line_outdent("}");
 											line("destroy__", component_name, "(comp);");
 										}
-										line("unordered_remove(&all__", component_name, ", i);");
-										line("break;");
+										line("pool_return(&all__", component_name, ", comp);");
+										line("break pool_loop__", component_name, ";");
 									}
 								}
 							}
@@ -182,19 +183,18 @@ using import "core:fmt"
 							line("switch comp_type {"); {
 								defer line_outdent("}");
 								for component_name in components {
-									line_indent("case Component_Type.", component_name, ":"); {
-										defer line_outdent("");
+									line_indent("case Component_Type.", component_name, ": {"); {
+										defer line_outdent("}");
 
-										line_indent("for _, i in all__", component_name, " {"); {
-											defer line_outdent("}");
-											line("comp := &all__", component_name, "[i];");
+										line("pool_loop__", component_name, ":");
+										pool_foreach("comp", component_name); {
+											defer end_pool_foreach();
 											line_indent("if comp.entity == entity {"); {
 												defer line_outdent("}");
 												line("wb.imgui_struct(comp, tprint(entity, \": ", component_name,"\"));");
-												line("break;");
+												line("break pool_loop__", component_name, ";");
 											}
 										}
-
 
 										line("break;");
 									}
@@ -227,9 +227,8 @@ Component_Definition :: struct {
 emit_component_proc_call :: proc(proc_name: string, comp_name: string) {
 	line_indent("when #defined(", proc_name, ") {"); {
 		defer line_outdent("}");
-		line_indent("for _, i in all__", comp_name, " {"); {
-			defer line_outdent("}");
-			line("c := &all__", comp_name, "[i];");
+		pool_foreach("c", comp_name); {
+			defer end_pool_foreach();
 			line(proc_name, "(c);");
 		}
 	}
@@ -241,6 +240,19 @@ print_indents :: proc() {
 	for i in 0..indent_level-1 {
 		sbprint(&generated_code, "\t");
 	}
+}
+
+
+
+pool_foreach :: proc(ident: string, component: string) {
+	line_indent("for _, batch_idx in &all__", component, ".batches {");
+	line("batch := &all__", component, ".batches[batch_idx];");
+	line_indent("for _, idx in batch.list do if batch.empties[idx] {");
+	line(ident, " := &batch.list[idx];");
+}
+end_pool_foreach :: proc() {
+	line_outdent("}");
+	line_outdent("}");
 }
 
 

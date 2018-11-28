@@ -103,7 +103,7 @@ update_player_input :: proc() {
 }
 
 issue_command :: proc(command: $T) {
-	logln(command);
+	// logln(command);
 	holding_shift := wb.get_input(key_config.queue_command_modifier);
 	for selected in selected_units {
 		unit := get_component(selected, Unit_Component);

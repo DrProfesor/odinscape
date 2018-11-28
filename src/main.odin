@@ -66,7 +66,7 @@ make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Textur
 make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entity {
 	e := new_entity("Training Dummy");
 	add_component(e, transform(position));
-	add_component(e, Mesh_Renderer{{}, model, {}, wb.COLOR_WHITE, {}, wb.shader_texture});
+	add_component(e, Mesh_Renderer{{}, model, {0, 0.5, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
 	add_component(e, Attack_Default_Command);
 	add_component(e, Health_Component{{}, 10});
