@@ -1,8 +1,12 @@
 @echo off
 
-echo Running prebuild...
-odin run builder -out=builder.exe
-if exist builder.exe del builder.exe
+rem USAGE: `build <run/release> [gameonly]`
+
+if not "%2" == "gameonly" (
+	echo Running prebuild...
+	odin run builder -out=builder.exe
+	if exist builder.exe del builder.exe
+)
 
 echo Copying dlls...
 xcopy /s/q/y src\includes\windows . > NUL
