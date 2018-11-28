@@ -55,6 +55,10 @@ Transform :: struct {
 	velocity: Vec3,
 }
 
+transform :: inline proc(position := Vec3{0, 0, 0}, rotation := Vec3{}, scale := Vec3{1, 1, 1}) -> Transform {
+	return Transform{{}, position, scale, rotation, {}};
+}
+
 debug_draw_entity_handles: bool;
 render__Transform :: inline proc(using tf: ^Transform) {
 	if debug_draw_entity_handles {
@@ -62,10 +66,6 @@ render__Transform :: inline proc(using tf: ^Transform) {
 		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_GREEN);
 		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_BLUE);
 	}
-}
-
-identity_transform :: inline proc() -> Transform {
-	return Transform{{}, {}, Vec3{1, 1, 1}, {}, {}};
 }
 
 //
@@ -155,10 +155,10 @@ Box_Collider :: struct {
 	size: Vec3,
 }
 
-box_collider_identity :: proc() -> Box_Collider {
+box_collider :: proc(size := Vec3{1, 1, 1}, offset := Vec3{0, 0, 0}) -> Box_Collider {
 	return Box_Collider{
 		{},
-		{},
+		offset,
 		Vec3{1, 1, 1},
 	};
 }
