@@ -5,9 +5,9 @@ using import "core:math"
 	  import "core:mem"
 	  import "core:os"
 
-	  import wb "shared:workbench"
-	  import coll "shared:workbench/collision"
-	  import ai "shared:workbench/external/assimp"
+	  import wb    "shared:workbench"
+	  import coll  "shared:workbench/collision"
+	  import ai    "shared:workbench/external/assimp"
 	  import imgui "shared:workbench/external/imgui"
 
 logln :: wb.logln;

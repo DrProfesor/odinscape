@@ -124,6 +124,13 @@ focus_camera_on_guy :: proc(e: Entity) {
 
 	wb.update_view_matrix(&gameplay_camera);
 	free_camera = false;
+
+	select_single_unit(player_entity);
+}
+
+select_single_unit :: proc(unit: Entity) {
+	clear_selected_units();
+	add_selected_unit(unit);
 }
 
 add_selected_unit :: proc(unit: Entity) {

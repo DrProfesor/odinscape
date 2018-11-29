@@ -16,7 +16,11 @@ Unit_Component :: struct {
 	attack_damage: int,
 	attack_range: f32,
 	attack_cooldown: f32,
+	attack_recovery: f32,
+
 	cur_attack_cooldown: f32,
+
+	command_blockers: [dynamic]Command_Blocker,
 
 	queued_commands: [dynamic]Unit_Command,
 }
@@ -34,13 +38,34 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 	cur_attack_cooldown -= wb.fixed_delta_time;
 	if cur_attack_cooldown < 0 do cur_attack_cooldown = 0;
 
+	for i := len(command_blockers)-1; i >= 0; i -= 1 {
+		blocker_base := &command_blockers[i];
+		do_remove := false;
+
+		// note(josh): @UnitCommandCompleteSwitch: #complete doesn't seem to be working here
+		// #complete switch blocker in &blocker_base.kind {
+
+		switch blocker in &blocker_base.kind {
+			case Timed_Blocker: {
+				blocker.time_left -= wb.fixed_delta_time;
+				if blocker.time_left <= 0 do do_remove = true;
+			}
+		}
+
+		if do_remove {
+			unordered_remove(&command_blockers, i);
+		}
+	}
+
+	if len(command_blockers) > 0 do return;
+
 	if len(queued_commands) == 0 do return;
 
 	base_command := &queued_commands[0];
 	completed := false;
 
 	// note(josh): @UnitCommandCompleteSwitch: #complete doesn't seem to be working here
-	// #complete switch command_kind in command {
+	// #complete switch command in &base_command.kind {
 
 	switch command in &base_command.kind {
 		case Move_Command: {
@@ -92,6 +117,8 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 			}
 
 			if cur_attack_cooldown <= 0 {
+				ATTACK_RECOVERY_TIME :: 0.6;
+				add_timed_blocker(unit, ATTACK_RECOVERY_TIME);
 				other_health.health -= attack_damage;
 				if other_health.health <= 0 {
 					other_health.health = 0;
@@ -112,6 +139,7 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 destroy__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 	// todo(josh): @Alloc: pool these or something?
 	delete(queued_commands);
+	delete(command_blockers);
 }
 
 DISTANCE_BUFFER_DEFAULT :: 0.25;
@@ -154,7 +182,25 @@ Approach_Command :: struct {
 	target: Entity,
 }
 
+/*
+note(josh):
+We'll likely have a bunch of things that would block a unit from moving
+such as attack recovery times or waiting on an animation to complete or
+the dialog system blocking control until a conversation is over
+*/
+Command_Blocker :: struct {
+	kind: union {
+		Timed_Blocker,
+	},
+}
 
+Timed_Blocker :: struct {
+	time_left: f32,
+}
+
+add_timed_blocker :: proc(unit: ^Unit_Component, duration: f32) {
+	append(&unit.command_blockers, Command_Blocker{Timed_Blocker{duration}});
+}
 
 
 
