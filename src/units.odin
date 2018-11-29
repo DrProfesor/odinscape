@@ -123,6 +123,7 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 				if other_health.health <= 0 {
 					other_health.health = 0;
 					destroy_entity(command.target);
+					completed = true;
 				}
 				logln("dealt ", attack_damage, " damage. health left: ", other_health.health);
 				cur_attack_cooldown = attack_cooldown;
@@ -144,6 +145,7 @@ destroy__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 
 DISTANCE_BUFFER_DEFAULT :: 0.25;
 do_move_command :: proc(me: ^Transform, target: Vec3, speed: f32, range : f32 = DISTANCE_BUFFER_DEFAULT) -> bool {
+	// note(josh): do the check first so we can't move _and_ do another action in the same frame
 	if close_enough(me.position, target, range) {
 		return true;
 	}
