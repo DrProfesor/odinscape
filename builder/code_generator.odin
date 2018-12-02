@@ -44,7 +44,7 @@ using import "shared:workbench/pool"
 
 
 		line("");
-		line("add_component :: proc[add_component_type, add_component_value];");
+		line("add_component :: proc{add_component_type, add_component_value};");
 		line("");
 
 		procedure_begin("add_component_type", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {

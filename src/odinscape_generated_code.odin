@@ -27,7 +27,7 @@ all__Transform: Pool(Transform, 64);
 all__Box_Collider: Pool(Box_Collider, 64);
 all__Terrain_Component: Pool(Terrain_Component, 64);
 
-add_component :: proc[add_component_type, add_component_value];
+add_component :: proc{add_component_type, add_component_value};
 
 add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 	entity_data, ok := all_entities[entity]; assert(ok);
