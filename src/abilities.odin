@@ -39,6 +39,7 @@ get_ability :: proc(id: string) -> (^Ability_Definition, bool) {
 
 damage_ability :: proc(ability: ^Ability_Definition, user: ^Unit_Component, target: ^Unit_Component, cursor_position_on_terrain: Vec3) {
 	assert(user != nil);
+	logln("ABILITY!!!");
 	if target != nil {
 		health := get_component(target.entity, Health_Component);
 		assert(health != nil);
