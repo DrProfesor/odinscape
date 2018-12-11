@@ -40,10 +40,7 @@ unit_component :: proc(move_speed: f32, damage: int, range: f32, cooldown: f32) 
 
 
 init__Unit_Component :: inline proc(using unit: ^Unit_Component) {
-	abilities[&key_config.ability1] = "attack";
-	abilities[&key_config.ability2] = "bar";
-	abilities[&key_config.ability3] = "baz";
-	abilities[&key_config.ability4] = "qux";
+	abilities[&key_config.ability1] = "slash";
 }
 
 

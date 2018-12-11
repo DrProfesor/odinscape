@@ -232,10 +232,12 @@ draw_player_hud :: proc() {
 					wb.ui_draw_colored_quad(wb.Colorf{0.8, 0.8, 0.8, 1});
 
 					if unit_abilities_ok {
-						ability_id, ok1 := unit_abilities[input]; assert(ok1);
-						ability, ok2 := get_ability(ability_id);
-						if ok2 {
-							wb.ui_draw_sprite(ability.icon);
+						ability_id, ok1 := unit_abilities[input];
+						if ok1 {
+							ability, ok2 := get_ability(ability_id);
+							if ok2 {
+								wb.ui_draw_sprite(ability.icon);
+							}
 						}
 					}
 

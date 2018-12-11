@@ -61,6 +61,7 @@ make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Textur
 	add_component(e, transform(position));
 	add_component(e, Mesh_Renderer{{}, model, {}, wb.COLOR_WHITE, texture, wb.shader_texture});
 	add_component(e, health_component(10));
+	add_component(e, Attack_Default_Command);
 	add_component(e, unit_component(5, 1, 2, 0.5));
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
  	return e;

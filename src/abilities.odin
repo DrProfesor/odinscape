@@ -23,7 +23,7 @@ all_ability_definitions: map[string]^Ability_Definition;
 
 init_abilities :: proc() {
 	// todo(josh): Pull from config file for abilities
-	all_ability_definitions["attack"] = new_clone(Ability_Definition{
+	all_ability_definitions["slash"] = new_clone(Ability_Definition{
 		"Slash",
 		{}, // todo(josh): do this
 		Ability_Target.Unit,
