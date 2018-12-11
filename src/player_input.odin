@@ -14,6 +14,8 @@ free_camera: bool;
 cursor_hit_infos: [dynamic]coll.Hit_Info;
 
 update_player_input :: proc() {
+	assert(!destroyed(player_entity));
+
 	if wb.get_input_down(key_config.camera_snap_to_unit) {
 		focus_camera_on_guy(player_entity);
 	}
@@ -49,18 +51,44 @@ update_player_input :: proc() {
 	wb.update_view_matrix(&gameplay_camera);
 
 	if !free_camera {
-		// Get the unit under the cursor
-		cursor_direction := wb.get_cursor_direction_from_camera(&gameplay_camera);
-		coll.linecast(&main_collision_scene, gameplay_camera.position, gameplay_camera.position + cursor_direction * 1000, &cursor_hit_infos);
-		thing_under_cursor: Entity;
-		if len(cursor_hit_infos) > 0 {
-			hit := cursor_hit_infos[0];
-			collider, ok := coll.get_collider(&main_collision_scene, hit.handle);
-			assert(ok);
-			thing_under_cursor = cast(Entity)hit.handle;
+		cursor_position_on_terrain: Vec3;
+		found_terrain_position: bool;
+		unit_under_cursor: ^Unit_Component; // note(josh): do not store this pointer anywhere!!!!
+		{
+			cursor_direction := wb.get_cursor_direction_from_camera(&gameplay_camera);
+			coll.linecast(&main_collision_scene, gameplay_camera.position, gameplay_camera.position + cursor_direction * 1000, &cursor_hit_infos);
+			for hit in cursor_hit_infos {
+				e := cast(Entity)hit.handle;
+				if !found_terrain_position && get_component(e, Terrain_Component) != nil {
+					found_terrain_position = true;
+					cursor_position_on_terrain = hit.point0;
+				}
+
+				if unit_under_cursor == nil {
+					if unit := get_component(e, Unit_Component); unit != nil {
+						unit_under_cursor = unit;
+					}
+				}
+			}
 		}
 
-		if unit_under_cursor := get_component(thing_under_cursor, Unit_Component); unit_under_cursor != nil {
+		// do abilities
+		if len(selected_units) > 0 {
+			// todo(josh): better filtering on deciding what the "most important unit" is
+			// probably prioritize the player character, things like that. also maybe tabbing
+			// through the different unit types?
+
+			unit_abilities, ok := get_most_important_units_abilities();
+			if ok {
+				for input, ability in unit_abilities {
+					if wb.get_input_down(input^) {
+						issue_command(Ability_Command{ability, cursor_position_on_terrain, unit_under_cursor != nil ? unit_under_cursor.entity : 0});
+					}
+				}
+			}
+		}
+
+		if unit_under_cursor != nil {
 			if wb.get_input_down(key_config.select_unit) {
 				holding_shift := wb.get_input(key_config.add_unit_to_selection_modifier);
 				if !holding_shift {
@@ -69,6 +97,8 @@ update_player_input :: proc() {
 				add_selected_unit(unit_under_cursor.entity);
 			}
 		}
+
+
 
 		if wb.get_input_down(key_config.move_command) {
 			for hit in cursor_hit_infos {
@@ -100,12 +130,22 @@ update_player_input :: proc() {
 		}
 	}
 	last_mouse_pos = wb.cursor_screen_position;
+
+	draw_player_hud();
+}
+
+get_most_important_units_abilities :: inline proc() -> (map[^Game_Input]string, bool) {
+	most_important_unit : ^Unit_Component = get_component(selected_units[0], Unit_Component);
+	if most_important_unit == nil do return {}, false;
+	return most_important_unit.abilities, true;
 }
 
 issue_command :: proc(command: $T) {
 	// logln(command);
 	holding_shift := wb.get_input(key_config.queue_command_modifier);
 	for selected in selected_units {
+		if destroyed(selected) do continue;
+
 		unit := get_component(selected, Unit_Component);
 		assert(unit != nil);
 		if !holding_shift {
@@ -143,9 +183,12 @@ add_selected_unit :: proc(unit: Entity) {
 
 remove_selected_unit_index :: proc(idx: int) {
 	unit := selected_units[idx];
-	renderer := get_component(unit, Mesh_Renderer);
-	assert(renderer != nil);
-	renderer.color = wb.COLOR_WHITE;
+	if !destroyed(unit) {
+		renderer := get_component(unit, Mesh_Renderer);
+		assert(renderer != nil);
+		renderer.color = wb.COLOR_WHITE;
+	}
+
 	wb.remove_at(&selected_units, idx);
 }
 
@@ -162,3 +205,53 @@ clear_selected_units :: proc() {
 		remove_selected_unit_index(0);
 	}
 }
+
+
+
+//
+// Player HUD
+//
+
+draw_player_hud :: proc() {
+	wb.ui_push_rect(0.5, 0, 0.5, 0, -150, -300, 0, -300); {
+		defer wb.ui_pop_rect();
+		wb.ui_draw_colored_quad(wb.Colorf{1, 1, 1, 1});
+
+		unit_abilities, unit_abilities_ok := get_most_important_units_abilities();
+		grid := wb.ui_grid_layout(4, 1); {
+			defer wb.ui_grid_layout_end();
+
+			idx := 0;
+			ability_input := [?]^Game_Input{&key_config.ability1, &key_config.ability2, &key_config.ability3, &key_config.ability4};
+			for input in ability_input {
+				defer idx += 1;
+				defer wb.ui_grid_layout_next(&grid);
+
+				wb.ui_push_rect(0, 0, 1, 1, 20, 20, 20, 20); {
+					defer wb.ui_pop_rect();
+					wb.ui_draw_colored_quad(wb.Colorf{0.8, 0.8, 0.8, 1});
+
+					if unit_abilities_ok {
+						ability_id, ok1 := unit_abilities[input]; assert(ok1);
+						ability, ok2 := get_ability(ability_id);
+						if ok2 {
+							wb.ui_draw_sprite(ability.icon);
+						}
+					}
+
+					wb.ui_text(wb.font_default, input_to_nice_name(input^), 0.5, wb.COLOR_GREEN);
+				}
+			}
+			assert(idx <= 4);
+		}
+	}
+}
+
+
+
+
+
+
+
+
+vec3 :: inline proc(x, y: f32) -> Vec3 do return Vec3{x, y, 0};

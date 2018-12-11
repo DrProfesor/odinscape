@@ -30,6 +30,15 @@ destroy_entity :: proc(entity_id: Entity) {
 	append(&entities_to_destroy, entity_id);
 }
 
+destroyed :: proc(entity_id: Entity) -> bool {
+	_, ok := all_entities[entity_id];
+	if !ok do return true;
+	for e in entities_to_destroy {
+		if e == entity_id do return true;
+	}
+	return false;
+}
+
 get_all_component_types :: proc(entity: Entity) -> []Component_Type {
 	e := all_entities[entity];
 	return e.component_types[:];

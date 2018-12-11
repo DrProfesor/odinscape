@@ -24,8 +24,10 @@ scene : Scene;
 gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
 
 main_init :: proc() {
-	init_entities();
+	load_fonts();
 	init_key_config();
+	init_entities();
+	init_abilities();
 	scene = scene_init("main");
 
 	gronk_model := get_model("gronk");
@@ -58,6 +60,7 @@ make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Textur
 	e := new_entity("Unit");
 	add_component(e, transform(position));
 	add_component(e, Mesh_Renderer{{}, model, {}, wb.COLOR_WHITE, texture, wb.shader_texture});
+	add_component(e, health_component(10));
 	add_component(e, unit_component(5, 1, 2, 0.5));
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
  	return e;
@@ -69,7 +72,7 @@ make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entit
 	add_component(e, Mesh_Renderer{{}, model, {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
 	add_component(e, Attack_Default_Command);
-	add_component(e, Health_Component{{}, 10});
+	add_component(e, health_component(100, true));
  	return e;
 }
 
@@ -95,4 +98,13 @@ main_end :: proc() {
 debug_window_proc :: proc() {
 	imgui.checkbox("Debug Colliders", &debugging_colliders);
 	imgui.checkbox("Entity Handles", &debug_draw_entity_handles);
+}
+
+load_fonts :: proc() {
+	data, ok1 := os.read_entire_file("resources/fonts/OpenSans-Regular.ttf");
+	assert(ok1);
+
+	ok2: bool;
+	wb.font_default, ok2 = wb.load_font(data, 72);
+	assert(ok2);
 }
