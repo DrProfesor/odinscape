@@ -14,9 +14,10 @@ Ability_Definition :: struct {
 }
 
 Ability_Target :: enum i32 {
-	Self,
-	Unit,
-	Location,
+	Click,    // self or cursor location
+	Friendly, // caster + units on their team
+	Allies,   // units on the caster's team
+	Enemy,    // units not on the casters team
 }
 
 all_ability_definitions: map[string]^Ability_Definition;
@@ -26,10 +27,12 @@ init_abilities :: proc() {
 	all_ability_definitions["slash"] = new_clone(Ability_Definition{
 		"Slash",
 		{}, // todo(josh): do this
-		Ability_Target.Unit,
+		Ability_Target.Enemy,
 		5,
 		damage_ability
 	});
+
+
 }
 
 get_ability :: proc(id: string) -> (^Ability_Definition, bool) {
@@ -45,4 +48,8 @@ damage_ability :: proc(ability: ^Ability_Definition, user: ^Unit_Component, targ
 		assert(health != nil);
 		take_damage(health, 1);
 	}
+}
+
+projectile_ability :: proc(ability: ^Ability_Definition, user: ^Unit_Component, target: ^Unit_Component, cursor_position_on_terrain: Vec3) {
+
 }

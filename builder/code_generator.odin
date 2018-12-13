@@ -191,7 +191,7 @@ using import "shared:workbench/pool"
 											defer end_pool_foreach();
 											line_indent("if comp.entity == entity {"); {
 												defer line_outdent("}");
-												line("wb.imgui_struct(comp, tprint(entity, \": ", component_name,"\"));");
+												line("wb.imgui_struct(comp, tprint(\"", component_name, "\"));");
 												line("break pool_loop__", component_name, ";");
 											}
 										}

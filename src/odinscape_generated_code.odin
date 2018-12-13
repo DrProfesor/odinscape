@@ -642,7 +642,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Sprite_Renderer"));
+										wb.imgui_struct(comp, tprint("Sprite_Renderer"));
 										break pool_loop__Sprite_Renderer;
 									}
 								}
@@ -656,7 +656,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Mesh_Renderer"));
+										wb.imgui_struct(comp, tprint("Mesh_Renderer"));
 										break pool_loop__Mesh_Renderer;
 									}
 								}
@@ -670,7 +670,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Unit_Component"));
+										wb.imgui_struct(comp, tprint("Unit_Component"));
 										break pool_loop__Unit_Component;
 									}
 								}
@@ -684,7 +684,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Spinner_Component"));
+										wb.imgui_struct(comp, tprint("Spinner_Component"));
 										break pool_loop__Spinner_Component;
 									}
 								}
@@ -698,7 +698,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Health_Component"));
+										wb.imgui_struct(comp, tprint("Health_Component"));
 										break pool_loop__Health_Component;
 									}
 								}
@@ -712,7 +712,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Attack_Default_Command"));
+										wb.imgui_struct(comp, tprint("Attack_Default_Command"));
 										break pool_loop__Attack_Default_Command;
 									}
 								}
@@ -726,7 +726,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Transform"));
+										wb.imgui_struct(comp, tprint("Transform"));
 										break pool_loop__Transform;
 									}
 								}
@@ -740,7 +740,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Box_Collider"));
+										wb.imgui_struct(comp, tprint("Box_Collider"));
 										break pool_loop__Box_Collider;
 									}
 								}
@@ -754,7 +754,7 @@ update_inspector_window :: proc() {
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint(entity, ": Terrain_Component"));
+										wb.imgui_struct(comp, tprint("Terrain_Component"));
 										break pool_loop__Terrain_Component;
 									}
 								}

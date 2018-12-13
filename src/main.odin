@@ -77,6 +77,13 @@ make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entit
  	return e;
 }
 
+make_entity_projectile :: proc(position: Vec3, direction: Vec3) {
+	e := new_entity("Projectile");
+	add_component(e, transform(position));
+	add_component(e, Mesh_Renderer{{}, cube_model, {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
+	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
+}
+
 last_mouse_pos: Vec2;
 main_update :: proc(dt: f32) {
     if wb.get_input_down(wb.Input.Escape) do wb.end_workspace(wb.current_workspace);
