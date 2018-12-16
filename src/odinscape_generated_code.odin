@@ -629,7 +629,6 @@ destroy_marked_entities :: proc() {
 
 update_inspector_window :: proc() {
 	if imgui.begin("Scene") {
-		defer imgui.end();
 		for entity, entity_data in all_entities {
 			if imgui.collapsing_header(tprint((entity_data.name == "" ? "<no_name>" : entity_data.name), " #", entity)) {
 				for comp_type in entity_data.component_types {
@@ -767,5 +766,6 @@ update_inspector_window :: proc() {
 			}
 		}
 	}
+	imgui.end();
 }
 

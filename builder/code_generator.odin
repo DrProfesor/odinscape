@@ -167,7 +167,6 @@ using import "shared:workbench/pool"
 
 			line_indent("if imgui.begin(\"Scene\") {"); {
 				defer line_outdent("}");
-				line("defer imgui.end();");
 
 				line_indent("for entity, entity_data in all_entities {"); {
 					defer line_outdent("}");
@@ -204,6 +203,7 @@ using import "shared:workbench/pool"
 					}
 				}
 			}
+			line("imgui.end();");
 		}
 	}
 
