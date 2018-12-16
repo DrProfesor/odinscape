@@ -9,7 +9,8 @@ Ability_Definition :: struct {
 	name: string,
 	icon: wb.Sprite, // todo(josh): set this up
 	target_type: Ability_Target,
-	range: f32,
+	stats: map[string]f32,
+
 	on_activate: proc(ability: ^Ability_Definition, user: ^Unit_Component, target_unit: ^Unit_Component, cursor_position_on_terrain: Vec3),
 }
 
@@ -36,7 +37,11 @@ init_abilities :: proc() {
 		"Slash",
 		{}, // todo(josh): do this
 		Ability_Target.Enemy,
-		5,
+		{
+			"range" = 1,
+			"damage" = 1,
+			"cooldown" = 4,
+		},
 		damage_ability
 	});
 }
@@ -46,13 +51,21 @@ get_ability :: proc(id: string) -> (^Ability_Definition, bool) {
 	return a, ok;
 }
 
+get_ability_stat :: proc(ability: ^Ability_Definition, stat_name: string) -> f32 {
+	value, ok := ability.stats["damage"];
+	assert(ok, tprint("Ability ", ability.name, " did not have stat ", stat_name));
+	return value;
+}
+
 damage_ability :: proc(ability: ^Ability_Definition, user: ^Unit_Component, target: ^Unit_Component, cursor_position_on_terrain: Vec3) {
 	assert(user != nil);
 	logln("ABILITY!!!");
 	if target != nil {
 		health := get_component(target.entity, Health_Component);
 		assert(health != nil);
-		take_damage(health, 1);
+
+		damage := get_ability_stat(ability, "damage");
+		take_damage(health, int(damage+0.5));
 	}
 }
 
