@@ -10,40 +10,43 @@ using import "core:math"
 	  import ai    "shared:workbench/external/assimp"
 	  import imgui "shared:workbench/external/imgui"
 
-logln :: wb.logln;
-
-main :: proc() {
-    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
-}
-
 cube_model: ^Model_Asset;
 
 main_collision_scene: coll.Collision_Scene;
-scene : Scene;
+scene: Scene;
 
-gameplay_camera := wb.Camera{true, 85, {}, {}, {}};
+gameplay_camera := wb.Camera{true, 65, {}, {}, {}};
 
 main_init :: proc() {
+	//
 	load_fonts();
 	init_key_config();
 	init_entities();
 	init_abilities();
+
+	//
 	scene = scene_init("main");
 
+	//
 	gronk_model := get_model("gronk");
-
 	cube_model = get_model("cube");
 	gronk_tex := get_texture("gronk_texture");
 
+	//
 	make_entity_terrain(Vec3{0, -0.5, 0});
-	player_entity = make_entity_unit(Vec3{-3, 0, -3}, gronk_model, gronk_tex);
-	add_selected_unit(player_entity);
-	focus_camera_on_guy(player_entity);
 
+	//
+	player := make_entity_unit(Vec3{-3, 0, -3}, gronk_model, gronk_tex);
+	player_input_manager.player_entity = player;
+	add_selected_unit(player);
+	focus_camera_on_guy(player);
+
+	//
 	make_entity_unit(Vec3{ 3, 0, -3}, gronk_model, gronk_tex);
 	make_entity_unit(Vec3{-3, 0,  3}, gronk_model, gronk_tex);
 	make_entity_training_dummy(Vec3{ 3, 0,  3}, cube_model);
 
+	//
 	wb.client_debug_window_proc = debug_window_proc;
 }
 
@@ -106,6 +109,7 @@ main_end :: proc() {
 debug_window_proc :: proc() {
 	imgui.checkbox("Debug Colliders", &debugging_colliders);
 	imgui.checkbox("Entity Handles", &debug_draw_entity_handles);
+	imgui.checkbox("Ability Editor", &ability_manager.show_ability_editor);
 }
 
 load_fonts :: proc() {
@@ -116,3 +120,14 @@ load_fonts :: proc() {
 	wb.font_default, ok2 = wb.load_font(data, 72);
 	assert(ok2);
 }
+
+
+
+
+
+
+main :: proc() {
+    wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
+}
+
+logln :: wb.logln;

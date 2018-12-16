@@ -20,9 +20,17 @@ Ability_Target :: enum i32 {
 	Enemy,    // units not on the casters team
 }
 
-all_ability_definitions: map[string]^Ability_Definition;
+Ability_Manager :: struct {
+	all_ability_definitions: map[string]^Ability_Definition,
+
+	show_ability_editor: bool,
+}
+
+ability_manager: Ability_Manager;
 
 init_abilities :: proc() {
+	using ability_manager;
+
 	// todo(josh): Pull from config file for abilities
 	all_ability_definitions["slash"] = new_clone(Ability_Definition{
 		"Slash",
@@ -31,12 +39,10 @@ init_abilities :: proc() {
 		5,
 		damage_ability
 	});
-
-
 }
 
 get_ability :: proc(id: string) -> (^Ability_Definition, bool) {
-	a, ok := all_ability_definitions[id];
+	a, ok := ability_manager.all_ability_definitions[id];
 	return a, ok;
 }
 

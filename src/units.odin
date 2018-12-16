@@ -118,7 +118,7 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 			completed = true;
 
 			//
-			ability, ability_exists := all_ability_definitions[command.ability];
+			ability, ability_exists := get_ability(command.ability);
 			if !ability_exists {
 				logln("Error: Ability doesn't exist but was somehow queued up: ", command.ability);
 				break;

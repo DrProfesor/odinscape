@@ -36,8 +36,6 @@ Key_Config :: struct {
 
 key_config: Key_Config;
 
-key_config_item: ^wb.Catalog_Item;
-
 PATH :: "resources/data/key_config.wbml";
 
 init_key_config :: proc() {

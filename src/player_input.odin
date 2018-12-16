@@ -6,14 +6,20 @@ using import   "core:math"
 	  import coll "shared:workbench/collision"
 	  import wb "shared:workbench"
 
-player_entity: Entity;
-selected_units: [dynamic]Entity; // has to be of type Entity because we aren't allowed storing pointers to components
+Player_Input_Manager :: struct {
+	player_entity: Entity,
+	selected_units: [dynamic]Entity, // has to be of type Entity because we aren't allowed storing pointers to components
 
-free_camera: bool;
+	free_camera: bool,
 
-cursor_hit_infos: [dynamic]coll.Hit_Info;
+	cursor_hit_infos: [dynamic]coll.Hit_Info,
+}
+
+player_input_manager: Player_Input_Manager;
 
 update_player_input :: proc() {
+	using player_input_manager;
+
 	assert(!destroyed(player_entity));
 
 	if wb.get_input_down(key_config.camera_snap_to_unit) {
@@ -135,12 +141,16 @@ update_player_input :: proc() {
 }
 
 get_most_important_units_abilities :: inline proc() -> (map[^Game_Input]string, bool) {
+	using player_input_manager;
+
 	most_important_unit : ^Unit_Component = get_component(selected_units[0], Unit_Component);
 	if most_important_unit == nil do return {}, false;
 	return most_important_unit.abilities, true;
 }
 
 issue_command :: proc(command: $T) {
+	using player_input_manager;
+
 	// logln(command);
 	holding_shift := wb.get_input(key_config.queue_command_modifier);
 	for selected in selected_units {
@@ -156,11 +166,13 @@ issue_command :: proc(command: $T) {
 }
 
 focus_camera_on_guy :: proc(e: Entity) {
+	using player_input_manager;
+
 	tf := get_component(e, Transform);
 	assert(tf != nil);
 
-	gameplay_camera.position = tf.position + Vec3{0, 7, 5};
-	gameplay_camera.rotation = Vec3{300, 0, 0};
+	gameplay_camera.position = tf.position + Vec3{0, 10, 6};
+	gameplay_camera.rotation = Vec3{305, 0, 0};
 
 	wb.update_view_matrix(&gameplay_camera);
 	free_camera = false;
@@ -174,6 +186,8 @@ select_single_unit :: proc(unit: Entity) {
 }
 
 add_selected_unit :: proc(unit: Entity) {
+	using player_input_manager;
+
 	append(&selected_units, unit);
 
 	renderer := get_component(unit, Mesh_Renderer);
@@ -182,6 +196,8 @@ add_selected_unit :: proc(unit: Entity) {
 }
 
 remove_selected_unit_index :: proc(idx: int) {
+	using player_input_manager;
+
 	unit := selected_units[idx];
 	if !destroyed(unit) {
 		renderer := get_component(unit, Mesh_Renderer);
@@ -193,6 +209,8 @@ remove_selected_unit_index :: proc(idx: int) {
 }
 
 remove_selected_unit :: proc(unit: Entity) {
+	using player_input_manager;
+
 	for selected, idx in selected_units {
 		if selected == unit {
 			remove_selected_unit_index(idx);
@@ -201,6 +219,8 @@ remove_selected_unit :: proc(unit: Entity) {
 }
 
 clear_selected_units :: proc() {
+	using player_input_manager;
+
 	for len(selected_units) > 0 {
 		remove_selected_unit_index(0);
 	}
