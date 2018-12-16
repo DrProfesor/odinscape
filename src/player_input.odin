@@ -20,9 +20,9 @@ player_input_manager: Player_Input_Manager;
 update_player_input :: proc() {
 	using player_input_manager;
 
-	assert(!destroyed(player_entity));
+	assert(alive(player_entity));
 
-	if wb.get_input_down(key_config.camera_snap_to_unit) {
+	if wb.get_input(key_config.camera_snap_to_unit) {
 		focus_camera_on_guy(player_entity);
 	}
 
@@ -154,7 +154,7 @@ issue_command :: proc(command: $T) {
 	// logln(command);
 	holding_shift := wb.get_input(key_config.queue_command_modifier);
 	for selected in selected_units {
-		if destroyed(selected) do continue;
+		if !alive(selected) do continue;
 
 		unit := get_component(selected, Unit_Component);
 		assert(unit != nil);
@@ -171,7 +171,7 @@ focus_camera_on_guy :: proc(e: Entity) {
 	tf := get_component(e, Transform);
 	assert(tf != nil);
 
-	gameplay_camera.position = tf.position + Vec3{0, 10, 6};
+	gameplay_camera.position = tf.position + Vec3{0, 12, 10};
 	gameplay_camera.rotation = Vec3{305, 0, 0};
 
 	wb.update_view_matrix(&gameplay_camera);
@@ -199,7 +199,7 @@ remove_selected_unit_index :: proc(idx: int) {
 	using player_input_manager;
 
 	unit := selected_units[idx];
-	if !destroyed(unit) {
+	if alive(unit) {
 		renderer := get_component(unit, Mesh_Renderer);
 		assert(renderer != nil);
 		renderer.color = wb.COLOR_WHITE;

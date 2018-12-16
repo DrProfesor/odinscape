@@ -177,7 +177,7 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 		}
 	}
 
-	if !destroyed(entity) { // throughout the process of attacking/executing abilities it's very possible that we got destroyed or something
+	if alive(entity) { // throughout the process of attacking/executing abilities it's very possible that we got destroyed or something
 		if completed {
 			// todo(josh): @Optimization: maybe advance a cursor along the array instead of just always using [0] as the current command
 			ordered_remove(&queued_commands, 0);

@@ -30,7 +30,7 @@ destroy_entity :: proc(entity_id: Entity) {
 	append(&entities_to_destroy, entity_id);
 }
 
-destroyed :: proc(entity_id: Entity) -> bool {
+alive :: proc(entity_id: Entity) -> bool {
 	_, ok := all_entities[entity_id];
 	if !ok do return true;
 	for e in entities_to_destroy {
@@ -61,15 +61,34 @@ Transform :: struct {
 	scale: Vec3,
 	rotation: Vec3,
 
-	velocity: Vec3,
+	stuck_on_ground: bool,
+	offset_from_ground: Vec3,
 }
 
-transform :: inline proc(position := Vec3{0, 0, 0}, scale := Vec3{1, 1, 1}, rotation := Vec3{}) -> Transform {
+transform :: inline proc(position := Vec3{0, 0, 0}, scale := Vec3{1, 1, 1}, rotation := Vec3{}, stuck_on_ground := false, offset_from_ground := Vec3{}) -> Transform {
 	tf: Transform;
 	tf.position = position;
 	tf.scale = scale;
 	tf.rotation = rotation;
+	tf.stuck_on_ground = stuck_on_ground;
+	tf.offset_from_ground = offset_from_ground;
 	return tf;
+}
+
+
+update__Transform :: inline proc(using tf: ^Transform) {
+	if stuck_on_ground {
+		buffer := coll.get_temp_hits_buffer();
+		defer coll.return_temp_hits_buffer();
+		coll.linecast(&main_collision_scene, position + Vec3{0, 1000, 0}, {0, -5000, 0}, buffer);
+		for hit in buffer {
+			e := cast(Entity)hit.handle;
+			if get_component(e, Terrain_Component) != nil {
+				position = hit.point0 + offset_from_ground;
+				break;
+			}
+		}
+	}
 }
 
 debug_draw_entity_handles: bool;

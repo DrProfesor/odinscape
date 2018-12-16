@@ -33,7 +33,8 @@ main_init :: proc() {
 	gronk_tex := get_texture("gronk_texture");
 
 	//
-	make_entity_terrain(Vec3{0, -0.5, 0});
+	make_entity_terrain(Vec3{0, -0.5, 0}, {10, 1, 10});
+	make_entity_terrain(Vec3{2.5, 0.5, 2.5}, {5, 1, 5});
 
 	//
 	player := make_entity_unit(Vec3{-3, 0, -3}, gronk_model, gronk_tex);
@@ -50,9 +51,9 @@ main_init :: proc() {
 	wb.client_debug_window_proc = debug_window_proc;
 }
 
-make_entity_terrain :: proc(position: Vec3) -> Entity {
+make_entity_terrain :: proc(position: Vec3, size: Vec3) -> Entity {
 	e := new_entity("Terrain");
-	add_component(e, transform(position, {10, 1, 10}));
+	add_component(e, transform(position, size));
 	add_component(e, Mesh_Renderer{{}, cube_model, {}, wb.COLOR_BLUE, 0, wb.shader_rgba_3d});
 	add_component(e, Terrain_Component);
 	add_component(e, box_collider());
@@ -61,7 +62,9 @@ make_entity_terrain :: proc(position: Vec3) -> Entity {
 
 make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Texture) -> Entity {
 	e := new_entity("Unit");
-	add_component(e, transform(position));
+	tf := transform(position);
+	tf.stuck_on_ground = true;
+	add_component(e, tf);
 	add_component(e, Mesh_Renderer{{}, model, {}, wb.COLOR_WHITE, texture, wb.shader_texture});
 	add_component(e, health_component(10));
 	add_component(e, Attack_Default_Command);
@@ -72,8 +75,10 @@ make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Textur
 
 make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entity {
 	e := new_entity("Training Dummy");
-	add_component(e, transform(position));
-	add_component(e, Mesh_Renderer{{}, model, {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
+	tf := transform(position);
+	tf.stuck_on_ground = true;
+	add_component(e, tf);
+	add_component(e, Mesh_Renderer{{}, model, {0, 0.5, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
 	add_component(e, Attack_Default_Command);
 	add_component(e, health_component(100, true));
@@ -82,7 +87,10 @@ make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entit
 
 make_entity_projectile :: proc(position: Vec3, direction: Vec3) {
 	e := new_entity("Projectile");
-	add_component(e, transform(position));
+	tf := transform(position);
+	tf.stuck_on_ground = true;
+	tf.offset_from_ground = Vec3{0, 1, 0};
+	add_component(e, tf);
 	add_component(e, Mesh_Renderer{{}, cube_model, {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
 }
