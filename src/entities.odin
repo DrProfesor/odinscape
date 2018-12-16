@@ -32,11 +32,11 @@ destroy_entity :: proc(entity_id: Entity) {
 
 alive :: proc(entity_id: Entity) -> bool {
 	_, ok := all_entities[entity_id];
-	if !ok do return true;
+	if !ok do return false;
 	for e in entities_to_destroy {
-		if e == entity_id do return true;
+		if e == entity_id do return false;
 	}
-	return false;
+	return true;
 }
 
 get_all_component_types :: proc(entity: Entity) -> []Component_Type {
