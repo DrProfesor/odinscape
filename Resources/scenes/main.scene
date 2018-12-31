@@ -1,6 +1,6 @@
 {
 	manifest {
-		entries 
+		entries
 		[
 			{
 				id "gronk"
