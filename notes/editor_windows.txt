@@ -4,7 +4,7 @@ Right now the F1 menu is a bit messy, there's a bunch of stuff open by default a
 
 Even outside of the menu itself the implementation is weird because there's a bunch of globals strewn around like `show_foo_debug_window: bool`. It would be super nice if there was a single way to add something to the F1 menu.
 
-I'm almost imagining something like an operating system where you press F1 and a sidebar appears, like the one in Ubuntu for example, and it's a list of "programs". Kinda like how it is now but instead of checkboxes maybe they're buttons with some fancy icons or something.
+I'm almost imagining you press F1 and something like the sidebar from Ubuntu appears, and it's a list of "programs". Kinda like how it is now but instead of checkboxes maybe they're buttons with some fancy icons or something.
 
 To add a program to the sidebar we would do something like:
 
