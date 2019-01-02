@@ -29,18 +29,13 @@ scene_init :: proc(scene_id : string) -> Scene {
 	scene := Scene{};
 	scene.id = scene_id;
 
-	manifest := wbml.deserialize(Entity_Manifest, string(manifest_data));
-	scene.manifest = manifest;
+	for _, i in 0 .. len(scene.manifest.entries)-1 {
 
-	for _, i in 0 .. len(manifest.entries)-1 {
-
-		entry := manifest.entries[i];
+		entry := scene.manifest.entries[i];
 
 		switch entry.asset_type {
 			case Asset_Type.Model: {
-				_, ok2 := loaded_models[entry.id];
-				if ok2 {
-					current := loaded_models[entry.id];
+				if current, ok := loaded_models[entry.id]; ok {
 					current.count += 1;
 					loaded_models[entry.id] = current;
 				} else {
@@ -48,7 +43,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 					// @Alloc this will be owned by the catalog and freed when unsubscribe is called
 					userdata_entry := new_clone(manifest.entries[i]);
 
-					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry, 
+					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry,
 						proc(entry: ^Manifest_Entry, entry_data: []u8) {
 							defer delete(entry_data);
 							existing, ok := loaded_models[entry.id];
@@ -56,20 +51,20 @@ scene_init :: proc(scene_id : string) -> Scene {
 								path := strings.new_cstring(tprint(RESOURCES, entry.path));
 								defer delete(path);
 								new_model := wb.buffer_model(wb.load_model_from_file(path));
-								
+
 								wb.release_model(existing.asset);
 								existing.asset = new_model;
-							
+
 								loaded_models[entry.id] = existing;
 							} else {
-								// TODO (jake): don't do this, use load_model_from_memory, same with #43 
+								// TODO (jake): don't do this, use load_model_from_memory, same with #43
 								// too lazy to figure it out now though
 								path := strings.new_cstring(tprint(RESOURCES, entry.path));
 								defer delete(path);
 								model := wb.buffer_model(wb.load_model_from_file(path));
 								// end of bad
-								
-								/* 
+
+								/*
 									@Alloc Model_Asset so mesh renderers do not have to poll the scene
 								    This is owned by the scene and will be freed when the scene is ended
 								    if not other scene is using the same asset
@@ -81,20 +76,17 @@ scene_init :: proc(scene_id : string) -> Scene {
 				break;
 			}
 			case Asset_Type.Texture: {
-				_, ok2 := loaded_textures[entry.id];
-				if ok2 {
-					current := loaded_textures[entry.id];
+				if current, ok := loaded_textures[entry.id]; ok {
 					current.count += 1;
 					loaded_textures[entry.id] = current;
 				} else {
 					// @Alloc this will be owned by the catalog and freed when unsubscribe is called
 					userdata_entry := new_clone(scene.manifest.entries[i]);
 
-					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry, 
+					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry,
 						proc(entry: ^Manifest_Entry, entry_data: []u8) {
 							defer delete(entry_data);
-							existing, ok := loaded_textures[entry.id];
-							if ok {
+							if existing, ok := loaded_textures[entry.id]; ok {
 								wb.rebuffer_texture(existing.asset, entry_data);
 							} else {
 								texture := wb.load_texture(entry_data);
@@ -245,9 +237,9 @@ Texture_Asset :: struct {
 	count: int,
 }
 
-get_texture :: proc(id: string) -> wb.Texture {
+get_texture :: proc(id: string, loc := #caller_location) -> wb.Texture {
 	texture, ok := loaded_textures[id];
-	assert(ok, tprint("Could not find texture asset with id:", id));
+	assert(ok, tprint("Could not find texture asset with id:", id, loc));
 	return texture.asset;
 }
 

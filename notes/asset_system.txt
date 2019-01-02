@@ -1,0 +1,13 @@
+=> Asset Package Files
+
+The current system of scenes having a manifest of what assets need to be loaded is good and it might be good to generalize that a bit. I'm thinking instead of saying which individual assets it needs, it says which .asset_manifest files it needs. So pretty much taking the concept of the manifest into a separate thing that the scenes will reference.
+
+This is super nice because then all our assets will be loaded through a single system which can handle hotloading and everything, no more randy loading of individual assets all over the codebase.
+
+Also good because if we need to change which file an asset maps to and it's needed by multiple scenes it's still just a single change in the one manifest file.
+
+We could also have a `default_assets.asset_manifest` that we load on startup of odinscape so that we can have things like fonts or whatever else loaded by default.
+
+=> Editor Window
+
+It would be super cool to have an editor window for the asset system where we can create new asset packages and add files to them, change ID's and all that, and save them out to disk.

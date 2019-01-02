@@ -358,7 +358,7 @@ Parameter :: struct {
 	name: string,
 	type: string,
 }
-procedure_begin :: proc(name: string, return_type: string = nil, params: ..Parameter) {
+procedure_begin :: proc(name: string, return_type: string = "", params: ..Parameter) {
 	print_indents();
 	sbprint(&generated_code, name, " :: proc(");
 	comma := "";
