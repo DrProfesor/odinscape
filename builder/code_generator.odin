@@ -20,6 +20,7 @@ using import "core:fmt"
 using import "shared:workbench/pool"
       import wb "shared:workbench"
       import imgui "shared:workbench/external/imgui"
+      import "shared:workbench/wbml"
 
 `);
 
@@ -92,9 +93,6 @@ using import "shared:workbench/pool"
 			line("return nil;");
 		}
 
-
-
-
 		procedure_begin("get_component", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
 			for component_name in components {
@@ -124,6 +122,54 @@ using import "shared:workbench/pool"
 			for component_name in components {
 				emit_component_proc_call(tprint("render__", component_name), component_name);
 			}
+		}
+
+		for component_name in components {
+			struct_begin(tprint("Serializable_", component_name,"_Component")); {
+				defer struct_end();
+				struct_field(tprint("value: ", component_name));
+				struct_field(tprint("name: string"));
+			}
+		}
+
+		procedure_begin("serialize_entity_components", "string", Parameter{"entity", "Entity"}); {
+			defer procedure_end();
+
+			line("serialized : String_Buffer;");
+
+			for component_name in components {
+				line(component_name, "_comp := get_component(entity, ",component_name, ");");
+				line_indent("if ", component_name,"_comp != nil {"); {
+					defer line_outdent("}");
+					line("s := wbml.serialize(",component_name, "_comp);");
+					line("sbprint(&serialized, \"",component_name, `\n`,"\");");
+					line("sbprint(&serialized, s);");
+				}
+			}
+
+			line("return to_string(serialized);");
+		}
+
+		procedure_begin("deserialize_entity_comnponents", "Entity", Parameter{"entity_id", "int"}, Parameter{"serialized_entity", "[dynamic]string"}, Parameter{"component_types", "[dynamic]string"}); {
+			defer procedure_end();
+
+			line("entity := new_entity_dangerous(entity_id);");
+
+			line_indent("for component_data, i in serialized_entity {");{
+				defer line_outdent("}");
+				line("component_type := component_types[i];");
+				line_indent("switch component_type {"); {
+					defer line_outdent("}");
+					for component_name in components {
+						line_indent("case \"", component_name, "\": {"); {
+							defer line_outdent("}");
+							line("component := wbml.deserialize(", component_name, ", component_data);");
+							line("add_component(entity, component);");
+						}
+					}
+				}
+			}
+			line("return entity;");
 		}
 
 		procedure_begin("destroy_marked_entities"); {

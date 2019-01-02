@@ -4,6 +4,7 @@ using import "core:fmt"
 using import "shared:workbench/pool"
       import wb "shared:workbench"
       import imgui "shared:workbench/external/imgui"
+      import "shared:workbench/wbml"
 
 Component_Type :: enum {
 	Sprite_Renderer,
@@ -467,6 +468,156 @@ call_component_renders :: proc() {
 			}
 		}
 	}
+}
+
+Serializable_Sprite_Renderer_Component :: struct {
+	value: Sprite_Renderer,
+	name: string,
+}
+
+Serializable_Mesh_Renderer_Component :: struct {
+	value: Mesh_Renderer,
+	name: string,
+}
+
+Serializable_Unit_Component_Component :: struct {
+	value: Unit_Component,
+	name: string,
+}
+
+Serializable_Spinner_Component_Component :: struct {
+	value: Spinner_Component,
+	name: string,
+}
+
+Serializable_Health_Component_Component :: struct {
+	value: Health_Component,
+	name: string,
+}
+
+Serializable_Attack_Default_Command_Component :: struct {
+	value: Attack_Default_Command,
+	name: string,
+}
+
+Serializable_Transform_Component :: struct {
+	value: Transform,
+	name: string,
+}
+
+Serializable_Box_Collider_Component :: struct {
+	value: Box_Collider,
+	name: string,
+}
+
+Serializable_Terrain_Component_Component :: struct {
+	value: Terrain_Component,
+	name: string,
+}
+
+serialize_entity_components :: proc(entity: Entity) -> string {
+	serialized : String_Buffer;
+	Sprite_Renderer_comp := get_component(entity, Sprite_Renderer);
+	if Sprite_Renderer_comp != nil {
+		s := wbml.serialize(Sprite_Renderer_comp);
+		sbprint(&serialized, "Sprite_Renderer\n");
+		sbprint(&serialized, s);
+	}
+	Mesh_Renderer_comp := get_component(entity, Mesh_Renderer);
+	if Mesh_Renderer_comp != nil {
+		s := wbml.serialize(Mesh_Renderer_comp);
+		sbprint(&serialized, "Mesh_Renderer\n");
+		sbprint(&serialized, s);
+	}
+	Unit_Component_comp := get_component(entity, Unit_Component);
+	if Unit_Component_comp != nil {
+		s := wbml.serialize(Unit_Component_comp);
+		sbprint(&serialized, "Unit_Component\n");
+		sbprint(&serialized, s);
+	}
+	Spinner_Component_comp := get_component(entity, Spinner_Component);
+	if Spinner_Component_comp != nil {
+		s := wbml.serialize(Spinner_Component_comp);
+		sbprint(&serialized, "Spinner_Component\n");
+		sbprint(&serialized, s);
+	}
+	Health_Component_comp := get_component(entity, Health_Component);
+	if Health_Component_comp != nil {
+		s := wbml.serialize(Health_Component_comp);
+		sbprint(&serialized, "Health_Component\n");
+		sbprint(&serialized, s);
+	}
+	Attack_Default_Command_comp := get_component(entity, Attack_Default_Command);
+	if Attack_Default_Command_comp != nil {
+		s := wbml.serialize(Attack_Default_Command_comp);
+		sbprint(&serialized, "Attack_Default_Command\n");
+		sbprint(&serialized, s);
+	}
+	Transform_comp := get_component(entity, Transform);
+	if Transform_comp != nil {
+		s := wbml.serialize(Transform_comp);
+		sbprint(&serialized, "Transform\n");
+		sbprint(&serialized, s);
+	}
+	Box_Collider_comp := get_component(entity, Box_Collider);
+	if Box_Collider_comp != nil {
+		s := wbml.serialize(Box_Collider_comp);
+		sbprint(&serialized, "Box_Collider\n");
+		sbprint(&serialized, s);
+	}
+	Terrain_Component_comp := get_component(entity, Terrain_Component);
+	if Terrain_Component_comp != nil {
+		s := wbml.serialize(Terrain_Component_comp);
+		sbprint(&serialized, "Terrain_Component\n");
+		sbprint(&serialized, s);
+	}
+	return to_string(serialized);
+}
+
+deserialize_entity_comnponents :: proc(entity_id: int, serialized_entity: [dynamic]string, component_types: [dynamic]string) -> Entity {
+	entity := new_entity_dangerous(entity_id);
+	for component_data, i in serialized_entity {
+		component_type := component_types[i];
+		switch component_type {
+			case "Sprite_Renderer": {
+				component := wbml.deserialize(Sprite_Renderer, component_data);
+				add_component(entity, component);
+			}
+			case "Mesh_Renderer": {
+				component := wbml.deserialize(Mesh_Renderer, component_data);
+				add_component(entity, component);
+			}
+			case "Unit_Component": {
+				component := wbml.deserialize(Unit_Component, component_data);
+				add_component(entity, component);
+			}
+			case "Spinner_Component": {
+				component := wbml.deserialize(Spinner_Component, component_data);
+				add_component(entity, component);
+			}
+			case "Health_Component": {
+				component := wbml.deserialize(Health_Component, component_data);
+				add_component(entity, component);
+			}
+			case "Attack_Default_Command": {
+				component := wbml.deserialize(Attack_Default_Command, component_data);
+				add_component(entity, component);
+			}
+			case "Transform": {
+				component := wbml.deserialize(Transform, component_data);
+				add_component(entity, component);
+			}
+			case "Box_Collider": {
+				component := wbml.deserialize(Box_Collider, component_data);
+				add_component(entity, component);
+			}
+			case "Terrain_Component": {
+				component := wbml.deserialize(Terrain_Component, component_data);
+				add_component(entity, component);
+			}
+		}
+	}
+	return entity;
 }
 
 destroy_marked_entities :: proc() {

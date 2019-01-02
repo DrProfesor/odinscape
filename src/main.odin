@@ -27,25 +27,25 @@ main_init :: proc() {
 	//
 	scene = scene_init("main");
 
-	//
-	gronk_model := get_model("gronk");
-	cube_model = get_model("cube");
+	// //
+	// gronk_model := get_model("gronk");
+	// cube_model = get_model("cube");
 	gronk_tex := get_texture("gronk_texture");
 
 	//
-	make_entity_terrain(Vec3{0, -0.5, 0}, {10, 1, 10});
-	make_entity_terrain(Vec3{2.5, 0.5, 2.5}, {5, 1, 5});
+	//make_entity_terrain(Vec3{0, -0.5, 0}, {10, 1, 10});
+	//make_entity_terrain(Vec3{2.5, 0.5, 2.5}, {5, 1, 5});
 
 	//
-	player := make_entity_unit(Vec3{-3, 0, -3}, gronk_model, gronk_tex);
+	player := make_entity_unit(Vec3{-3, 0, -3}, "gronk", gronk_tex);
 	player_input_manager.player_entity = player;
 	add_selected_unit(player);
 	focus_camera_on_guy(player);
 
 	//
-	make_entity_unit(Vec3{ 3, 0, -3}, gronk_model, gronk_tex);
-	make_entity_unit(Vec3{-3, 0,  3}, gronk_model, gronk_tex);
-	make_entity_training_dummy(Vec3{ 3, 0,  3}, cube_model);
+	make_entity_unit(Vec3{ 3, 0, -3}, "gronk", gronk_tex);
+	make_entity_unit(Vec3{-3, 0,  3}, "gronk", gronk_tex);
+	make_entity_training_dummy(Vec3{ 3, 0,  3}, "cube");
 
 	//
 	wb.client_debug_window_proc = debug_window_proc;
@@ -54,13 +54,13 @@ main_init :: proc() {
 make_entity_terrain :: proc(position: Vec3, size: Vec3) -> Entity {
 	e := new_entity("Terrain");
 	add_component(e, transform(position, size));
-	add_component(e, Mesh_Renderer{{}, cube_model, {}, wb.COLOR_BLUE, 0, wb.shader_rgba_3d});
+	add_component(e, Mesh_Renderer{{}, "cube", {}, wb.COLOR_BLUE, 0, wb.shader_rgba_3d});
 	add_component(e, Terrain_Component);
 	add_component(e, box_collider());
 	return e;
 }
 
-make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Texture) -> Entity {
+make_entity_unit :: proc(position: Vec3, model: string, texture: wb.Texture) -> Entity {
 	e := new_entity("Unit");
 	tf := transform(position);
 	tf.stuck_on_ground = true;
@@ -73,7 +73,7 @@ make_entity_unit :: proc(position: Vec3, model: ^Model_Asset, texture: wb.Textur
  	return e;
 }
 
-make_entity_training_dummy :: proc(position: Vec3, model: ^Model_Asset) -> Entity {
+make_entity_training_dummy :: proc(position: Vec3, model: string) -> Entity {
 	e := new_entity("Training Dummy");
 	tf := transform(position);
 	tf.stuck_on_ground = true;
@@ -91,7 +91,7 @@ make_entity_projectile :: proc(position: Vec3, direction: Vec3) {
 	tf.stuck_on_ground = true;
 	tf.offset_from_ground = Vec3{0, 1, 0};
 	add_component(e, tf);
-	add_component(e, Mesh_Renderer{{}, cube_model, {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
+	add_component(e, Mesh_Renderer{{}, "cube", {0, 0, 0}, wb.COLOR_WHITE, {}, wb.shader_texture});
 	add_component(e, box_collider({1, 1, 1}, {0, 0.5, 0}));
 }
 
@@ -110,6 +110,7 @@ main_render :: proc(dt: f32) {
 }
 
 main_end :: proc() {
+	scene_end(scene);
 	shutdown_entities();
 	key_config_save();
 }

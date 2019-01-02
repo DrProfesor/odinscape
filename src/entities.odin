@@ -8,7 +8,7 @@ using import "core:math"
 	  import imgui "shared:workbench/external/imgui"
 	  import coll  "shared:workbench/collision"
 
-Entity :: distinct int;
+Entity :: int;
 
 last_entity_id           : Entity;
 all_entities             : map[Entity]_Entity_Data;
@@ -26,6 +26,22 @@ new_entity :: proc(name: string = "") -> Entity {
 	all_entities[last_entity_id] = e;
 	return last_entity_id;
 }
+
+new_entity_dangerous :: proc(_id: int) -> Entity {
+	id := Entity(_id);
+	if id > last_entity_id {
+		last_entity_id = id;
+	}
+	e: _Entity_Data;
+	e.name = "";
+	if len(available_component_lists) > 0 {
+		e.component_types = pop(&available_component_lists);
+		assert(len(e.component_types) == 0, "list wasn't cleared before returning to available_component_lists");
+	}
+	all_entities[id] = e;
+	return id;
+}
+
 destroy_entity :: proc(entity_id: Entity) {
 	append(&entities_to_destroy, entity_id);
 }
@@ -47,7 +63,7 @@ get_all_component_types :: proc(entity: Entity) -> []Component_Type {
 
 
 Component_Base :: struct {
-	entity: Entity,
+	entity: int,
 }
 
 //
@@ -152,7 +168,7 @@ Terrain_Component :: struct {
 Mesh_Renderer :: struct {
 	using base: Component_Base,
 
-	model                 : ^Model_Asset,
+	model          : string,
 	offset_from_transform : Vec3,
 	color                 : wb.Colorf,
 	texture_handle        : wb.Texture,
@@ -163,7 +179,10 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 
-	for mesh_id in model.asset.meshes {
+	model_asset := get_model(model);
+	assert(model_asset != nil);
+
+	for mesh_id in model_asset.asset.meshes {
 		wb.push_mesh(
 			mesh_id,
 			tf.position + offset_from_transform,
