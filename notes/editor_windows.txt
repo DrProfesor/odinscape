@@ -1,0 +1,15 @@
+=> More Formal Editor Window System
+
+Right now the F1 menu is a bit messy, there's a bunch of stuff open by default and the main menu for it is kinda weird and just has a slew of checkboxes to open windows.
+
+Even outside of the menu itself the implementation is weird because there's a bunch of globals strewn around like `show_foo_debug_window: bool`. It would be super nice if there was a single way to add something to the F1 menu.
+
+I'm almost imagining you press F1 and something like the sidebar from Ubuntu appears, and it's a list of "programs". Kinda like how it is now but instead of checkboxes maybe they're buttons with some fancy icons or something.
+
+To add a program to the sidebar we would do something like:
+
+	add_debug_menu_program("Renderer", draw_renderer_debug_menu);
+
+The system would then add a tile to the F1 menu sidebar for it, and if the user opens that program it'll call `draw_renderer_debug_menu` every frame. A program could be anything from just drawing a static imgui window to doing some big calculation or something and then maybe returning false from the program's procedure (`draw_renderer_debug_menu` in the example) means "exit me".
+
+Maybe the `add_debug_menu_program` proc would also have a `userdata` parameter as well in case there's some state that the user would like passed to the `draw_renderer_debug_menu` proc.
