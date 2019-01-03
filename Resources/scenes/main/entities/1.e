@@ -2,7 +2,6 @@ Mesh_Renderer
 {
 	base {
 		entity 1
-
 	}
 
 	model "cube"
@@ -29,7 +28,6 @@ Transform
 {
 	base {
 		entity 1
-
 	}
 
 	position [
@@ -63,7 +61,6 @@ Box_Collider
 {
 	base {
 		entity 1
-
 	}
 
 	offset_from_transform [
@@ -84,7 +81,6 @@ Terrain_Component
 {
 	base {
 		entity 1
-
 	}
 
 }

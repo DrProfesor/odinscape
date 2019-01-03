@@ -37,15 +37,15 @@ main_init :: proc() {
 	//make_entity_terrain(Vec3{2.5, 0.5, 2.5}, {5, 1, 5});
 
 	//
-	player := make_entity_unit(Vec3{-3, 0, -3}, "gronk", gronk_tex);
-	player_input_manager.player_entity = player;
-	add_selected_unit(player);
-	focus_camera_on_guy(player);
+	//player := make_entity_unit(Vec3{-3, 0, -3}, "gronk", gronk_tex);
+	//player_input_manager.player_entity = player;
+	//add_selected_unit(player);
+	//focus_camera_on_guy(player);
 
 	//
-	make_entity_unit(Vec3{ 3, 0, -3}, "gronk", gronk_tex);
-	make_entity_unit(Vec3{-3, 0,  3}, "gronk", gronk_tex);
-	make_entity_training_dummy(Vec3{ 3, 0,  3}, "cube");
+	//make_entity_unit(Vec3{ 3, 0, -3}, "gronk", gronk_tex);
+	//make_entity_unit(Vec3{-3, 0,  3}, "gronk", gronk_tex);
+	//make_entity_training_dummy(Vec3{ 3, 0,  3}, "cube");
 
 	//
 	wb.client_debug_window_proc = debug_window_proc;

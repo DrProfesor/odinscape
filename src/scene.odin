@@ -29,9 +29,9 @@ scene_init :: proc(scene_id : string) -> Scene {
 	scene := Scene{};
 	scene.id = scene_id;
 
-	for _, i in 0 .. len(scene.manifest.entries)-1 {
+	scene.manifest = wbml.deserialize(Entity_Manifest, string(manifest_data));
 
-		entry := scene.manifest.entries[i];
+	for entry, i in scene.manifest.entries {
 
 		switch entry.asset_type {
 			case Asset_Type.Model: {
@@ -41,7 +41,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 				} else {
 
 					// @Alloc this will be owned by the catalog and freed when unsubscribe is called
-					userdata_entry := new_clone(manifest.entries[i]);
+					userdata_entry := new_clone(scene.manifest.entries[i]);
 
 					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry,
 						proc(entry: ^Manifest_Entry, entry_data: []u8) {
@@ -122,7 +122,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 
 		for get_next_token(&lexer, &token) {
 			switch value_kind in token.kind {
-				case Token_Symbol: {
+				case Symbol: {
 					switch value_kind.value {
 						case '{':{
 							depth += 1;
@@ -139,7 +139,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 						}
 					}
 				}
-				case Token_Identifier: {
+				case Identifier: {
 					if depth == 0 {
 						component_type = token.slice_of_text;
 					}

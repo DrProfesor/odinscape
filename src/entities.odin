@@ -14,8 +14,10 @@ all_entities             : map[Entity]_Entity_Data;
 entities_to_destroy      : [dynamic]Entity;
 available_component_lists: [dynamic][dynamic]Component_Type;
 
+// fuck your static :D
+last_entity_id: Entity;
+
 new_entity :: proc(name: string = "") -> Entity {
-	static last_entity_id: Entity;
 
 	last_entity_id += 1;
 	e: _Entity_Data;
