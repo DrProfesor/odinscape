@@ -27,7 +27,7 @@ Unit_Component :: struct {
 	queued_commands:  [dynamic]Unit_Command,
 }
 
-ATTACK_RECOVERY_TIME :: 0.6;
+ATTACK_RECOVERY_TIME :: 0;
 
 unit_component :: proc(move_speed: f32, damage: int, range: f32, cooldown: f32) -> Unit_Component {
 	unit: Unit_Component;
@@ -177,7 +177,7 @@ update__Unit_Component :: inline proc(using unit: ^Unit_Component) {
 		}
 	}
 
-	if alive(entity) { // throughout the process of attacking/executing abilities it's very possible that we got destroyed or something
+	if !queued_for_destruction(entity) { // throughout the process of attacking/executing abilities it's very possible that we got destroyed or something
 		if completed {
 			// todo(josh): @Optimization: maybe advance a cursor along the array instead of just always using [0] as the current command
 			ordered_remove(&queued_commands, 0);

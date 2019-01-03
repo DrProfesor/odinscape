@@ -31,13 +31,15 @@ destroy_entity :: proc(entity_id: Entity) {
 	append(&entities_to_destroy, entity_id);
 }
 
-alive :: proc(entity_id: Entity) -> bool {
-	_, ok := all_entities[entity_id];
-	if !ok do return false;
-	for e in entities_to_destroy {
-		if e == entity_id do return false;
-	}
+entity_is_active :: proc(entity_id: Entity) -> bool {
+	if _, ok := all_entities[entity_id]; !ok do return false;
 	return true;
+}
+queued_for_destruction :: proc(entity_id: Entity) -> bool {
+	for e in entities_to_destroy {
+		if e == entity_id do return true;
+	}
+	return false;
 }
 
 get_all_component_types :: proc(entity: Entity) -> []Component_Type {

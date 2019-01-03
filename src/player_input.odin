@@ -20,7 +20,7 @@ player_input_manager: Player_Input_Manager;
 update_player_input :: proc() {
 	using player_input_manager;
 
-	assert(alive(player_entity));
+	assert(entity_is_active(player_entity));
 
 	if wb.get_input(key_config.camera_snap_to_unit) {
 		focus_camera_on_guy(player_entity);
@@ -154,7 +154,7 @@ issue_command :: proc(command: $T) {
 	// logln(command);
 	holding_shift := wb.get_input(key_config.queue_command_modifier);
 	for selected in selected_units {
-		if !alive(selected) do continue;
+		if !entity_is_active(selected) do continue;
 
 		unit := get_component(selected, Unit_Component);
 		assert(unit != nil);
@@ -199,7 +199,7 @@ remove_selected_unit_index :: proc(idx: int) {
 	using player_input_manager;
 
 	unit := selected_units[idx];
-	if alive(unit) {
+	if entity_is_active(unit) {
 		renderer := get_component(unit, Mesh_Renderer);
 		assert(renderer != nil);
 		renderer.color = wb.COLOR_WHITE;
