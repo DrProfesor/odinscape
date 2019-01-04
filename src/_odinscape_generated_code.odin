@@ -574,6 +574,64 @@ serialize_entity_components :: proc(entity: Entity) -> string {
 	return to_string(serialized);
 }
 
+init_entity :: proc(entity: Entity) -> bool {
+	when #defined(init__Sprite_Renderer) {
+		Sprite_Renderer_comp := get_component(entity, Sprite_Renderer);
+		if Sprite_Renderer_comp != nil {
+			init__Sprite_Renderer(Sprite_Renderer_comp);
+		}
+	}
+	when #defined(init__Mesh_Renderer) {
+		Mesh_Renderer_comp := get_component(entity, Mesh_Renderer);
+		if Mesh_Renderer_comp != nil {
+			init__Mesh_Renderer(Mesh_Renderer_comp);
+		}
+	}
+	when #defined(init__Unit_Component) {
+		Unit_Component_comp := get_component(entity, Unit_Component);
+		if Unit_Component_comp != nil {
+			init__Unit_Component(Unit_Component_comp);
+		}
+	}
+	when #defined(init__Spinner_Component) {
+		Spinner_Component_comp := get_component(entity, Spinner_Component);
+		if Spinner_Component_comp != nil {
+			init__Spinner_Component(Spinner_Component_comp);
+		}
+	}
+	when #defined(init__Health_Component) {
+		Health_Component_comp := get_component(entity, Health_Component);
+		if Health_Component_comp != nil {
+			init__Health_Component(Health_Component_comp);
+		}
+	}
+	when #defined(init__Attack_Default_Command) {
+		Attack_Default_Command_comp := get_component(entity, Attack_Default_Command);
+		if Attack_Default_Command_comp != nil {
+			init__Attack_Default_Command(Attack_Default_Command_comp);
+		}
+	}
+	when #defined(init__Transform) {
+		Transform_comp := get_component(entity, Transform);
+		if Transform_comp != nil {
+			init__Transform(Transform_comp);
+		}
+	}
+	when #defined(init__Box_Collider) {
+		Box_Collider_comp := get_component(entity, Box_Collider);
+		if Box_Collider_comp != nil {
+			init__Box_Collider(Box_Collider_comp);
+		}
+	}
+	when #defined(init__Terrain_Component) {
+		Terrain_Component_comp := get_component(entity, Terrain_Component);
+		if Terrain_Component_comp != nil {
+			init__Terrain_Component(Terrain_Component_comp);
+		}
+	}
+	return true;
+}
+
 deserialize_entity_comnponents :: proc(entity_id: int, serialized_entity: [dynamic]string, component_types: [dynamic]string) -> Entity {
 	entity := new_entity_dangerous(entity_id);
 	for component_data, i in serialized_entity {

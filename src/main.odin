@@ -30,17 +30,17 @@ main_init :: proc() {
 	// //
 	// gronk_model := get_model("gronk");
 	// cube_model = get_model("cube");
-	gronk_tex := get_texture("gronk_texture");
+	//gronk_tex := get_texture("gronk_texture");
 
 	//
 	//make_entity_terrain(Vec3{0, -0.5, 0}, {10, 1, 10});
 	//make_entity_terrain(Vec3{2.5, 0.5, 2.5}, {5, 1, 5});
 
 	//
-	//player := make_entity_unit(Vec3{-3, 0, -3}, "gronk", gronk_tex);
-	//player_input_manager.player_entity = player;
-	//add_selected_unit(player);
-	//focus_camera_on_guy(player);
+	player := Entity(3);
+	player_input_manager.player_entity = player;
+	add_selected_unit(player);
+	focus_camera_on_guy(player);
 
 	//
 	//make_entity_unit(Vec3{ 3, 0, -3}, "gronk", gronk_tex);

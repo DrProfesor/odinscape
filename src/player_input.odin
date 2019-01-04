@@ -20,8 +20,6 @@ player_input_manager: Player_Input_Manager;
 update_player_input :: proc() {
 	using player_input_manager;
 
-	if true do return;
-
 	assert(alive(player_entity));
 
 	if wb.get_input(key_config.camera_snap_to_unit) {

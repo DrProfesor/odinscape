@@ -150,6 +150,22 @@ using import "shared:workbench/pool"
 			line("return to_string(serialized);");
 		}
 
+		procedure_begin("init_entity", "bool", Parameter{"entity", "Entity"}); {
+			defer procedure_end();
+
+			for component_name in components {
+				line_indent("when #defined(init__", component_name, ") {"); {
+					defer line_outdent("}");
+					line(component_name, "_comp := get_component(entity, ",component_name, ");");
+					line_indent("if ", component_name,"_comp != nil {"); {
+						defer line_outdent("}");
+						line("init__",component_name, "(",  component_name,"_comp);");
+					}
+				}
+			}
+			line("return true;");
+		}
+
 		procedure_begin("deserialize_entity_comnponents", "Entity", Parameter{"entity_id", "int"}, Parameter{"serialized_entity", "[dynamic]string"}, Parameter{"component_types", "[dynamic]string"}); {
 			defer procedure_end();
 
@@ -253,7 +269,7 @@ using import "shared:workbench/pool"
 		}
 	}
 
-	os.write_entire_file("./src/odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
+	os.write_entire_file("./src/_odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
 	delete(generated_code);
 }
 
