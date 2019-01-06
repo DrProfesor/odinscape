@@ -2,8 +2,8 @@ package main
 
 using import    "core:math"
 using import    "core:fmt"
+using import    "core:strings"
       import    "core:os"
-      import    "core:strings"
       import    "shared:workbench/wbml"
       import wb "shared:workbench"
       import laas "shared:workbench/laas"
@@ -204,13 +204,13 @@ scene_end :: proc(using scene: Scene) {
 		}
 	}
 
-	serialized_manifest: String_Buffer;
+	serialized_manifest: Builder;
 	sbprint(&serialized_manifest, wbml.serialize(&scene.manifest));
 	os.write_entire_file(tprint(SCENE_DIRECTORY, scene.id, "/", scene.id, ".manifest"), cast([]u8) to_string(serialized_manifest));
 
 	for entity, _ in all_entities {
 		serialized_entity := serialize_entity_components(entity);
-		generated_code: String_Buffer;
+		generated_code: Builder;
 		sbprint(&generated_code, serialized_entity);
 		os.write_entire_file(tprint(SCENE_DIRECTORY, scene.id, "/entities/", entity, ".e"), cast([]u8) to_string(generated_code));
 	}

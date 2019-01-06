@@ -1,6 +1,7 @@
 package main
 
 using import "core:fmt"
+using import "core:strings"
 using import "shared:workbench/pool"
       import wb "shared:workbench"
       import imgui "shared:workbench/external/imgui"
@@ -14,6 +15,8 @@ Component_Type :: enum {
 	Mesh_Renderer,
 	Box_Collider,
 	Unit_Component,
+	Health_Component,
+	Attack_Default_Command,
 }
 
 all__Transform: Pool(Transform, 64);
@@ -23,6 +26,8 @@ all__Terrain_Component: Pool(Terrain_Component, 64);
 all__Mesh_Renderer: Pool(Mesh_Renderer, 64);
 all__Box_Collider: Pool(Box_Collider, 64);
 all__Unit_Component: Pool(Unit_Component, 64);
+all__Health_Component: Pool(Health_Component, 64);
+all__Attack_Default_Command: Pool(Attack_Default_Command, 64);
 
 add_component :: proc{add_component_type, add_component_value};
 
@@ -89,6 +94,24 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Unit_Component);
 		when #defined(init__Unit_Component) {
 			init__Unit_Component(t);
+		}
+		return t;
+	}
+	when Type == Health_Component {
+		t := pool_get(&all__Health_Component);
+		t.entity = entity;
+		append(&entity_data.component_types, Component_Type.Health_Component);
+		when #defined(init__Health_Component) {
+			init__Health_Component(t);
+		}
+		return t;
+	}
+	when Type == Attack_Default_Command {
+		t := pool_get(&all__Attack_Default_Command);
+		t.entity = entity;
+		append(&entity_data.component_types, Component_Type.Attack_Default_Command);
+		when #defined(init__Attack_Default_Command) {
+			init__Attack_Default_Command(t);
 		}
 		return t;
 	}
@@ -160,6 +183,24 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Unit_Component);
 		when #defined(init__Unit_Component) {
 			init__Unit_Component(t);
+		}
+		return t;
+	}
+	when Type == Health_Component {
+		t := pool_get(&all__Health_Component);
+		t^ = component;
+		append(&entity_data.component_types, Component_Type.Health_Component);
+		when #defined(init__Health_Component) {
+			init__Health_Component(t);
+		}
+		return t;
+	}
+	when Type == Attack_Default_Command {
+		t := pool_get(&all__Attack_Default_Command);
+		t^ = component;
+		append(&entity_data.component_types, Component_Type.Attack_Default_Command);
+		when #defined(init__Attack_Default_Command) {
+			init__Attack_Default_Command(t);
 		}
 		return t;
 	}
@@ -238,6 +279,26 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
+	when Type == Health_Component {
+		for _, batch_idx in &all__Health_Component.batches {
+			batch := &all__Health_Component.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				if c.entity == entity do return c;
+			}
+		}
+		return nil;
+	}
+	when Type == Attack_Default_Command {
+		for _, batch_idx in &all__Attack_Default_Command.batches {
+			batch := &all__Attack_Default_Command.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				if c.entity == entity do return c;
+			}
+		}
+		return nil;
+	}
 	panic(tprint("No generated code for type ", type_info_of(Type), " in get_component(). Make sure you add your new component types to component_types.wbml"));
 	return nil;
 }
@@ -303,6 +364,24 @@ call_component_updates :: proc() {
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				update__Unit_Component(c);
+			}
+		}
+	}
+	when #defined(update__Health_Component) {
+		for _, batch_idx in &all__Health_Component.batches {
+			batch := &all__Health_Component.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				update__Health_Component(c);
+			}
+		}
+	}
+	when #defined(update__Attack_Default_Command) {
+		for _, batch_idx in &all__Attack_Default_Command.batches {
+			batch := &all__Attack_Default_Command.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				update__Attack_Default_Command(c);
 			}
 		}
 	}
@@ -372,10 +451,28 @@ call_component_renders :: proc() {
 			}
 		}
 	}
+	when #defined(render__Health_Component) {
+		for _, batch_idx in &all__Health_Component.batches {
+			batch := &all__Health_Component.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				render__Health_Component(c);
+			}
+		}
+	}
+	when #defined(render__Attack_Default_Command) {
+		for _, batch_idx in &all__Attack_Default_Command.batches {
+			batch := &all__Attack_Default_Command.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				render__Attack_Default_Command(c);
+			}
+		}
+	}
 }
 
 serialize_entity_components :: proc(entity: Entity) -> string {
-	serialized : String_Buffer;
+	serialized : Builder;
 	sbprint(&serialized, tprint("\"", all_entities[entity].name, "\"", "\n"));
 	Transform_comp := get_component(entity, Transform);
 	if Transform_comp != nil {
@@ -417,6 +514,18 @@ serialize_entity_components :: proc(entity: Entity) -> string {
 	if Unit_Component_comp != nil {
 		s := wbml.serialize(Unit_Component_comp);
 		sbprint(&serialized, "Unit_Component\n");
+		sbprint(&serialized, s);
+	}
+	Health_Component_comp := get_component(entity, Health_Component);
+	if Health_Component_comp != nil {
+		s := wbml.serialize(Health_Component_comp);
+		sbprint(&serialized, "Health_Component\n");
+		sbprint(&serialized, s);
+	}
+	Attack_Default_Command_comp := get_component(entity, Attack_Default_Command);
+	if Attack_Default_Command_comp != nil {
+		s := wbml.serialize(Attack_Default_Command_comp);
+		sbprint(&serialized, "Attack_Default_Command\n");
 		sbprint(&serialized, s);
 	}
 	return to_string(serialized);
@@ -465,6 +574,18 @@ init_entity :: proc(entity: Entity) -> bool {
 			init__Unit_Component(Unit_Component_comp);
 		}
 	}
+	when #defined(init__Health_Component) {
+		Health_Component_comp := get_component(entity, Health_Component);
+		if Health_Component_comp != nil {
+			init__Health_Component(Health_Component_comp);
+		}
+	}
+	when #defined(init__Attack_Default_Command) {
+		Attack_Default_Command_comp := get_component(entity, Attack_Default_Command);
+		if Attack_Default_Command_comp != nil {
+			init__Attack_Default_Command(Attack_Default_Command_comp);
+		}
+	}
 	return true;
 }
 
@@ -499,6 +620,14 @@ deserialize_entity_comnponents :: proc(entity_id: int, serialized_entity: [dynam
 			}
 			case "Unit_Component": {
 				component := wbml.deserialize(Unit_Component, component_data);
+				add_component(entity, component);
+			}
+			case "Health_Component": {
+				component := wbml.deserialize(Health_Component, component_data);
+				add_component(entity, component);
+			}
+			case "Attack_Default_Command": {
+				component := wbml.deserialize(Attack_Default_Command, component_data);
 				add_component(entity, component);
 			}
 		}
@@ -623,6 +752,38 @@ destroy_marked_entities :: proc() {
 					}
 				}
 			}
+			case Component_Type.Health_Component: {
+				pool_loop__Health_Component:
+				for _, batch_idx in &all__Health_Component.batches {
+					batch := &all__Health_Component.batches[batch_idx];
+					for _, idx in batch.list do if batch.empties[idx] {
+						comp := &batch.list[idx];
+						if comp.entity == entity_id {
+							when #defined(destroy__Health_Component) {
+								destroy__Health_Component(comp);
+							}
+							pool_return(&all__Health_Component, comp);
+							break pool_loop__Health_Component;
+						}
+					}
+				}
+			}
+			case Component_Type.Attack_Default_Command: {
+				pool_loop__Attack_Default_Command:
+				for _, batch_idx in &all__Attack_Default_Command.batches {
+					batch := &all__Attack_Default_Command.batches[batch_idx];
+					for _, idx in batch.list do if batch.empties[idx] {
+						comp := &batch.list[idx];
+						if comp.entity == entity_id {
+							when #defined(destroy__Attack_Default_Command) {
+								destroy__Attack_Default_Command(comp);
+							}
+							pool_return(&all__Attack_Default_Command, comp);
+							break pool_loop__Attack_Default_Command;
+						}
+					}
+				}
+			}
 			}
 		}
 		clear(&entity.component_types);
@@ -732,6 +893,34 @@ update_inspector_window :: proc() {
 									if comp.entity == entity {
 										wb.imgui_struct(comp, tprint("Unit_Component"));
 										break pool_loop__Unit_Component;
+									}
+								}
+							}
+							break;
+						}
+						case Component_Type.Health_Component: {
+							pool_loop__Health_Component:
+							for _, batch_idx in &all__Health_Component.batches {
+								batch := &all__Health_Component.batches[batch_idx];
+								for _, idx in batch.list do if batch.empties[idx] {
+									comp := &batch.list[idx];
+									if comp.entity == entity {
+										wb.imgui_struct(comp, tprint("Health_Component"));
+										break pool_loop__Health_Component;
+									}
+								}
+							}
+							break;
+						}
+						case Component_Type.Attack_Default_Command: {
+							pool_loop__Attack_Default_Command:
+							for _, batch_idx in &all__Attack_Default_Command.batches {
+								batch := &all__Attack_Default_Command.batches[batch_idx];
+								for _, idx in batch.list do if batch.empties[idx] {
+									comp := &batch.list[idx];
+									if comp.entity == entity {
+										wb.imgui_struct(comp, tprint("Attack_Default_Command"));
+										break pool_loop__Attack_Default_Command;
 									}
 								}
 							}

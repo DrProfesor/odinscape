@@ -6,10 +6,11 @@ when wb.DEVELOPER {
 
 import "core:os"
 using import "core:fmt"
+using import "core:strings"
 
 import "shared:workbench/wbml"
 
-generated_code: String_Buffer;
+generated_code: Builder;
 indent_level: int = 0;
 
 run_code_generator :: proc() {
@@ -17,6 +18,7 @@ run_code_generator :: proc() {
 `package main
 
 using import "core:fmt"
+using import "core:strings"
 using import "shared:workbench/pool"
       import wb "shared:workbench"
       import imgui "shared:workbench/external/imgui"
@@ -118,7 +120,7 @@ using import "shared:workbench/pool"
 		procedure_begin("serialize_entity_components", "string", Parameter{"entity", "Entity"}); {
 			defer procedure_end();
 
-			line("serialized : String_Buffer;");
+			line("serialized : Builder;");
 			line("sbprint(&serialized, tprint(\"\\\"\", all_entities[entity].name, \"\\\"\", \"\\n\"));");
 
 			for component_name in components {
@@ -260,7 +262,7 @@ using import "shared:workbench/pool"
 	}
 
 	os.write_entire_file("./src/_odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
-	delete(generated_code);
+	//delete(generated_code);
 }
 
 

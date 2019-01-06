@@ -271,7 +271,7 @@ add_timed_blocker :: proc(unit: ^Unit_Component, duration: f32) {
 }
 
 
-
+// @Component
 Health_Component :: struct {
 	using base: Component_Base,
 
@@ -297,6 +297,7 @@ take_damage :: inline proc(using comp: ^Health_Component, damage: int) {
 	logln("dealt ", damage, " damage. health left: ", health);
 }
 
+// @Component
 Attack_Default_Command :: struct {
 	using base: Component_Base,
 }
