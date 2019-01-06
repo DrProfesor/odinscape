@@ -10,12 +10,20 @@ import "shared:workbench/wbml"
 
 // (jake): This function will run through the entire code base.
 // If you ever need to do something like that probably do it here
-// Current tasks: 
+// Current tasks:
 //   - handling tags in the codebase
 run_preprocessor :: proc() {
 	all_source_files := wb.get_all_entries_strings_in_directory(ODINSCAPE_DIRECTORY, true);
 	for source_file in all_source_files {
-		if wb.is_directory(source_file) do continue;
+		{
+			//
+			if wb.is_directory(source_file) do continue;
+
+			//
+			ext, ok := wb.get_file_extension(source_file);
+			if !ok do continue;
+			if ext != ".odin" do continue;
+		}
 
 		source_code, ok := os.read_entire_file(source_file);
 		assert(ok);
@@ -34,7 +42,7 @@ run_preprocessor :: proc() {
 
 			switch value_kind in token.kind {
 				case Symbol: {
-					
+
 					switch value_kind.value {
 						case '/': {
 							is_comment += 1;
@@ -62,7 +70,7 @@ run_preprocessor :: proc() {
 						entity: string;
 
 						// (jake): we need to build up some data about what we are tagging
-						// just keep using the lexer to get the name and type of 
+						// just keep using the lexer to get the name and type of
 						// thing we are tagging
 						loop: for get_next_token(&lexer, &token) {
 							switch token_kind in token.kind {
