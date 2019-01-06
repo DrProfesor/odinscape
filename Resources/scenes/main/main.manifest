@@ -1,0 +1,25 @@
+{
+	entries [
+		{
+			id "gronk"
+			path "Models/gronk.obj"
+			asset_type Model
+		}
+
+		{
+			id "cube"
+			path "Models/cube.fbx"
+			asset_type Model
+		}
+
+		{
+			id "gronk_texture"
+			path "Textures/OrcGreen.png"
+			asset_type Texture
+		}
+
+	]
+	entity_list [
+	]
+}
+

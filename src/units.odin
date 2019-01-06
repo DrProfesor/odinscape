@@ -8,6 +8,7 @@ using import    "core:math"
 	  import ai "shared:workbench/external/assimp"
 	  import coll "shared:workbench/collision"
 
+// @Component
 Unit_Component :: struct {
 	using base: Component_Base,
 
@@ -20,11 +21,13 @@ Unit_Component :: struct {
 
 	cur_attack_cooldown: f32,
 
-	// note(josh): pointer should always be to a unique field in `key_config`
-	abilities: map[^Game_Input]string, // has to be a pointer to a Game_Input because of an odin bug with enum keys for maps
+	using _unserialized : struct {
+		// note(josh): pointer should always be to a unique field in `key_config`
+		abilities: map[^Game_Input]string, // has to be a pointer to a Game_Input because of an odin bug with enum keys for maps
 
-	command_blockers: [dynamic]Command_Blocker,
-	queued_commands:  [dynamic]Unit_Command,
+		command_blockers: [dynamic]Command_Blocker,
+		queued_commands:  [dynamic]Unit_Command,
+	}
 }
 
 ATTACK_RECOVERY_TIME :: 0;
@@ -268,7 +271,7 @@ add_timed_blocker :: proc(unit: ^Unit_Component, duration: f32) {
 }
 
 
-
+// @Component
 Health_Component :: struct {
 	using base: Component_Base,
 
@@ -294,6 +297,7 @@ take_damage :: inline proc(using comp: ^Health_Component, damage: int) {
 	logln("dealt ", damage, " damage. health left: ", health);
 }
 
+// @Component
 Attack_Default_Command :: struct {
 	using base: Component_Base,
 }

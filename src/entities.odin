@@ -8,14 +8,16 @@ using import "core:math"
 	  import imgui "shared:workbench/external/imgui"
 	  import coll  "shared:workbench/collision"
 
-Entity :: distinct int;
+Entity :: int;
 
 all_entities             : map[Entity]_Entity_Data;
 entities_to_destroy      : [dynamic]Entity;
 available_component_lists: [dynamic][dynamic]Component_Type;
 
-new_entity :: proc(name: string = "") -> Entity {
-	static last_entity_id: Entity;
+// fuck your static :D
+last_entity_id: Entity;
+
+new_entity :: proc(name: string = "nil") -> Entity {
 
 	last_entity_id += 1;
 	e: _Entity_Data;
@@ -27,6 +29,22 @@ new_entity :: proc(name: string = "") -> Entity {
 	all_entities[last_entity_id] = e;
 	return last_entity_id;
 }
+
+new_entity_dangerous :: proc(_id: int, name: string = "nil") -> Entity {
+	id := Entity(_id);
+	if id > last_entity_id {
+		last_entity_id = id;
+	}
+	e: _Entity_Data;
+	e.name = name;
+	if len(available_component_lists) > 0 {
+		e.component_types = pop(&available_component_lists);
+		assert(len(e.component_types) == 0, "list wasn't cleared before returning to available_component_lists");
+	}
+	all_entities[id] = e;
+	return id;
+}
+
 destroy_entity :: proc(entity_id: Entity) {
 	append(&entities_to_destroy, entity_id);
 }
@@ -50,13 +68,13 @@ get_all_component_types :: proc(entity: Entity) -> []Component_Type {
 
 
 Component_Base :: struct {
-	entity: Entity,
+	entity: int,
 }
 
 //
 // Transform
 //
-
+// @Component
 Transform :: struct {
 	using base: Component_Base,
 
@@ -106,7 +124,7 @@ render__Transform :: inline proc(using tf: ^Transform) {
 //
 // Sprite_Renderer
 //
-
+// @Component
 Sprite_Renderer :: struct {
 	using base: Component_Base,
 
@@ -121,7 +139,7 @@ render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 //
 // Spinner component
 //
-
+// @Component
 Spinner_Component :: struct {
 	using base: Component_Base,
 
@@ -144,7 +162,7 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 //
 // Terrain
 //
-
+// @Component
 Terrain_Component :: struct {
 	using base: Component_Base,
 }
@@ -152,10 +170,11 @@ Terrain_Component :: struct {
 //
 // Mesh Renderer
 //
+// @Component
 Mesh_Renderer :: struct {
 	using base: Component_Base,
 
-	model                 : ^Model_Asset,
+	model          : string,
 	offset_from_transform : Vec3,
 	color                 : wb.Colorf,
 	texture_handle        : wb.Texture,
@@ -166,7 +185,10 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	tf := get_component(entity, Transform);
 	assert(tf != nil);
 
-	for mesh_id in model.asset.meshes {
+	model_asset := get_model(model);
+	assert(model_asset != nil);
+
+	for mesh_id in model_asset.asset.meshes {
 		wb.push_mesh(
 			mesh_id,
 			tf.position + offset_from_transform,
@@ -182,7 +204,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 //
 // Box Collider
 //
-
+// @Component
 Box_Collider :: struct {
 	using base: Component_Base,
 

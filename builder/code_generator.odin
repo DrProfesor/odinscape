@@ -6,10 +6,11 @@ when wb.DEVELOPER {
 
 import "core:os"
 using import "core:fmt"
+using import "core:strings"
 
 import "shared:workbench/wbml"
 
-generated_code: String_Buffer;
+generated_code: Builder;
 indent_level: int = 0;
 
 run_code_generator :: proc() {
@@ -17,19 +18,16 @@ run_code_generator :: proc() {
 `package main
 
 using import "core:fmt"
+using import "core:strings"
 using import "shared:workbench/pool"
       import wb "shared:workbench"
       import imgui "shared:workbench/external/imgui"
+      import "shared:workbench/wbml"
 
 `);
 
 	// Components
 	{
-		component_types_data, ok := os.read_entire_file(ODINSCAPE_DIRECTORY + "component_types.wbml");
-		assert(ok, tprint("Couldn't find ", ODINSCAPE_DIRECTORY + "component_types.wbml"));
-		defer delete(component_types_data);
-		components := wbml.deserialize([]string, cast(string)component_types_data);
-
 		enum_begin("Component_Type"); {
 			defer enum_end();
 			for component_name in components {
@@ -41,11 +39,7 @@ using import "shared:workbench/pool"
 			line("all__", component_name, ": Pool(", component_name, ", 64);");
 		}
 
-
-
-		line("");
-		line("add_component :: proc{add_component_type, add_component_value};");
-		line("");
+		line("\nadd_component :: proc{add_component_type, add_component_value};\n");
 
 		procedure_begin("add_component_type", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
@@ -92,9 +86,6 @@ using import "shared:workbench/pool"
 			line("return nil;");
 		}
 
-
-
-
 		procedure_begin("get_component", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
 			for component_name in components {
@@ -124,6 +115,68 @@ using import "shared:workbench/pool"
 			for component_name in components {
 				emit_component_proc_call(tprint("render__", component_name), component_name);
 			}
+		}
+
+		procedure_begin("serialize_entity_components", "string", Parameter{"entity", "Entity"}); {
+			defer procedure_end();
+
+			line("serialized : Builder;");
+			line("sbprint(&serialized, tprint(\"\\\"\", all_entities[entity].name, \"\\\"\", \"\\n\"));");
+
+			for component_name in components {
+				line(component_name, "_comp := get_component(entity, ",component_name, ");");
+				line_indent("if ", component_name,"_comp != nil {"); {
+					defer line_outdent("}");
+					line("s := wbml.serialize(",component_name, "_comp);");
+					line("sbprint(&serialized, \"",component_name, `\n`,"\");");
+					line("sbprint(&serialized, s);");
+				}
+			}
+
+			line("return to_string(serialized);");
+		}
+
+		procedure_begin("init_entity", "bool", Parameter{"entity", "Entity"}); {
+			defer procedure_end();
+
+			for component_name in components {
+				line_indent("when #defined(init__", component_name, ") {"); {
+					defer line_outdent("}");
+					line(component_name, "_comp := get_component(entity, ",component_name, ");");
+					line_indent("if ", component_name,"_comp != nil {"); {
+						defer line_outdent("}");
+						line("init__",component_name, "(",  component_name,"_comp);");
+					}
+				}
+			}
+			line("return true;");
+		}
+
+		procedure_begin("deserialize_entity_comnponents", "Entity", 
+			Parameter{"entity_id", "int"}, 
+			Parameter{"serialized_entity", "[dynamic]string"}, 
+			Parameter{"component_types", "[dynamic]string"},
+			Parameter{"entity_name", "string"}); 
+		{
+			defer procedure_end();
+
+			line("entity := new_entity_dangerous(entity_id, entity_name);");
+
+			line_indent("for component_data, i in serialized_entity {");{
+				defer line_outdent("}");
+				line("component_type := component_types[i];");
+				line_indent("switch component_type {"); {
+					defer line_outdent("}");
+					for component_name in components {
+						line_indent("case \"", component_name, "\": {"); {
+							defer line_outdent("}");
+							line("component := wbml.deserialize(", component_name, ", component_data);");
+							line("add_component(entity, component);");
+						}
+					}
+				}
+			}
+			line("return entity;");
 		}
 
 		procedure_begin("destroy_marked_entities"); {
@@ -162,7 +215,7 @@ using import "shared:workbench/pool"
 			line("clear(&entities_to_destroy);");
 		}
 
-		procedure_begin("update_inspector_window");{
+		procedure_begin("update_inspector_window"); {
 			defer procedure_end();
 
 			line_indent("if imgui.begin(\"Scene\") {"); {
@@ -205,10 +258,11 @@ using import "shared:workbench/pool"
 			}
 			line("imgui.end();");
 		}
+
 	}
 
-	os.write_entire_file("./src/odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
-	delete(generated_code);
+	os.write_entire_file("./src/_odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
+	//delete(generated_code);
 }
 
 
