@@ -279,6 +279,20 @@ destroy__Box_Collider :: inline proc(using box: ^Box_Collider) {
 	coll.remove_collider(&main_collision_scene, entity);
 }
 
+
+
+// @Component
+Player_Component :: struct {
+	using base: Component_Base,
+}
+
+init__Player_Component :: inline proc(using player: ^Player_Component) {
+	assert(player_input_manager.player_entity == 0);
+	player_input_manager.player_entity = entity;
+}
+
+
+
 //
 // Entities Internal
 //

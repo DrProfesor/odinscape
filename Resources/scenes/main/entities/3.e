@@ -6,9 +6,9 @@ Transform
 	}
 
 	position [
-		-1.546
+		-2.671
 		0.000
-		-1.925
+		-2.857
 	]
 
 	scale [
@@ -75,6 +75,14 @@ Box_Collider
 		1.000
 		1.000
 	]
+
+}
+
+Player_Component
+{
+	base {
+		entity 3
+	}
 
 }
 

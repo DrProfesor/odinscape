@@ -14,6 +14,7 @@ Component_Type :: enum {
 	Terrain_Component,
 	Mesh_Renderer,
 	Box_Collider,
+	Player_Component,
 	Unit_Component,
 	Health_Component,
 	Attack_Default_Command,
@@ -25,6 +26,7 @@ all__Spinner_Component: Pool(Spinner_Component, 64);
 all__Terrain_Component: Pool(Terrain_Component, 64);
 all__Mesh_Renderer: Pool(Mesh_Renderer, 64);
 all__Box_Collider: Pool(Box_Collider, 64);
+all__Player_Component: Pool(Player_Component, 64);
 all__Unit_Component: Pool(Unit_Component, 64);
 all__Health_Component: Pool(Health_Component, 64);
 all__Attack_Default_Command: Pool(Attack_Default_Command, 64);
@@ -85,6 +87,15 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		append(&entity_data.component_types, Component_Type.Box_Collider);
 		when #defined(init__Box_Collider) {
 			init__Box_Collider(t);
+		}
+		return t;
+	}
+	when Type == Player_Component {
+		t := pool_get(&all__Player_Component);
+		t.entity = entity;
+		append(&entity_data.component_types, Component_Type.Player_Component);
+		when #defined(init__Player_Component) {
+			init__Player_Component(t);
 		}
 		return t;
 	}
@@ -177,6 +188,15 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
+	when Type == Player_Component {
+		t := pool_get(&all__Player_Component);
+		t^ = component;
+		append(&entity_data.component_types, Component_Type.Player_Component);
+		when #defined(init__Player_Component) {
+			init__Player_Component(t);
+		}
+		return t;
+	}
 	when Type == Unit_Component {
 		t := pool_get(&all__Unit_Component);
 		t^ = component;
@@ -262,6 +282,16 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 	when Type == Box_Collider {
 		for _, batch_idx in &all__Box_Collider.batches {
 			batch := &all__Box_Collider.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				if c.entity == entity do return c;
+			}
+		}
+		return nil;
+	}
+	when Type == Player_Component {
+		for _, batch_idx in &all__Player_Component.batches {
+			batch := &all__Player_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				if c.entity == entity do return c;
@@ -358,6 +388,15 @@ call_component_updates :: proc() {
 			}
 		}
 	}
+	when #defined(update__Player_Component) {
+		for _, batch_idx in &all__Player_Component.batches {
+			batch := &all__Player_Component.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				update__Player_Component(c);
+			}
+		}
+	}
 	when #defined(update__Unit_Component) {
 		for _, batch_idx in &all__Unit_Component.batches {
 			batch := &all__Unit_Component.batches[batch_idx];
@@ -442,6 +481,15 @@ call_component_renders :: proc() {
 			}
 		}
 	}
+	when #defined(render__Player_Component) {
+		for _, batch_idx in &all__Player_Component.batches {
+			batch := &all__Player_Component.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				render__Player_Component(c);
+			}
+		}
+	}
 	when #defined(render__Unit_Component) {
 		for _, batch_idx in &all__Unit_Component.batches {
 			batch := &all__Unit_Component.batches[batch_idx];
@@ -510,6 +558,12 @@ serialize_entity_components :: proc(entity: Entity) -> string {
 		sbprint(&serialized, "Box_Collider\n");
 		sbprint(&serialized, s);
 	}
+	Player_Component_comp := get_component(entity, Player_Component);
+	if Player_Component_comp != nil {
+		s := wbml.serialize(Player_Component_comp);
+		sbprint(&serialized, "Player_Component\n");
+		sbprint(&serialized, s);
+	}
 	Unit_Component_comp := get_component(entity, Unit_Component);
 	if Unit_Component_comp != nil {
 		s := wbml.serialize(Unit_Component_comp);
@@ -568,6 +622,12 @@ init_entity :: proc(entity: Entity) -> bool {
 			init__Box_Collider(Box_Collider_comp);
 		}
 	}
+	when #defined(init__Player_Component) {
+		Player_Component_comp := get_component(entity, Player_Component);
+		if Player_Component_comp != nil {
+			init__Player_Component(Player_Component_comp);
+		}
+	}
 	when #defined(init__Unit_Component) {
 		Unit_Component_comp := get_component(entity, Unit_Component);
 		if Unit_Component_comp != nil {
@@ -616,6 +676,10 @@ deserialize_entity_comnponents :: proc(entity_id: int, serialized_entity: [dynam
 			}
 			case "Box_Collider": {
 				component := wbml.deserialize(Box_Collider, component_data);
+				add_component(entity, component);
+			}
+			case "Player_Component": {
+				component := wbml.deserialize(Player_Component, component_data);
 				add_component(entity, component);
 			}
 			case "Unit_Component": {
@@ -732,6 +796,22 @@ destroy_marked_entities :: proc() {
 							}
 							pool_return(&all__Box_Collider, comp);
 							break pool_loop__Box_Collider;
+						}
+					}
+				}
+			}
+			case Component_Type.Player_Component: {
+				pool_loop__Player_Component:
+				for _, batch_idx in &all__Player_Component.batches {
+					batch := &all__Player_Component.batches[batch_idx];
+					for _, idx in batch.list do if batch.empties[idx] {
+						comp := &batch.list[idx];
+						if comp.entity == entity_id {
+							when #defined(destroy__Player_Component) {
+								destroy__Player_Component(comp);
+							}
+							pool_return(&all__Player_Component, comp);
+							break pool_loop__Player_Component;
 						}
 					}
 				}
@@ -879,6 +959,20 @@ update_inspector_window :: proc() {
 									if comp.entity == entity {
 										wb.imgui_struct(comp, tprint("Box_Collider"));
 										break pool_loop__Box_Collider;
+									}
+								}
+							}
+							break;
+						}
+						case Component_Type.Player_Component: {
+							pool_loop__Player_Component:
+							for _, batch_idx in &all__Player_Component.batches {
+								batch := &all__Player_Component.batches[batch_idx];
+								for _, idx in batch.list do if batch.empties[idx] {
+									comp := &batch.list[idx];
+									if comp.entity == entity {
+										wb.imgui_struct(comp, tprint("Player_Component"));
+										break pool_loop__Player_Component;
 									}
 								}
 							}
