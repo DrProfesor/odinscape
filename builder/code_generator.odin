@@ -26,11 +26,6 @@ using import "shared:workbench/pool"
 
 	// Components
 	{
-		component_types_data, ok := os.read_entire_file(ODINSCAPE_DIRECTORY + "component_types.wbml");
-		assert(ok, tprint("Couldn't find ", ODINSCAPE_DIRECTORY + "component_types.wbml"));
-		defer delete(component_types_data);
-		components := wbml.deserialize([]string, cast(string)component_types_data);
-
 		enum_begin("Component_Type"); {
 			defer enum_end();
 			for component_name in components {
@@ -42,11 +37,7 @@ using import "shared:workbench/pool"
 			line("all__", component_name, ": Pool(", component_name, ", 64);");
 		}
 
-
-
-		line("");
-		line("add_component :: proc{add_component_type, add_component_value};");
-		line("");
+		line("\nadd_component :: proc{add_component_type, add_component_value};\n");
 
 		procedure_begin("add_component_type", "^Type", Parameter{"entity", "Entity"}, Parameter{"$Type", "typeid"}); {
 			defer procedure_end();
@@ -124,18 +115,11 @@ using import "shared:workbench/pool"
 			}
 		}
 
-		for component_name in components {
-			struct_begin(tprint("Serializable_", component_name,"_Component")); {
-				defer struct_end();
-				struct_field(tprint("value: ", component_name));
-				struct_field(tprint("name: string"));
-			}
-		}
-
 		procedure_begin("serialize_entity_components", "string", Parameter{"entity", "Entity"}); {
 			defer procedure_end();
 
 			line("serialized : String_Buffer;");
+			line("sbprint(&serialized, tprint(\"\\\"\", all_entities[entity].name, \"\\\"\", \"\\n\"));");
 
 			for component_name in components {
 				line(component_name, "_comp := get_component(entity, ",component_name, ");");
@@ -166,10 +150,15 @@ using import "shared:workbench/pool"
 			line("return true;");
 		}
 
-		procedure_begin("deserialize_entity_comnponents", "Entity", Parameter{"entity_id", "int"}, Parameter{"serialized_entity", "[dynamic]string"}, Parameter{"component_types", "[dynamic]string"}); {
+		procedure_begin("deserialize_entity_comnponents", "Entity", 
+			Parameter{"entity_id", "int"}, 
+			Parameter{"serialized_entity", "[dynamic]string"}, 
+			Parameter{"component_types", "[dynamic]string"},
+			Parameter{"entity_name", "string"}); 
+		{
 			defer procedure_end();
 
-			line("entity := new_entity_dangerous(entity_id);");
+			line("entity := new_entity_dangerous(entity_id, entity_name);");
 
 			line_indent("for component_data, i in serialized_entity {");{
 				defer line_outdent("}");
@@ -224,7 +213,7 @@ using import "shared:workbench/pool"
 			line("clear(&entities_to_destroy);");
 		}
 
-		procedure_begin("update_inspector_window");{
+		procedure_begin("update_inspector_window"); {
 			defer procedure_end();
 
 			line_indent("if imgui.begin(\"Scene\") {"); {
@@ -267,6 +256,7 @@ using import "shared:workbench/pool"
 			}
 			line("imgui.end();");
 		}
+
 	}
 
 	os.write_entire_file("./src/_odinscape_generated_code.odin", cast([]u8)to_string(generated_code));

@@ -1,61 +1,4 @@
-Mesh_Renderer
-{
-	base {
-		entity 5
-	}
-
-	model "gronk"
-	offset_from_transform [
-		0.000
-		0.000
-		0.000
-	]
-
-	color {
-		r 1.000
-		g 1.000
-		b 1.000
-		a 1.000
-	}
-
-	texture_handle 3
-
-	shader_handle 6
-
-}
-
-Unit_Component
-{
-	base {
-		entity 5
-	}
-
-	move_speed 5.000
-	attack_damage 1
-	attack_range 2.000
-	attack_cooldown 0.500
-	attack_recovery 0.000
-	cur_attack_cooldown 0.000
-	}
-
-Health_Component
-{
-	base {
-		entity 5
-	}
-
-	health 10
-	invincible false
-}
-
-Attack_Default_Command
-{
-	base {
-		entity 5
-	}
-
-}
-
+"nil"
 Transform
 {
 	base {
@@ -89,6 +32,32 @@ Transform
 
 }
 
+Mesh_Renderer
+{
+	base {
+		entity 5
+	}
+
+	model "gronk"
+	offset_from_transform [
+		0.000
+		0.000
+		0.000
+	]
+
+	color {
+		r 1.000
+		g 1.000
+		b 1.000
+		a 1.000
+	}
+
+	texture_handle 3
+
+	shader_handle 6
+
+}
+
 Box_Collider
 {
 	base {
@@ -108,4 +77,18 @@ Box_Collider
 	]
 
 }
+
+Unit_Component
+{
+	base {
+		entity 5
+	}
+
+	move_speed 5.000
+	attack_damage 1
+	attack_range 2.000
+	attack_cooldown 0.500
+	attack_recovery 0.000
+	cur_attack_cooldown 0.000
+	}
 

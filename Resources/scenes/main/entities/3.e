@@ -1,3 +1,37 @@
+"nil"
+Transform
+{
+	base {
+		entity 3
+	}
+
+	position [
+		-2.268
+		0.000
+		-0.211
+	]
+
+	scale [
+		1.000
+		1.000
+		1.000
+	]
+
+	rotation [
+		0.000
+		0.000
+		0.000
+	]
+
+	stuck_on_ground true
+	offset_from_ground [
+		0.000
+		0.000
+		0.000
+	]
+
+}
+
 Mesh_Renderer
 {
 	base {
@@ -24,71 +58,6 @@ Mesh_Renderer
 
 }
 
-Unit_Component
-{
-	base {
-		entity 3
-	}
-
-	move_speed 5.000
-	attack_damage 1
-	attack_range 2.000
-	attack_cooldown 0.500
-	attack_recovery 0.000
-	cur_attack_cooldown 0.000
-	}
-
-Health_Component
-{
-	base {
-		entity 3
-	}
-
-	health 10
-	invincible false
-}
-
-Attack_Default_Command
-{
-	base {
-		entity 3
-	}
-
-}
-
-Transform
-{
-	base {
-		entity 3
-	}
-
-	position [
-		-2.862
-		0.000
-		-0.162
-	]
-
-	scale [
-		1.000
-		1.000
-		1.000
-	]
-
-	rotation [
-		0.000
-		0.000
-		0.000
-	]
-
-	stuck_on_ground true
-	offset_from_ground [
-		0.000
-		0.000
-		0.000
-	]
-
-}
-
 Box_Collider
 {
 	base {
@@ -108,4 +77,18 @@ Box_Collider
 	]
 
 }
+
+Unit_Component
+{
+	base {
+		entity 3
+	}
+
+	move_speed 5.000
+	attack_damage 1
+	attack_range 2.000
+	attack_cooldown 0.500
+	attack_recovery 0.000
+	cur_attack_cooldown 0.000
+	}
 

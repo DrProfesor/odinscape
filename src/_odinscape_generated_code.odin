@@ -7,56 +7,43 @@ using import "shared:workbench/pool"
       import "shared:workbench/wbml"
 
 Component_Type :: enum {
-	Sprite_Renderer,
-	Mesh_Renderer,
-	Unit_Component,
-	Spinner_Component,
-	Health_Component,
-	Attack_Default_Command,
 	Transform,
-	Box_Collider,
+	Sprite_Renderer,
+	Spinner_Component,
 	Terrain_Component,
+	Mesh_Renderer,
+	Box_Collider,
+	Unit_Component,
 }
 
-all__Sprite_Renderer: Pool(Sprite_Renderer, 64);
-all__Mesh_Renderer: Pool(Mesh_Renderer, 64);
-all__Unit_Component: Pool(Unit_Component, 64);
-all__Spinner_Component: Pool(Spinner_Component, 64);
-all__Health_Component: Pool(Health_Component, 64);
-all__Attack_Default_Command: Pool(Attack_Default_Command, 64);
 all__Transform: Pool(Transform, 64);
-all__Box_Collider: Pool(Box_Collider, 64);
+all__Sprite_Renderer: Pool(Sprite_Renderer, 64);
+all__Spinner_Component: Pool(Spinner_Component, 64);
 all__Terrain_Component: Pool(Terrain_Component, 64);
+all__Mesh_Renderer: Pool(Mesh_Renderer, 64);
+all__Box_Collider: Pool(Box_Collider, 64);
+all__Unit_Component: Pool(Unit_Component, 64);
 
 add_component :: proc{add_component_type, add_component_value};
 
 add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 	entity_data, ok := all_entities[entity]; assert(ok);
 	defer all_entities[entity] = entity_data;
+	when Type == Transform {
+		t := pool_get(&all__Transform);
+		t.entity = entity;
+		append(&entity_data.component_types, Component_Type.Transform);
+		when #defined(init__Transform) {
+			init__Transform(t);
+		}
+		return t;
+	}
 	when Type == Sprite_Renderer {
 		t := pool_get(&all__Sprite_Renderer);
 		t.entity = entity;
 		append(&entity_data.component_types, Component_Type.Sprite_Renderer);
 		when #defined(init__Sprite_Renderer) {
 			init__Sprite_Renderer(t);
-		}
-		return t;
-	}
-	when Type == Mesh_Renderer {
-		t := pool_get(&all__Mesh_Renderer);
-		t.entity = entity;
-		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
-		when #defined(init__Mesh_Renderer) {
-			init__Mesh_Renderer(t);
-		}
-		return t;
-	}
-	when Type == Unit_Component {
-		t := pool_get(&all__Unit_Component);
-		t.entity = entity;
-		append(&entity_data.component_types, Component_Type.Unit_Component);
-		when #defined(init__Unit_Component) {
-			init__Unit_Component(t);
 		}
 		return t;
 	}
@@ -69,30 +56,21 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return t;
 	}
-	when Type == Health_Component {
-		t := pool_get(&all__Health_Component);
+	when Type == Terrain_Component {
+		t := pool_get(&all__Terrain_Component);
 		t.entity = entity;
-		append(&entity_data.component_types, Component_Type.Health_Component);
-		when #defined(init__Health_Component) {
-			init__Health_Component(t);
+		append(&entity_data.component_types, Component_Type.Terrain_Component);
+		when #defined(init__Terrain_Component) {
+			init__Terrain_Component(t);
 		}
 		return t;
 	}
-	when Type == Attack_Default_Command {
-		t := pool_get(&all__Attack_Default_Command);
+	when Type == Mesh_Renderer {
+		t := pool_get(&all__Mesh_Renderer);
 		t.entity = entity;
-		append(&entity_data.component_types, Component_Type.Attack_Default_Command);
-		when #defined(init__Attack_Default_Command) {
-			init__Attack_Default_Command(t);
-		}
-		return t;
-	}
-	when Type == Transform {
-		t := pool_get(&all__Transform);
-		t.entity = entity;
-		append(&entity_data.component_types, Component_Type.Transform);
-		when #defined(init__Transform) {
-			init__Transform(t);
+		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
+		when #defined(init__Mesh_Renderer) {
+			init__Mesh_Renderer(t);
 		}
 		return t;
 	}
@@ -105,12 +83,12 @@ add_component_type :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return t;
 	}
-	when Type == Terrain_Component {
-		t := pool_get(&all__Terrain_Component);
+	when Type == Unit_Component {
+		t := pool_get(&all__Unit_Component);
 		t.entity = entity;
-		append(&entity_data.component_types, Component_Type.Terrain_Component);
-		when #defined(init__Terrain_Component) {
-			init__Terrain_Component(t);
+		append(&entity_data.component_types, Component_Type.Unit_Component);
+		when #defined(init__Unit_Component) {
+			init__Unit_Component(t);
 		}
 		return t;
 	}
@@ -122,30 +100,21 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 	entity_data, ok := all_entities[entity]; assert(ok);
 	defer all_entities[entity] = entity_data;
 	component.entity = entity;
+	when Type == Transform {
+		t := pool_get(&all__Transform);
+		t^ = component;
+		append(&entity_data.component_types, Component_Type.Transform);
+		when #defined(init__Transform) {
+			init__Transform(t);
+		}
+		return t;
+	}
 	when Type == Sprite_Renderer {
 		t := pool_get(&all__Sprite_Renderer);
 		t^ = component;
 		append(&entity_data.component_types, Component_Type.Sprite_Renderer);
 		when #defined(init__Sprite_Renderer) {
 			init__Sprite_Renderer(t);
-		}
-		return t;
-	}
-	when Type == Mesh_Renderer {
-		t := pool_get(&all__Mesh_Renderer);
-		t^ = component;
-		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
-		when #defined(init__Mesh_Renderer) {
-			init__Mesh_Renderer(t);
-		}
-		return t;
-	}
-	when Type == Unit_Component {
-		t := pool_get(&all__Unit_Component);
-		t^ = component;
-		append(&entity_data.component_types, Component_Type.Unit_Component);
-		when #defined(init__Unit_Component) {
-			init__Unit_Component(t);
 		}
 		return t;
 	}
@@ -158,30 +127,21 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
-	when Type == Health_Component {
-		t := pool_get(&all__Health_Component);
+	when Type == Terrain_Component {
+		t := pool_get(&all__Terrain_Component);
 		t^ = component;
-		append(&entity_data.component_types, Component_Type.Health_Component);
-		when #defined(init__Health_Component) {
-			init__Health_Component(t);
+		append(&entity_data.component_types, Component_Type.Terrain_Component);
+		when #defined(init__Terrain_Component) {
+			init__Terrain_Component(t);
 		}
 		return t;
 	}
-	when Type == Attack_Default_Command {
-		t := pool_get(&all__Attack_Default_Command);
+	when Type == Mesh_Renderer {
+		t := pool_get(&all__Mesh_Renderer);
 		t^ = component;
-		append(&entity_data.component_types, Component_Type.Attack_Default_Command);
-		when #defined(init__Attack_Default_Command) {
-			init__Attack_Default_Command(t);
-		}
-		return t;
-	}
-	when Type == Transform {
-		t := pool_get(&all__Transform);
-		t^ = component;
-		append(&entity_data.component_types, Component_Type.Transform);
-		when #defined(init__Transform) {
-			init__Transform(t);
+		append(&entity_data.component_types, Component_Type.Mesh_Renderer);
+		when #defined(init__Mesh_Renderer) {
+			init__Mesh_Renderer(t);
 		}
 		return t;
 	}
@@ -194,12 +154,12 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 		}
 		return t;
 	}
-	when Type == Terrain_Component {
-		t := pool_get(&all__Terrain_Component);
+	when Type == Unit_Component {
+		t := pool_get(&all__Unit_Component);
 		t^ = component;
-		append(&entity_data.component_types, Component_Type.Terrain_Component);
-		when #defined(init__Terrain_Component) {
-			init__Terrain_Component(t);
+		append(&entity_data.component_types, Component_Type.Unit_Component);
+		when #defined(init__Unit_Component) {
+			init__Unit_Component(t);
 		}
 		return t;
 	}
@@ -208,29 +168,19 @@ add_component_value :: proc(entity: Entity, component: $Type) -> ^Type {
 }
 
 get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
+	when Type == Transform {
+		for _, batch_idx in &all__Transform.batches {
+			batch := &all__Transform.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				if c.entity == entity do return c;
+			}
+		}
+		return nil;
+	}
 	when Type == Sprite_Renderer {
 		for _, batch_idx in &all__Sprite_Renderer.batches {
 			batch := &all__Sprite_Renderer.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				if c.entity == entity do return c;
-			}
-		}
-		return nil;
-	}
-	when Type == Mesh_Renderer {
-		for _, batch_idx in &all__Mesh_Renderer.batches {
-			batch := &all__Mesh_Renderer.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				if c.entity == entity do return c;
-			}
-		}
-		return nil;
-	}
-	when Type == Unit_Component {
-		for _, batch_idx in &all__Unit_Component.batches {
-			batch := &all__Unit_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				if c.entity == entity do return c;
@@ -248,9 +198,9 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
-	when Type == Health_Component {
-		for _, batch_idx in &all__Health_Component.batches {
-			batch := &all__Health_Component.batches[batch_idx];
+	when Type == Terrain_Component {
+		for _, batch_idx in &all__Terrain_Component.batches {
+			batch := &all__Terrain_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				if c.entity == entity do return c;
@@ -258,19 +208,9 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
-	when Type == Attack_Default_Command {
-		for _, batch_idx in &all__Attack_Default_Command.batches {
-			batch := &all__Attack_Default_Command.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				if c.entity == entity do return c;
-			}
-		}
-		return nil;
-	}
-	when Type == Transform {
-		for _, batch_idx in &all__Transform.batches {
-			batch := &all__Transform.batches[batch_idx];
+	when Type == Mesh_Renderer {
+		for _, batch_idx in &all__Mesh_Renderer.batches {
+			batch := &all__Mesh_Renderer.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				if c.entity == entity do return c;
@@ -288,9 +228,9 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 		}
 		return nil;
 	}
-	when Type == Terrain_Component {
-		for _, batch_idx in &all__Terrain_Component.batches {
-			batch := &all__Terrain_Component.batches[batch_idx];
+	when Type == Unit_Component {
+		for _, batch_idx in &all__Unit_Component.batches {
+			batch := &all__Unit_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				if c.entity == entity do return c;
@@ -303,30 +243,21 @@ get_component :: proc(entity: Entity, $Type: typeid) -> ^Type {
 }
 
 call_component_updates :: proc() {
+	when #defined(update__Transform) {
+		for _, batch_idx in &all__Transform.batches {
+			batch := &all__Transform.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				update__Transform(c);
+			}
+		}
+	}
 	when #defined(update__Sprite_Renderer) {
 		for _, batch_idx in &all__Sprite_Renderer.batches {
 			batch := &all__Sprite_Renderer.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				update__Sprite_Renderer(c);
-			}
-		}
-	}
-	when #defined(update__Mesh_Renderer) {
-		for _, batch_idx in &all__Mesh_Renderer.batches {
-			batch := &all__Mesh_Renderer.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				update__Mesh_Renderer(c);
-			}
-		}
-	}
-	when #defined(update__Unit_Component) {
-		for _, batch_idx in &all__Unit_Component.batches {
-			batch := &all__Unit_Component.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				update__Unit_Component(c);
 			}
 		}
 	}
@@ -339,30 +270,21 @@ call_component_updates :: proc() {
 			}
 		}
 	}
-	when #defined(update__Health_Component) {
-		for _, batch_idx in &all__Health_Component.batches {
-			batch := &all__Health_Component.batches[batch_idx];
+	when #defined(update__Terrain_Component) {
+		for _, batch_idx in &all__Terrain_Component.batches {
+			batch := &all__Terrain_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
-				update__Health_Component(c);
+				update__Terrain_Component(c);
 			}
 		}
 	}
-	when #defined(update__Attack_Default_Command) {
-		for _, batch_idx in &all__Attack_Default_Command.batches {
-			batch := &all__Attack_Default_Command.batches[batch_idx];
+	when #defined(update__Mesh_Renderer) {
+		for _, batch_idx in &all__Mesh_Renderer.batches {
+			batch := &all__Mesh_Renderer.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
-				update__Attack_Default_Command(c);
-			}
-		}
-	}
-	when #defined(update__Transform) {
-		for _, batch_idx in &all__Transform.batches {
-			batch := &all__Transform.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				update__Transform(c);
+				update__Mesh_Renderer(c);
 			}
 		}
 	}
@@ -375,42 +297,33 @@ call_component_updates :: proc() {
 			}
 		}
 	}
-	when #defined(update__Terrain_Component) {
-		for _, batch_idx in &all__Terrain_Component.batches {
-			batch := &all__Terrain_Component.batches[batch_idx];
+	when #defined(update__Unit_Component) {
+		for _, batch_idx in &all__Unit_Component.batches {
+			batch := &all__Unit_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
-				update__Terrain_Component(c);
+				update__Unit_Component(c);
 			}
 		}
 	}
 }
 
 call_component_renders :: proc() {
+	when #defined(render__Transform) {
+		for _, batch_idx in &all__Transform.batches {
+			batch := &all__Transform.batches[batch_idx];
+			for _, idx in batch.list do if batch.empties[idx] {
+				c := &batch.list[idx];
+				render__Transform(c);
+			}
+		}
+	}
 	when #defined(render__Sprite_Renderer) {
 		for _, batch_idx in &all__Sprite_Renderer.batches {
 			batch := &all__Sprite_Renderer.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
 				render__Sprite_Renderer(c);
-			}
-		}
-	}
-	when #defined(render__Mesh_Renderer) {
-		for _, batch_idx in &all__Mesh_Renderer.batches {
-			batch := &all__Mesh_Renderer.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				render__Mesh_Renderer(c);
-			}
-		}
-	}
-	when #defined(render__Unit_Component) {
-		for _, batch_idx in &all__Unit_Component.batches {
-			batch := &all__Unit_Component.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				render__Unit_Component(c);
 			}
 		}
 	}
@@ -423,30 +336,21 @@ call_component_renders :: proc() {
 			}
 		}
 	}
-	when #defined(render__Health_Component) {
-		for _, batch_idx in &all__Health_Component.batches {
-			batch := &all__Health_Component.batches[batch_idx];
+	when #defined(render__Terrain_Component) {
+		for _, batch_idx in &all__Terrain_Component.batches {
+			batch := &all__Terrain_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
-				render__Health_Component(c);
+				render__Terrain_Component(c);
 			}
 		}
 	}
-	when #defined(render__Attack_Default_Command) {
-		for _, batch_idx in &all__Attack_Default_Command.batches {
-			batch := &all__Attack_Default_Command.batches[batch_idx];
+	when #defined(render__Mesh_Renderer) {
+		for _, batch_idx in &all__Mesh_Renderer.batches {
+			batch := &all__Mesh_Renderer.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
-				render__Attack_Default_Command(c);
-			}
-		}
-	}
-	when #defined(render__Transform) {
-		for _, batch_idx in &all__Transform.batches {
-			batch := &all__Transform.batches[batch_idx];
-			for _, idx in batch.list do if batch.empties[idx] {
-				c := &batch.list[idx];
-				render__Transform(c);
+				render__Mesh_Renderer(c);
 			}
 		}
 	}
@@ -459,80 +363,30 @@ call_component_renders :: proc() {
 			}
 		}
 	}
-	when #defined(render__Terrain_Component) {
-		for _, batch_idx in &all__Terrain_Component.batches {
-			batch := &all__Terrain_Component.batches[batch_idx];
+	when #defined(render__Unit_Component) {
+		for _, batch_idx in &all__Unit_Component.batches {
+			batch := &all__Unit_Component.batches[batch_idx];
 			for _, idx in batch.list do if batch.empties[idx] {
 				c := &batch.list[idx];
-				render__Terrain_Component(c);
+				render__Unit_Component(c);
 			}
 		}
 	}
 }
 
-Serializable_Sprite_Renderer_Component :: struct {
-	value: Sprite_Renderer,
-	name: string,
-}
-
-Serializable_Mesh_Renderer_Component :: struct {
-	value: Mesh_Renderer,
-	name: string,
-}
-
-Serializable_Unit_Component_Component :: struct {
-	value: Unit_Component,
-	name: string,
-}
-
-Serializable_Spinner_Component_Component :: struct {
-	value: Spinner_Component,
-	name: string,
-}
-
-Serializable_Health_Component_Component :: struct {
-	value: Health_Component,
-	name: string,
-}
-
-Serializable_Attack_Default_Command_Component :: struct {
-	value: Attack_Default_Command,
-	name: string,
-}
-
-Serializable_Transform_Component :: struct {
-	value: Transform,
-	name: string,
-}
-
-Serializable_Box_Collider_Component :: struct {
-	value: Box_Collider,
-	name: string,
-}
-
-Serializable_Terrain_Component_Component :: struct {
-	value: Terrain_Component,
-	name: string,
-}
-
 serialize_entity_components :: proc(entity: Entity) -> string {
 	serialized : String_Buffer;
+	sbprint(&serialized, tprint("\"", all_entities[entity].name, "\"", "\n"));
+	Transform_comp := get_component(entity, Transform);
+	if Transform_comp != nil {
+		s := wbml.serialize(Transform_comp);
+		sbprint(&serialized, "Transform\n");
+		sbprint(&serialized, s);
+	}
 	Sprite_Renderer_comp := get_component(entity, Sprite_Renderer);
 	if Sprite_Renderer_comp != nil {
 		s := wbml.serialize(Sprite_Renderer_comp);
 		sbprint(&serialized, "Sprite_Renderer\n");
-		sbprint(&serialized, s);
-	}
-	Mesh_Renderer_comp := get_component(entity, Mesh_Renderer);
-	if Mesh_Renderer_comp != nil {
-		s := wbml.serialize(Mesh_Renderer_comp);
-		sbprint(&serialized, "Mesh_Renderer\n");
-		sbprint(&serialized, s);
-	}
-	Unit_Component_comp := get_component(entity, Unit_Component);
-	if Unit_Component_comp != nil {
-		s := wbml.serialize(Unit_Component_comp);
-		sbprint(&serialized, "Unit_Component\n");
 		sbprint(&serialized, s);
 	}
 	Spinner_Component_comp := get_component(entity, Spinner_Component);
@@ -541,22 +395,16 @@ serialize_entity_components :: proc(entity: Entity) -> string {
 		sbprint(&serialized, "Spinner_Component\n");
 		sbprint(&serialized, s);
 	}
-	Health_Component_comp := get_component(entity, Health_Component);
-	if Health_Component_comp != nil {
-		s := wbml.serialize(Health_Component_comp);
-		sbprint(&serialized, "Health_Component\n");
+	Terrain_Component_comp := get_component(entity, Terrain_Component);
+	if Terrain_Component_comp != nil {
+		s := wbml.serialize(Terrain_Component_comp);
+		sbprint(&serialized, "Terrain_Component\n");
 		sbprint(&serialized, s);
 	}
-	Attack_Default_Command_comp := get_component(entity, Attack_Default_Command);
-	if Attack_Default_Command_comp != nil {
-		s := wbml.serialize(Attack_Default_Command_comp);
-		sbprint(&serialized, "Attack_Default_Command\n");
-		sbprint(&serialized, s);
-	}
-	Transform_comp := get_component(entity, Transform);
-	if Transform_comp != nil {
-		s := wbml.serialize(Transform_comp);
-		sbprint(&serialized, "Transform\n");
+	Mesh_Renderer_comp := get_component(entity, Mesh_Renderer);
+	if Mesh_Renderer_comp != nil {
+		s := wbml.serialize(Mesh_Renderer_comp);
+		sbprint(&serialized, "Mesh_Renderer\n");
 		sbprint(&serialized, s);
 	}
 	Box_Collider_comp := get_component(entity, Box_Collider);
@@ -565,32 +413,26 @@ serialize_entity_components :: proc(entity: Entity) -> string {
 		sbprint(&serialized, "Box_Collider\n");
 		sbprint(&serialized, s);
 	}
-	Terrain_Component_comp := get_component(entity, Terrain_Component);
-	if Terrain_Component_comp != nil {
-		s := wbml.serialize(Terrain_Component_comp);
-		sbprint(&serialized, "Terrain_Component\n");
+	Unit_Component_comp := get_component(entity, Unit_Component);
+	if Unit_Component_comp != nil {
+		s := wbml.serialize(Unit_Component_comp);
+		sbprint(&serialized, "Unit_Component\n");
 		sbprint(&serialized, s);
 	}
 	return to_string(serialized);
 }
 
 init_entity :: proc(entity: Entity) -> bool {
+	when #defined(init__Transform) {
+		Transform_comp := get_component(entity, Transform);
+		if Transform_comp != nil {
+			init__Transform(Transform_comp);
+		}
+	}
 	when #defined(init__Sprite_Renderer) {
 		Sprite_Renderer_comp := get_component(entity, Sprite_Renderer);
 		if Sprite_Renderer_comp != nil {
 			init__Sprite_Renderer(Sprite_Renderer_comp);
-		}
-	}
-	when #defined(init__Mesh_Renderer) {
-		Mesh_Renderer_comp := get_component(entity, Mesh_Renderer);
-		if Mesh_Renderer_comp != nil {
-			init__Mesh_Renderer(Mesh_Renderer_comp);
-		}
-	}
-	when #defined(init__Unit_Component) {
-		Unit_Component_comp := get_component(entity, Unit_Component);
-		if Unit_Component_comp != nil {
-			init__Unit_Component(Unit_Component_comp);
 		}
 	}
 	when #defined(init__Spinner_Component) {
@@ -599,22 +441,16 @@ init_entity :: proc(entity: Entity) -> bool {
 			init__Spinner_Component(Spinner_Component_comp);
 		}
 	}
-	when #defined(init__Health_Component) {
-		Health_Component_comp := get_component(entity, Health_Component);
-		if Health_Component_comp != nil {
-			init__Health_Component(Health_Component_comp);
+	when #defined(init__Terrain_Component) {
+		Terrain_Component_comp := get_component(entity, Terrain_Component);
+		if Terrain_Component_comp != nil {
+			init__Terrain_Component(Terrain_Component_comp);
 		}
 	}
-	when #defined(init__Attack_Default_Command) {
-		Attack_Default_Command_comp := get_component(entity, Attack_Default_Command);
-		if Attack_Default_Command_comp != nil {
-			init__Attack_Default_Command(Attack_Default_Command_comp);
-		}
-	}
-	when #defined(init__Transform) {
-		Transform_comp := get_component(entity, Transform);
-		if Transform_comp != nil {
-			init__Transform(Transform_comp);
+	when #defined(init__Mesh_Renderer) {
+		Mesh_Renderer_comp := get_component(entity, Mesh_Renderer);
+		if Mesh_Renderer_comp != nil {
+			init__Mesh_Renderer(Mesh_Renderer_comp);
 		}
 	}
 	when #defined(init__Box_Collider) {
@@ -623,54 +459,46 @@ init_entity :: proc(entity: Entity) -> bool {
 			init__Box_Collider(Box_Collider_comp);
 		}
 	}
-	when #defined(init__Terrain_Component) {
-		Terrain_Component_comp := get_component(entity, Terrain_Component);
-		if Terrain_Component_comp != nil {
-			init__Terrain_Component(Terrain_Component_comp);
+	when #defined(init__Unit_Component) {
+		Unit_Component_comp := get_component(entity, Unit_Component);
+		if Unit_Component_comp != nil {
+			init__Unit_Component(Unit_Component_comp);
 		}
 	}
 	return true;
 }
 
-deserialize_entity_comnponents :: proc(entity_id: int, serialized_entity: [dynamic]string, component_types: [dynamic]string) -> Entity {
-	entity := new_entity_dangerous(entity_id);
+deserialize_entity_comnponents :: proc(entity_id: int, serialized_entity: [dynamic]string, component_types: [dynamic]string, entity_name: string) -> Entity {
+	entity := new_entity_dangerous(entity_id, entity_name);
 	for component_data, i in serialized_entity {
 		component_type := component_types[i];
 		switch component_type {
+			case "Transform": {
+				component := wbml.deserialize(Transform, component_data);
+				add_component(entity, component);
+			}
 			case "Sprite_Renderer": {
 				component := wbml.deserialize(Sprite_Renderer, component_data);
-				add_component(entity, component);
-			}
-			case "Mesh_Renderer": {
-				component := wbml.deserialize(Mesh_Renderer, component_data);
-				add_component(entity, component);
-			}
-			case "Unit_Component": {
-				component := wbml.deserialize(Unit_Component, component_data);
 				add_component(entity, component);
 			}
 			case "Spinner_Component": {
 				component := wbml.deserialize(Spinner_Component, component_data);
 				add_component(entity, component);
 			}
-			case "Health_Component": {
-				component := wbml.deserialize(Health_Component, component_data);
+			case "Terrain_Component": {
+				component := wbml.deserialize(Terrain_Component, component_data);
 				add_component(entity, component);
 			}
-			case "Attack_Default_Command": {
-				component := wbml.deserialize(Attack_Default_Command, component_data);
-				add_component(entity, component);
-			}
-			case "Transform": {
-				component := wbml.deserialize(Transform, component_data);
+			case "Mesh_Renderer": {
+				component := wbml.deserialize(Mesh_Renderer, component_data);
 				add_component(entity, component);
 			}
 			case "Box_Collider": {
 				component := wbml.deserialize(Box_Collider, component_data);
 				add_component(entity, component);
 			}
-			case "Terrain_Component": {
-				component := wbml.deserialize(Terrain_Component, component_data);
+			case "Unit_Component": {
+				component := wbml.deserialize(Unit_Component, component_data);
 				add_component(entity, component);
 			}
 		}
@@ -683,6 +511,22 @@ destroy_marked_entities :: proc() {
 		entity, ok := all_entities[entity_id]; assert(ok);
 		for comp_type in entity.component_types {
 			switch comp_type {
+			case Component_Type.Transform: {
+				pool_loop__Transform:
+				for _, batch_idx in &all__Transform.batches {
+					batch := &all__Transform.batches[batch_idx];
+					for _, idx in batch.list do if batch.empties[idx] {
+						comp := &batch.list[idx];
+						if comp.entity == entity_id {
+							when #defined(destroy__Transform) {
+								destroy__Transform(comp);
+							}
+							pool_return(&all__Transform, comp);
+							break pool_loop__Transform;
+						}
+					}
+				}
+			}
 			case Component_Type.Sprite_Renderer: {
 				pool_loop__Sprite_Renderer:
 				for _, batch_idx in &all__Sprite_Renderer.batches {
@@ -695,38 +539,6 @@ destroy_marked_entities :: proc() {
 							}
 							pool_return(&all__Sprite_Renderer, comp);
 							break pool_loop__Sprite_Renderer;
-						}
-					}
-				}
-			}
-			case Component_Type.Mesh_Renderer: {
-				pool_loop__Mesh_Renderer:
-				for _, batch_idx in &all__Mesh_Renderer.batches {
-					batch := &all__Mesh_Renderer.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Mesh_Renderer) {
-								destroy__Mesh_Renderer(comp);
-							}
-							pool_return(&all__Mesh_Renderer, comp);
-							break pool_loop__Mesh_Renderer;
-						}
-					}
-				}
-			}
-			case Component_Type.Unit_Component: {
-				pool_loop__Unit_Component:
-				for _, batch_idx in &all__Unit_Component.batches {
-					batch := &all__Unit_Component.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Unit_Component) {
-								destroy__Unit_Component(comp);
-							}
-							pool_return(&all__Unit_Component, comp);
-							break pool_loop__Unit_Component;
 						}
 					}
 				}
@@ -747,50 +559,34 @@ destroy_marked_entities :: proc() {
 					}
 				}
 			}
-			case Component_Type.Health_Component: {
-				pool_loop__Health_Component:
-				for _, batch_idx in &all__Health_Component.batches {
-					batch := &all__Health_Component.batches[batch_idx];
+			case Component_Type.Terrain_Component: {
+				pool_loop__Terrain_Component:
+				for _, batch_idx in &all__Terrain_Component.batches {
+					batch := &all__Terrain_Component.batches[batch_idx];
 					for _, idx in batch.list do if batch.empties[idx] {
 						comp := &batch.list[idx];
 						if comp.entity == entity_id {
-							when #defined(destroy__Health_Component) {
-								destroy__Health_Component(comp);
+							when #defined(destroy__Terrain_Component) {
+								destroy__Terrain_Component(comp);
 							}
-							pool_return(&all__Health_Component, comp);
-							break pool_loop__Health_Component;
+							pool_return(&all__Terrain_Component, comp);
+							break pool_loop__Terrain_Component;
 						}
 					}
 				}
 			}
-			case Component_Type.Attack_Default_Command: {
-				pool_loop__Attack_Default_Command:
-				for _, batch_idx in &all__Attack_Default_Command.batches {
-					batch := &all__Attack_Default_Command.batches[batch_idx];
+			case Component_Type.Mesh_Renderer: {
+				pool_loop__Mesh_Renderer:
+				for _, batch_idx in &all__Mesh_Renderer.batches {
+					batch := &all__Mesh_Renderer.batches[batch_idx];
 					for _, idx in batch.list do if batch.empties[idx] {
 						comp := &batch.list[idx];
 						if comp.entity == entity_id {
-							when #defined(destroy__Attack_Default_Command) {
-								destroy__Attack_Default_Command(comp);
+							when #defined(destroy__Mesh_Renderer) {
+								destroy__Mesh_Renderer(comp);
 							}
-							pool_return(&all__Attack_Default_Command, comp);
-							break pool_loop__Attack_Default_Command;
-						}
-					}
-				}
-			}
-			case Component_Type.Transform: {
-				pool_loop__Transform:
-				for _, batch_idx in &all__Transform.batches {
-					batch := &all__Transform.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Transform) {
-								destroy__Transform(comp);
-							}
-							pool_return(&all__Transform, comp);
-							break pool_loop__Transform;
+							pool_return(&all__Mesh_Renderer, comp);
+							break pool_loop__Mesh_Renderer;
 						}
 					}
 				}
@@ -811,18 +607,18 @@ destroy_marked_entities :: proc() {
 					}
 				}
 			}
-			case Component_Type.Terrain_Component: {
-				pool_loop__Terrain_Component:
-				for _, batch_idx in &all__Terrain_Component.batches {
-					batch := &all__Terrain_Component.batches[batch_idx];
+			case Component_Type.Unit_Component: {
+				pool_loop__Unit_Component:
+				for _, batch_idx in &all__Unit_Component.batches {
+					batch := &all__Unit_Component.batches[batch_idx];
 					for _, idx in batch.list do if batch.empties[idx] {
 						comp := &batch.list[idx];
 						if comp.entity == entity_id {
-							when #defined(destroy__Terrain_Component) {
-								destroy__Terrain_Component(comp);
+							when #defined(destroy__Unit_Component) {
+								destroy__Unit_Component(comp);
 							}
-							pool_return(&all__Terrain_Component, comp);
-							break pool_loop__Terrain_Component;
+							pool_return(&all__Unit_Component, comp);
+							break pool_loop__Unit_Component;
 						}
 					}
 				}
@@ -843,6 +639,20 @@ update_inspector_window :: proc() {
 				for comp_type in entity_data.component_types {
 					imgui.indent();
 						switch comp_type {
+						case Component_Type.Transform: {
+							pool_loop__Transform:
+							for _, batch_idx in &all__Transform.batches {
+								batch := &all__Transform.batches[batch_idx];
+								for _, idx in batch.list do if batch.empties[idx] {
+									comp := &batch.list[idx];
+									if comp.entity == entity {
+										wb.imgui_struct(comp, tprint("Transform"));
+										break pool_loop__Transform;
+									}
+								}
+							}
+							break;
+						}
 						case Component_Type.Sprite_Renderer: {
 							pool_loop__Sprite_Renderer:
 							for _, batch_idx in &all__Sprite_Renderer.batches {
@@ -852,34 +662,6 @@ update_inspector_window :: proc() {
 									if comp.entity == entity {
 										wb.imgui_struct(comp, tprint("Sprite_Renderer"));
 										break pool_loop__Sprite_Renderer;
-									}
-								}
-							}
-							break;
-						}
-						case Component_Type.Mesh_Renderer: {
-							pool_loop__Mesh_Renderer:
-							for _, batch_idx in &all__Mesh_Renderer.batches {
-								batch := &all__Mesh_Renderer.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Mesh_Renderer"));
-										break pool_loop__Mesh_Renderer;
-									}
-								}
-							}
-							break;
-						}
-						case Component_Type.Unit_Component: {
-							pool_loop__Unit_Component:
-							for _, batch_idx in &all__Unit_Component.batches {
-								batch := &all__Unit_Component.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Unit_Component"));
-										break pool_loop__Unit_Component;
 									}
 								}
 							}
@@ -899,43 +681,29 @@ update_inspector_window :: proc() {
 							}
 							break;
 						}
-						case Component_Type.Health_Component: {
-							pool_loop__Health_Component:
-							for _, batch_idx in &all__Health_Component.batches {
-								batch := &all__Health_Component.batches[batch_idx];
+						case Component_Type.Terrain_Component: {
+							pool_loop__Terrain_Component:
+							for _, batch_idx in &all__Terrain_Component.batches {
+								batch := &all__Terrain_Component.batches[batch_idx];
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Health_Component"));
-										break pool_loop__Health_Component;
+										wb.imgui_struct(comp, tprint("Terrain_Component"));
+										break pool_loop__Terrain_Component;
 									}
 								}
 							}
 							break;
 						}
-						case Component_Type.Attack_Default_Command: {
-							pool_loop__Attack_Default_Command:
-							for _, batch_idx in &all__Attack_Default_Command.batches {
-								batch := &all__Attack_Default_Command.batches[batch_idx];
+						case Component_Type.Mesh_Renderer: {
+							pool_loop__Mesh_Renderer:
+							for _, batch_idx in &all__Mesh_Renderer.batches {
+								batch := &all__Mesh_Renderer.batches[batch_idx];
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Attack_Default_Command"));
-										break pool_loop__Attack_Default_Command;
-									}
-								}
-							}
-							break;
-						}
-						case Component_Type.Transform: {
-							pool_loop__Transform:
-							for _, batch_idx in &all__Transform.batches {
-								batch := &all__Transform.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Transform"));
-										break pool_loop__Transform;
+										wb.imgui_struct(comp, tprint("Mesh_Renderer"));
+										break pool_loop__Mesh_Renderer;
 									}
 								}
 							}
@@ -955,15 +723,15 @@ update_inspector_window :: proc() {
 							}
 							break;
 						}
-						case Component_Type.Terrain_Component: {
-							pool_loop__Terrain_Component:
-							for _, batch_idx in &all__Terrain_Component.batches {
-								batch := &all__Terrain_Component.batches[batch_idx];
+						case Component_Type.Unit_Component: {
+							pool_loop__Unit_Component:
+							for _, batch_idx in &all__Unit_Component.batches {
+								batch := &all__Unit_Component.batches[batch_idx];
 								for _, idx in batch.list do if batch.empties[idx] {
 									comp := &batch.list[idx];
 									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Terrain_Component"));
-										break pool_loop__Terrain_Component;
+										wb.imgui_struct(comp, tprint("Unit_Component"));
+										break pool_loop__Unit_Component;
 									}
 								}
 							}

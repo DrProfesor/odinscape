@@ -17,7 +17,7 @@ available_component_lists: [dynamic][dynamic]Component_Type;
 // fuck your static :D
 last_entity_id: Entity;
 
-new_entity :: proc(name: string = "") -> Entity {
+new_entity :: proc(name: string = "nil") -> Entity {
 
 	last_entity_id += 1;
 	e: _Entity_Data;
@@ -30,13 +30,13 @@ new_entity :: proc(name: string = "") -> Entity {
 	return last_entity_id;
 }
 
-new_entity_dangerous :: proc(_id: int) -> Entity {
+new_entity_dangerous :: proc(_id: int, name: string = "nil") -> Entity {
 	id := Entity(_id);
 	if id > last_entity_id {
 		last_entity_id = id;
 	}
 	e: _Entity_Data;
-	e.name = "";
+	e.name = name;
 	if len(available_component_lists) > 0 {
 		e.component_types = pop(&available_component_lists);
 		assert(len(e.component_types) == 0, "list wasn't cleared before returning to available_component_lists");
@@ -72,7 +72,7 @@ Component_Base :: struct {
 //
 // Transform
 //
-
+// @Component
 Transform :: struct {
 	using base: Component_Base,
 
@@ -122,7 +122,7 @@ render__Transform :: inline proc(using tf: ^Transform) {
 //
 // Sprite_Renderer
 //
-
+// @Component
 Sprite_Renderer :: struct {
 	using base: Component_Base,
 
@@ -137,7 +137,7 @@ render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 //
 // Spinner component
 //
-
+// @Component
 Spinner_Component :: struct {
 	using base: Component_Base,
 
@@ -160,7 +160,7 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 //
 // Terrain
 //
-
+// @Component
 Terrain_Component :: struct {
 	using base: Component_Base,
 }
@@ -168,6 +168,7 @@ Terrain_Component :: struct {
 //
 // Mesh Renderer
 //
+// @Component
 Mesh_Renderer :: struct {
 	using base: Component_Base,
 
@@ -201,7 +202,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 //
 // Box Collider
 //
-
+// @Component
 Box_Collider :: struct {
 	using base: Component_Base,
 

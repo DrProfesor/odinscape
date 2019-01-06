@@ -8,6 +8,7 @@ using import    "core:math"
 	  import ai "shared:workbench/external/assimp"
 	  import coll "shared:workbench/collision"
 
+// @Component
 Unit_Component :: struct {
 	using base: Component_Base,
 

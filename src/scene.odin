@@ -41,7 +41,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 				} else {
 
 					// @Alloc this will be owned by the catalog and freed when unsubscribe is called
-					userdata_entry := new_clone(scene.manifest.entries[i]);
+					userdata_entry : ^Manifest_Entry = new_clone(scene.manifest.entries[i]);
 
 					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry,
 						proc(entry: ^Manifest_Entry, entry_data: []u8) {
@@ -65,7 +65,8 @@ scene_init :: proc(scene_id : string) -> Scene {
 								// end of bad
 
 								/*
-									@Alloc Model_Asset so mesh renderers do not have to poll the scene
+									// @Alloc 
+									Model_Asset so mesh renderers do not have to poll the scene
 								    This is owned by the scene and will be freed when the scene is ended
 								    if not other scene is using the same asset
 								*/
@@ -81,7 +82,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 					loaded_textures[entry.id] = current;
 				} else {
 					// @Alloc this will be owned by the catalog and freed when unsubscribe is called
-					userdata_entry := new_clone(scene.manifest.entries[i]);
+					userdata_entry : ^Manifest_Entry = new_clone(scene.manifest.entries[i]);
 
 					catalog_subscriptions[entry.id] = wb.catalog_subscribe(tprint(RESOURCES, entry.path), userdata_entry,
 						proc(entry: ^Manifest_Entry, entry_data: []u8) {
@@ -107,6 +108,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 
 		trim_len := len(tprint(SCENE_DIRECTORY, scene_id, "/entities"));
 		entity_id := wb.parse_int(entity_file[trim_len+1:len(entity_file)-2]);
+		entity_name := "nil";
 
 		entity_data, ok := os.read_entire_file(entity_file);
 
@@ -119,6 +121,11 @@ scene_init :: proc(scene_id : string) -> Scene {
 
 		components := make([dynamic]string, 0, 10);
 		component_types := make([dynamic]string, 0, 10);
+
+		get_next_token(&lexer, &token);
+		if name_token, is_identifier := token.kind.(laas.String); is_identifier {
+			entity_name = name_token.value;
+		}
 
 		for get_next_token(&lexer, &token) {
 			switch value_kind in token.kind {
@@ -147,9 +154,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 			}
 		}
 
-		deserialize_entity_comnponents(entity_id, components, component_types);
-
-		// todo read file data into structs
+		deserialize_entity_comnponents(entity_id, components, component_types, entity_name);
 	}
 
 	return scene;
