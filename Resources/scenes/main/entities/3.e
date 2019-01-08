@@ -6,9 +6,9 @@ Transform
 	}
 
 	position [
-		-2.671
+		-2.107
 		0.000
-		-2.857
+		-1.158
 	]
 
 	scale [

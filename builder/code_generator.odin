@@ -230,7 +230,7 @@ using import "shared:workbench/pool"
 							defer line_outdent("}");
 
 							line_indent("imgui.indent();");
-							defer line("imgui.unindent();");
+							defer line_outdent("imgui.unindent();");
 
 							line("switch comp_type {"); {
 								defer line_outdent("}");

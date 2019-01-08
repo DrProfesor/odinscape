@@ -1021,11 +1021,11 @@ update_inspector_window :: proc() {
 							break;
 						}
 					}
-					imgui.unindent();
-				}
+				imgui.unindent();
 			}
 		}
 	}
-	imgui.end();
+}
+imgui.end();
 }
 

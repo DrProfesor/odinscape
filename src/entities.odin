@@ -99,8 +99,8 @@ transform :: inline proc(position := Vec3{0, 0, 0}, scale := Vec3{1, 1, 1}, rota
 
 update__Transform :: inline proc(using tf: ^Transform) {
 	if stuck_on_ground {
-		buffer := coll.get_temp_hits_buffer();
-		defer coll.return_temp_hits_buffer();
+		buffer := coll.GET_TEMP_HITS_BUFFER();
+		//defer coll.return_temp_hits_buffer();
 		coll.linecast(&main_collision_scene, position + Vec3{0, 1000, 0}, {0, -5000, 0}, buffer);
 		for hit in buffer {
 			e := cast(Entity)hit.handle;
