@@ -242,8 +242,7 @@ draw_player_hud :: proc() {
 			defer wb.ui_grid_layout_end();
 
 			idx := 0;
-			ability_input := [?]^Game_Input{&key_config.ability1, &key_config.ability2, &key_config.ability3, &key_config.ability4};
-			for input in ability_input {
+			for input in ([?]^Game_Input{&key_config.ability1, &key_config.ability2, &key_config.ability3, &key_config.ability4}) {
 				defer idx += 1;
 				defer wb.ui_grid_layout_next(&grid);
 
