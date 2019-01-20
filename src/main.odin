@@ -9,7 +9,6 @@ using import "core:math"
 	  import coll  "shared:workbench/collision"
 	  import ai    "shared:workbench/external/assimp"
 	  import imgui "shared:workbench/external/imgui"
-	  import draw  "shared:workbench/rendering"
 
 cube_model: ^Model_Asset;
 
