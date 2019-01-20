@@ -114,9 +114,9 @@ update__Transform :: inline proc(using tf: ^Transform) {
 debug_draw_entity_handles: bool;
 render__Transform :: inline proc(using tf: ^Transform) {
 	if debug_draw_entity_handles {
-		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{1, 0, 0}, wb.COLOR_RED);
-		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_BLUE);
+		// wb.push_debug_line(wb.rendermode_world, position, position + Vec3{1, 0, 0}, wb.COLOR_RED);
+		// wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 1, 0}, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, position, position + Vec3{0, 0, 1}, wb.COLOR_BLUE);
 	}
 }
 
@@ -132,7 +132,7 @@ Sprite_Renderer :: struct {
 
 render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 	tf := get_component(entity, Transform);
-	wb.im_quad(wb.rendermode_world, wb.shader_rgba, tf.position-Vec3{1, 1, 0}, tf.position+Vec3{1, 1, 0}, color);
+	wb.push_quad(wb.rendermode_world, wb.shader_rgba, to_vec2(tf.position)-Vec2{1, 1}, to_vec2(tf.position)+Vec2{1, 1}, color);
 }
 
 //
@@ -154,8 +154,8 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	tf.scale = Vec3{1, 1, 1} * (wb.sin01(wb.time)/2+0.5);
 
 	q := wb.degrees_to_quaternion(tf.rotation);
-	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_forward(q) * 10, wb.COLOR_GREEN);
-	wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_right(q) * 10, wb.COLOR_BLUE);
+	// wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_forward(q) * 10, wb.COLOR_GREEN);
+	// wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_right(q) * 10, wb.COLOR_BLUE);
 }
 
 //
@@ -243,34 +243,34 @@ update__Box_Collider :: inline proc(using box: ^Box_Collider) {
 
 	if debugging_colliders {
 		origin := tf.position + offset_from_transform;
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5,
-												origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5,
+												// origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5,
-												origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5,
-												origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5,
-												origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5,
+												// origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5,
+												// origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5,
+												// origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5,
-												origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y, -size.z} * tf.scale * 0.5,
+												// origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{ size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{ size.x, -size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{ size.x,  size.y,  size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
-		wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5,
-												origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x, -size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{-size.x, -size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
+		// wb.push_debug_line(wb.rendermode_world, origin + Vec3{-size.x,  size.y,  size.z} * tf.scale * 0.5,
+												// origin + Vec3{-size.x,  size.y, -size.z} * tf.scale * 0.5, wb.COLOR_GREEN);
 	}
 }
 

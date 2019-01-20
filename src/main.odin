@@ -9,6 +9,7 @@ using import "core:math"
 	  import coll  "shared:workbench/collision"
 	  import ai    "shared:workbench/external/assimp"
 	  import imgui "shared:workbench/external/imgui"
+	  import draw  "shared:workbench/rendering"
 
 cube_model: ^Model_Asset;
 
@@ -80,3 +81,6 @@ main :: proc() {
 }
 
 logln :: wb.logln;
+to_vec2 :: wb.to_vec2;
+to_vec3 :: wb.to_vec3;
+to_vec4 :: wb.to_vec4;
