@@ -7,6 +7,7 @@ using import    "core:strings"
       import    "shared:workbench/wbml"
       import wb "shared:workbench"
       import laas "shared:workbench/laas"
+      import gpu "shared:workbench/gpu"
 
 SCENE_DIRECTORY :: "resources/scenes/";
 RESOURCES :: "resources/";
@@ -65,7 +66,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 								// end of bad
 
 								/*
-									// @Alloc 
+									// @Alloc
 									Model_Asset so mesh renderers do not have to poll the scene
 								    This is owned by the scene and will be freed when the scene is ended
 								    if not other scene is using the same asset
@@ -238,11 +239,11 @@ get_model :: proc(id: string) -> ^Model_Asset {
 loaded_textures : map[string]Texture_Asset;
 
 Texture_Asset :: struct {
-	asset: wb.Texture,
+	asset: gpu.Texture,
 	count: int,
 }
 
-get_texture :: proc(id: string, loc := #caller_location) -> wb.Texture {
+get_texture :: proc(id: string, loc := #caller_location) -> gpu.Texture {
 	texture, ok := loaded_textures[id];
 	assert(ok, tprint("Could not find texture asset with id:", id, loc));
 	return texture.asset;
@@ -254,7 +255,7 @@ get_texture :: proc(id: string, loc := #caller_location) -> wb.Texture {
 //
 
 Scene :: struct {
-	id: string, 
+	id: string,
 	manifest: Entity_Manifest,
 	entity_components: Entity_Components,
 }

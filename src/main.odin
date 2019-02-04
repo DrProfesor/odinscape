@@ -5,10 +5,12 @@ using import "core:math"
 	  import "core:mem"
 	  import "core:os"
 
-	  import wb    "shared:workbench"
-	  import coll  "shared:workbench/collision"
-	  import ai    "shared:workbench/external/assimp"
-	  import imgui "shared:workbench/external/imgui"
+using import "shared:workbench/logging"
+	  import wb     "shared:workbench"
+	  import coll   "shared:workbench/collision"
+	  import wbmath "shared:workbench/math"
+	  import ai     "shared:workbench/external/assimp"
+	  import imgui  "shared:workbench/external/imgui"
 
 cube_model: ^Model_Asset;
 
@@ -79,7 +81,6 @@ main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
-logln :: wb.logln;
-to_vec2 :: wb.to_vec2;
-to_vec3 :: wb.to_vec3;
-to_vec4 :: wb.to_vec4;
+to_vec2 :: wbmath.to_vec2;
+to_vec3 :: wbmath.to_vec3;
+to_vec4 :: wbmath.to_vec4;

@@ -1,7 +1,7 @@
 package builder
 
 import wb "shared:workbench"
-logln :: wb.logln;
+using import "shared:workbench/logging"
 
 when wb.DEVELOPER {
 

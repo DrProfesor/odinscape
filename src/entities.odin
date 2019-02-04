@@ -4,9 +4,12 @@ using import "core:fmt"
 using import "core:math"
 	  import "core:mem"
 
-	  import wb    "shared:workbench"
-	  import imgui "shared:workbench/external/imgui"
-	  import coll  "shared:workbench/collision"
+	  import wb     "shared:workbench"
+	  import wbmath "shared:workbench/math"
+using import        "shared:workbench/types"
+      import        "shared:workbench/gpu"
+	  import imgui  "shared:workbench/external/imgui"
+	  import coll   "shared:workbench/collision"
 
 Entity :: int;
 
@@ -127,7 +130,7 @@ render__Transform :: inline proc(using tf: ^Transform) {
 Sprite_Renderer :: struct {
 	using base: Component_Base,
 
-	color: wb.Colorf,
+	color: Colorf,
 }
 
 render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
@@ -151,9 +154,9 @@ update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
 	tf := get_component(entity, Transform);
 	tf.position = Vec3{sin(wb.time * orbit_speed) * orbit_distance, cos(wb.time * orbit_speed) * orbit_distance, 0};
 	tf.rotation += torque;
-	tf.scale = Vec3{1, 1, 1} * (wb.sin01(wb.time)/2+0.5);
+	tf.scale = Vec3{1, 1, 1} * (wbmath.sin01(wb.time)/2+0.5);
 
-	q := wb.degrees_to_quaternion(tf.rotation);
+	q := wbmath.degrees_to_quaternion(tf.rotation);
 	// wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_forward(q) * 10, wb.COLOR_GREEN);
 	// wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_right(q) * 10, wb.COLOR_BLUE);
 }
@@ -175,9 +178,9 @@ Mesh_Renderer :: struct {
 
 	model          : string,
 	offset_from_transform : Vec3,
-	color                 : wb.Colorf,
-	texture_handle        : wb.Texture,
-	shader_handle         : wb.Shader_Program,
+	color                 : Colorf,
+	texture_handle        : gpu.Texture,
+	shader_handle         : gpu.Shader_Program,
 }
 
 render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {

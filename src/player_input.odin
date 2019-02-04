@@ -3,8 +3,11 @@ package main
 using import   "core:fmt"
 using import   "core:math"
 
-	  import coll "shared:workbench/collision"
-	  import wb "shared:workbench"
+	  import coll   "shared:workbench/collision"
+	  import wb     "shared:workbench"
+	  import wbmath "shared:workbench/math"
+using import        "shared:workbench/types"
+using import        "shared:workbench/basic"
 
 Player_Input_Manager :: struct {
 	player_entity: Entity,
@@ -30,7 +33,7 @@ update_player_input :: proc() {
 		free_camera = true;
 	}
 
-    camera_orientation := wb.degrees_to_quaternion(gameplay_camera.rotation);
+    camera_orientation := wbmath.degrees_to_quaternion(gameplay_camera.rotation);
 
     up      := Vec3{0,  1,  0};
     down    := Vec3{0, -1,  0};
@@ -38,8 +41,8 @@ update_player_input :: proc() {
 	right   := Vec3{1,  0,  0};
 
     if free_camera {
-	    forward = wb.quaternion_forward(camera_orientation);
-	    right   = wb.quaternion_right(camera_orientation);
+	    forward = wbmath.quaternion_forward(camera_orientation);
+	    right   = wbmath.quaternion_right(camera_orientation);
     }
 
     back := -forward;
@@ -192,7 +195,7 @@ add_selected_unit :: proc(unit: Entity) {
 
 	renderer := get_component(unit, Mesh_Renderer);
 	assert(renderer != nil);
-	renderer.color = wb.COLOR_GREEN;
+	renderer.color = COLOR_GREEN;
 }
 
 remove_selected_unit_index :: proc(idx: int) {
@@ -202,10 +205,10 @@ remove_selected_unit_index :: proc(idx: int) {
 	if entity_is_active(unit) {
 		renderer := get_component(unit, Mesh_Renderer);
 		assert(renderer != nil);
-		renderer.color = wb.COLOR_WHITE;
+		renderer.color = COLOR_WHITE;
 	}
 
-	wb.remove_at(&selected_units, idx);
+	remove_at(&selected_units, idx);
 }
 
 remove_selected_unit :: proc(unit: Entity) {
@@ -235,7 +238,7 @@ clear_selected_units :: proc() {
 draw_player_hud :: proc() {
 	wb.ui_push_rect(0.5, 0, 0.5, 0, -150, -300, 0, -300); {
 		defer wb.ui_pop_rect();
-		wb.ui_draw_colored_quad(wb.Colorf{1, 1, 1, 1});
+		wb.ui_draw_colored_quad(Colorf{1, 1, 1, 1});
 
 		unit_abilities, unit_abilities_ok := get_most_important_units_abilities();
 		grid := wb.ui_grid_layout(4, 1); {
@@ -248,7 +251,7 @@ draw_player_hud :: proc() {
 
 				wb.ui_push_rect(0, 0, 1, 1, 20, 20, 20, 20); {
 					defer wb.ui_pop_rect();
-					wb.ui_draw_colored_quad(wb.Colorf{0.8, 0.8, 0.8, 1});
+					wb.ui_draw_colored_quad(Colorf{0.8, 0.8, 0.8, 1});
 
 					if unit_abilities_ok {
 						ability_id, ok1 := unit_abilities[input];
@@ -260,7 +263,7 @@ draw_player_hud :: proc() {
 						}
 					}
 
-					wb.ui_text(wb.font_default, input_to_nice_name(input^), 0.5, wb.COLOR_GREEN);
+					wb.ui_text(wb.font_default, input_to_nice_name(input^), 0.5, COLOR_GREEN);
 				}
 			}
 			assert(idx <= 4);

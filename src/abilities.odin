@@ -4,6 +4,7 @@ using import "core:fmt"
 using import "core:math"
 
 import wb "shared:workbench"
+using import "shared:workbench/logging"
 
 Ability_Definition :: struct {
 	name: string,

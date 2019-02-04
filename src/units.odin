@@ -4,9 +4,11 @@ using import    "core:fmt"
 using import    "core:math"
 	  import    "core:mem"
 
-	  import wb "shared:workbench"
-	  import ai "shared:workbench/external/assimp"
-	  import coll "shared:workbench/collision"
+	  import wb     "shared:workbench"
+	  import ai     "shared:workbench/external/assimp"
+	  import coll   "shared:workbench/collision"
+using import        "shared:workbench/logging"
+using import wbmath "shared:workbench/math"
 
 // @Component
 Unit_Component :: struct {
@@ -211,7 +213,7 @@ do_move_command :: proc(me: ^Transform, target: Vec3, speed: f32, range : f32 = 
 	return false;
 }
 close_enough :: inline proc(a, b: Vec3, range : f32 = DISTANCE_BUFFER_DEFAULT) -> bool {
-	return wb.sqr_magnitude(a - b) < range * range;
+	return wbmath.sqr_magnitude(a - b) < range * range;
 }
 
 Unit_Command :: struct {
