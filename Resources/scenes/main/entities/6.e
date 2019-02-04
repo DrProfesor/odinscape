@@ -52,7 +52,7 @@ Mesh_Renderer
 		a 1.000
 	}
 
-	texture_handle 0
+	texture_handle 2
 
 	shader_handle 6
 

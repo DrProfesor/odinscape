@@ -705,164 +705,84 @@ destroy_marked_entities :: proc() {
 		for comp_type in entity.component_types {
 			switch comp_type {
 			case Component_Type.Transform: {
-				pool_loop__Transform:
-				for _, batch_idx in &all__Transform.batches {
-					batch := &all__Transform.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Transform) {
-								destroy__Transform(comp);
-							}
-							pool_return(&all__Transform, comp);
-							break pool_loop__Transform;
-						}
-					}
+				comp := get_component(entity_id, Transform);
+				assert(comp != nil);
+				when #defined(destroy__Transform) {
+					destroy__Transform(comp);
 				}
+				pool_return(&all__Transform, comp);
 			}
 			case Component_Type.Sprite_Renderer: {
-				pool_loop__Sprite_Renderer:
-				for _, batch_idx in &all__Sprite_Renderer.batches {
-					batch := &all__Sprite_Renderer.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Sprite_Renderer) {
-								destroy__Sprite_Renderer(comp);
-							}
-							pool_return(&all__Sprite_Renderer, comp);
-							break pool_loop__Sprite_Renderer;
-						}
-					}
+				comp := get_component(entity_id, Sprite_Renderer);
+				assert(comp != nil);
+				when #defined(destroy__Sprite_Renderer) {
+					destroy__Sprite_Renderer(comp);
 				}
+				pool_return(&all__Sprite_Renderer, comp);
 			}
 			case Component_Type.Spinner_Component: {
-				pool_loop__Spinner_Component:
-				for _, batch_idx in &all__Spinner_Component.batches {
-					batch := &all__Spinner_Component.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Spinner_Component) {
-								destroy__Spinner_Component(comp);
-							}
-							pool_return(&all__Spinner_Component, comp);
-							break pool_loop__Spinner_Component;
-						}
-					}
+				comp := get_component(entity_id, Spinner_Component);
+				assert(comp != nil);
+				when #defined(destroy__Spinner_Component) {
+					destroy__Spinner_Component(comp);
 				}
+				pool_return(&all__Spinner_Component, comp);
 			}
 			case Component_Type.Terrain_Component: {
-				pool_loop__Terrain_Component:
-				for _, batch_idx in &all__Terrain_Component.batches {
-					batch := &all__Terrain_Component.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Terrain_Component) {
-								destroy__Terrain_Component(comp);
-							}
-							pool_return(&all__Terrain_Component, comp);
-							break pool_loop__Terrain_Component;
-						}
-					}
+				comp := get_component(entity_id, Terrain_Component);
+				assert(comp != nil);
+				when #defined(destroy__Terrain_Component) {
+					destroy__Terrain_Component(comp);
 				}
+				pool_return(&all__Terrain_Component, comp);
 			}
 			case Component_Type.Mesh_Renderer: {
-				pool_loop__Mesh_Renderer:
-				for _, batch_idx in &all__Mesh_Renderer.batches {
-					batch := &all__Mesh_Renderer.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Mesh_Renderer) {
-								destroy__Mesh_Renderer(comp);
-							}
-							pool_return(&all__Mesh_Renderer, comp);
-							break pool_loop__Mesh_Renderer;
-						}
-					}
+				comp := get_component(entity_id, Mesh_Renderer);
+				assert(comp != nil);
+				when #defined(destroy__Mesh_Renderer) {
+					destroy__Mesh_Renderer(comp);
 				}
+				pool_return(&all__Mesh_Renderer, comp);
 			}
 			case Component_Type.Box_Collider: {
-				pool_loop__Box_Collider:
-				for _, batch_idx in &all__Box_Collider.batches {
-					batch := &all__Box_Collider.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Box_Collider) {
-								destroy__Box_Collider(comp);
-							}
-							pool_return(&all__Box_Collider, comp);
-							break pool_loop__Box_Collider;
-						}
-					}
+				comp := get_component(entity_id, Box_Collider);
+				assert(comp != nil);
+				when #defined(destroy__Box_Collider) {
+					destroy__Box_Collider(comp);
 				}
+				pool_return(&all__Box_Collider, comp);
 			}
 			case Component_Type.Player_Component: {
-				pool_loop__Player_Component:
-				for _, batch_idx in &all__Player_Component.batches {
-					batch := &all__Player_Component.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Player_Component) {
-								destroy__Player_Component(comp);
-							}
-							pool_return(&all__Player_Component, comp);
-							break pool_loop__Player_Component;
-						}
-					}
+				comp := get_component(entity_id, Player_Component);
+				assert(comp != nil);
+				when #defined(destroy__Player_Component) {
+					destroy__Player_Component(comp);
 				}
+				pool_return(&all__Player_Component, comp);
 			}
 			case Component_Type.Unit_Component: {
-				pool_loop__Unit_Component:
-				for _, batch_idx in &all__Unit_Component.batches {
-					batch := &all__Unit_Component.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Unit_Component) {
-								destroy__Unit_Component(comp);
-							}
-							pool_return(&all__Unit_Component, comp);
-							break pool_loop__Unit_Component;
-						}
-					}
+				comp := get_component(entity_id, Unit_Component);
+				assert(comp != nil);
+				when #defined(destroy__Unit_Component) {
+					destroy__Unit_Component(comp);
 				}
+				pool_return(&all__Unit_Component, comp);
 			}
 			case Component_Type.Health_Component: {
-				pool_loop__Health_Component:
-				for _, batch_idx in &all__Health_Component.batches {
-					batch := &all__Health_Component.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Health_Component) {
-								destroy__Health_Component(comp);
-							}
-							pool_return(&all__Health_Component, comp);
-							break pool_loop__Health_Component;
-						}
-					}
+				comp := get_component(entity_id, Health_Component);
+				assert(comp != nil);
+				when #defined(destroy__Health_Component) {
+					destroy__Health_Component(comp);
 				}
+				pool_return(&all__Health_Component, comp);
 			}
 			case Component_Type.Attack_Default_Command: {
-				pool_loop__Attack_Default_Command:
-				for _, batch_idx in &all__Attack_Default_Command.batches {
-					batch := &all__Attack_Default_Command.batches[batch_idx];
-					for _, idx in batch.list do if batch.empties[idx] {
-						comp := &batch.list[idx];
-						if comp.entity == entity_id {
-							when #defined(destroy__Attack_Default_Command) {
-								destroy__Attack_Default_Command(comp);
-							}
-							pool_return(&all__Attack_Default_Command, comp);
-							break pool_loop__Attack_Default_Command;
-						}
-					}
+				comp := get_component(entity_id, Attack_Default_Command);
+				assert(comp != nil);
+				when #defined(destroy__Attack_Default_Command) {
+					destroy__Attack_Default_Command(comp);
 				}
+				pool_return(&all__Attack_Default_Command, comp);
 			}
 			}
 		}
@@ -876,149 +796,62 @@ destroy_marked_entities :: proc() {
 update_inspector_window :: proc() {
 	if imgui.begin("Scene") {
 		for entity, entity_data in all_entities {
-			if imgui.collapsing_header(tprint((entity_data.name == "" ? "<no_name>" : entity_data.name), " #", entity)) {
+			name := tprint((entity_data.name == "" ? "<no_name>" : entity_data.name), " #", entity);
+			imgui.push_id(name);
+			defer imgui.pop_id();
+			if imgui.collapsing_header(name) {
 				for comp_type in entity_data.component_types {
 					imgui.indent();
 						switch comp_type {
 						case Component_Type.Transform: {
-							pool_loop__Transform:
-							for _, batch_idx in &all__Transform.batches {
-								batch := &all__Transform.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Transform"));
-										break pool_loop__Transform;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Transform);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Transform");
 						}
 						case Component_Type.Sprite_Renderer: {
-							pool_loop__Sprite_Renderer:
-							for _, batch_idx in &all__Sprite_Renderer.batches {
-								batch := &all__Sprite_Renderer.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Sprite_Renderer"));
-										break pool_loop__Sprite_Renderer;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Sprite_Renderer);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Sprite_Renderer");
 						}
 						case Component_Type.Spinner_Component: {
-							pool_loop__Spinner_Component:
-							for _, batch_idx in &all__Spinner_Component.batches {
-								batch := &all__Spinner_Component.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Spinner_Component"));
-										break pool_loop__Spinner_Component;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Spinner_Component);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Spinner_Component");
 						}
 						case Component_Type.Terrain_Component: {
-							pool_loop__Terrain_Component:
-							for _, batch_idx in &all__Terrain_Component.batches {
-								batch := &all__Terrain_Component.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Terrain_Component"));
-										break pool_loop__Terrain_Component;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Terrain_Component);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Terrain_Component");
 						}
 						case Component_Type.Mesh_Renderer: {
-							pool_loop__Mesh_Renderer:
-							for _, batch_idx in &all__Mesh_Renderer.batches {
-								batch := &all__Mesh_Renderer.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Mesh_Renderer"));
-										break pool_loop__Mesh_Renderer;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Mesh_Renderer);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Mesh_Renderer");
 						}
 						case Component_Type.Box_Collider: {
-							pool_loop__Box_Collider:
-							for _, batch_idx in &all__Box_Collider.batches {
-								batch := &all__Box_Collider.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Box_Collider"));
-										break pool_loop__Box_Collider;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Box_Collider);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Box_Collider");
 						}
 						case Component_Type.Player_Component: {
-							pool_loop__Player_Component:
-							for _, batch_idx in &all__Player_Component.batches {
-								batch := &all__Player_Component.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Player_Component"));
-										break pool_loop__Player_Component;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Player_Component);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Player_Component");
 						}
 						case Component_Type.Unit_Component: {
-							pool_loop__Unit_Component:
-							for _, batch_idx in &all__Unit_Component.batches {
-								batch := &all__Unit_Component.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Unit_Component"));
-										break pool_loop__Unit_Component;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Unit_Component);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Unit_Component");
 						}
 						case Component_Type.Health_Component: {
-							pool_loop__Health_Component:
-							for _, batch_idx in &all__Health_Component.batches {
-								batch := &all__Health_Component.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Health_Component"));
-										break pool_loop__Health_Component;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Health_Component);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Health_Component");
 						}
 						case Component_Type.Attack_Default_Command: {
-							pool_loop__Attack_Default_Command:
-							for _, batch_idx in &all__Attack_Default_Command.batches {
-								batch := &all__Attack_Default_Command.batches[batch_idx];
-								for _, idx in batch.list do if batch.empties[idx] {
-									comp := &batch.list[idx];
-									if comp.entity == entity {
-										wb.imgui_struct(comp, tprint("Attack_Default_Command"));
-										break pool_loop__Attack_Default_Command;
-									}
-								}
-							}
-							break;
+							comp := get_component(entity, Attack_Default_Command);
+							assert(comp != nil);
+							wb.imgui_struct(comp, "Attack_Default_Command");
 						}
 					}
 				imgui.unindent();

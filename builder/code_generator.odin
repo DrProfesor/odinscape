@@ -152,11 +152,11 @@ using import "shared:workbench/pool"
 			line("return true;");
 		}
 
-		procedure_begin("deserialize_entity_comnponents", "Entity", 
-			Parameter{"entity_id", "int"}, 
-			Parameter{"serialized_entity", "[dynamic]string"}, 
+		procedure_begin("deserialize_entity_comnponents", "Entity",
+			Parameter{"entity_id", "int"},
+			Parameter{"serialized_entity", "[dynamic]string"},
 			Parameter{"component_types", "[dynamic]string"},
-			Parameter{"entity_name", "string"}); 
+			Parameter{"entity_name", "string"});
 		{
 			defer procedure_end();
 
@@ -191,19 +191,15 @@ using import "shared:workbench/pool"
 						for component_name in components {
 							line_indent("case Component_Type.", component_name, ": {"); {
 								defer line_outdent("}");
-								line("pool_loop__", component_name, ":");
-								pool_foreach("comp", component_name); {
-									defer end_pool_foreach();
-									line_indent("if comp.entity == entity_id {"); {
-										defer line_outdent("}");
-										line_indent("when #defined(destroy__", component_name, ") {"); {
-											defer line_outdent("}");
-											line("destroy__", component_name, "(comp);");
-										}
-										line("pool_return(&all__", component_name, ", comp);");
-										line("break pool_loop__", component_name, ";");
-									}
+
+								line("comp := get_component(entity_id, ", component_name, ");");
+								line("assert(comp != nil);");
+								line_indent("when #defined(destroy__", component_name, ") {"); {
+									line("destroy__", component_name, "(comp);");
+									defer line_outdent("}");
 								}
+
+								line("pool_return(&all__", component_name, ", comp);");
 							}
 						}
 					}
@@ -224,7 +220,10 @@ using import "shared:workbench/pool"
 				line_indent("for entity, entity_data in all_entities {"); {
 					defer line_outdent("}");
 
-					line_indent("if imgui.collapsing_header(tprint((entity_data.name == \"\" ? \"<no_name>\" : entity_data.name), \" #\", entity)) {"); {
+					line("name := tprint((entity_data.name == \"\" ? \"<no_name>\" : entity_data.name), \" #\", entity);");
+					line("imgui.push_id(name);");
+					line("defer imgui.pop_id();");
+					line_indent("if imgui.collapsing_header(name) {"); {
 						defer line_outdent("}");
 						line_indent("for comp_type in entity_data.component_types {"); {
 							defer line_outdent("}");
@@ -238,17 +237,9 @@ using import "shared:workbench/pool"
 									line_indent("case Component_Type.", component_name, ": {"); {
 										defer line_outdent("}");
 
-										line("pool_loop__", component_name, ":");
-										pool_foreach("comp", component_name); {
-											defer end_pool_foreach();
-											line_indent("if comp.entity == entity {"); {
-												defer line_outdent("}");
-												line("wb.imgui_struct(comp, tprint(\"", component_name, "\"));");
-												line("break pool_loop__", component_name, ";");
-											}
-										}
-
-										line("break;");
+										line("comp := get_component(entity, ", component_name, ");");
+										line("assert(comp != nil);");
+										line("wb.imgui_struct(comp, \"", component_name, "\");");
 									}
 								}
 							}
