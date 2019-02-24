@@ -81,6 +81,3 @@ main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, wb.Workspace{"Main", main_init, main_update, main_render, main_end}, &gameplay_camera);
 }
 
-to_vec2 :: wbmath.to_vec2;
-to_vec3 :: wbmath.to_vec3;
-to_vec4 :: wbmath.to_vec4;
