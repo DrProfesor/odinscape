@@ -18,8 +18,6 @@ all_entities             : map[Entity]_Entity_Data;
 entities_to_destroy      : [dynamic]Entity;
 available_component_lists: [dynamic][dynamic]Component_Type;
 
-// fuck your static :D
-// :(
 last_entity_id: Entity;
 
 new_entity :: proc(name: string = "nil") -> Entity {

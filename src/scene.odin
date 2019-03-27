@@ -49,7 +49,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 							defer delete(entry_data);
 							existing, ok := loaded_models[entry.id];
 							if ok {
-								path := strings.new_cstring(tprint(RESOURCES, entry.path));
+								path := strings.clone_to_cstring(tprint(RESOURCES, entry.path));
 								defer delete(path);
 								new_model := wb.buffer_model(wb.load_model_from_file(path));
 
@@ -60,7 +60,7 @@ scene_init :: proc(scene_id : string) -> Scene {
 							} else {
 								// TODO (jake): don't do this, use load_model_from_memory, same with #43
 								// too lazy to figure it out now though
-								path := strings.new_cstring(tprint(RESOURCES, entry.path));
+								path := strings.clone_to_cstring(tprint(RESOURCES, entry.path));
 								defer delete(path);
 								model := wb.buffer_model(wb.load_model_from_file(path));
 								// end of bad

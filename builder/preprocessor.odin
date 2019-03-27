@@ -5,6 +5,7 @@ import    "core:os"
 
 using import "core:fmt"
 using import "shared:workbench/laas"
+using import "shared:workbench/basic"
 
 import "shared:workbench/wbml"
 
@@ -20,7 +21,7 @@ run_preprocessor :: proc() {
 			if wb.is_directory(source_file) do continue;
 
 			//
-			ext, ok := wb.get_file_extension(source_file);
+			ext, ok := get_file_extension(source_file);
 			if !ok do continue;
 			if ext != ".odin" do continue;
 		}
