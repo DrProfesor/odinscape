@@ -209,7 +209,9 @@ do_move_command :: proc(me: ^Transform, target: Vec3, speed: f32, range : f32 = 
 	if close_enough(me.position, target, range) {
 		return true;
 	}
-	me.position += norm0(target - me.position) * speed * wb.fixed_delta_time;
+	dir := norm0(target - me.position);
+	me.position += dir * speed * wb.fixed_delta_time;
+	me.orientation = wbmath.direction_to_quaternion(dir);
 	return false;
 }
 close_enough :: inline proc(a, b: Vec3, range : f32 = DISTANCE_BUFFER_DEFAULT) -> bool {

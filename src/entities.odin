@@ -82,22 +82,31 @@ Transform :: struct {
 
 	position: Vec3,
 	scale: Vec3,
+	orientation: Quat,
 	rotation: Vec3,
 
 	stuck_on_ground: bool,
 	offset_from_ground: Vec3,
 }
 
-transform :: inline proc(position := Vec3{0, 0, 0}, scale := Vec3{1, 1, 1}, rotation := Vec3{}, stuck_on_ground := false, offset_from_ground := Vec3{}) -> Transform {
+transform :: inline proc(position := Vec3{0, 0, 0}, scale := Vec3{1, 1, 1}, rotation := Quat{0, 0, 0, 1}, stuck_on_ground := false, offset_from_ground := Vec3{}) -> Transform {
 	tf: Transform;
 	tf.position = position;
 	tf.scale = scale;
-	tf.rotation = rotation;
+	tf.orientation = rotation;
 	tf.stuck_on_ground = stuck_on_ground;
 	tf.offset_from_ground = offset_from_ground;
 	return tf;
 }
 
+init__Transform :: inline proc(using tf: ^Transform) {
+	if orientation.x == 0 &&
+	   orientation.y == 0 &&
+	   orientation.z == 0 &&
+	   orientation.w == 0 {
+	   	orientation = {0, 0, 0, 1};
+	}
+}
 
 update__Transform :: inline proc(using tf: ^Transform) {
 	if stuck_on_ground {
@@ -138,29 +147,6 @@ render__Sprite_Renderer :: inline proc(using sprite: ^Sprite_Renderer) {
 }
 
 //
-// Spinner component
-//
-// @Component
-Spinner_Component :: struct {
-	using base: Component_Base,
-
-	orbit_distance: f32,
-	orbit_speed: f32,
-	torque: Vec3,
-}
-
-update__Spinner_Component :: inline proc(using spinner: ^Spinner_Component) {
-	tf := get_component(entity, Transform);
-	tf.position = Vec3{sin(wb.time * orbit_speed) * orbit_distance, cos(wb.time * orbit_speed) * orbit_distance, 0};
-	tf.rotation += torque;
-	tf.scale = Vec3{1, 1, 1} * (wbmath.sin01(wb.time)/2+0.5);
-
-	q := wbmath.degrees_to_quaternion(tf.rotation);
-	// wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_forward(q) * 10, wb.COLOR_GREEN);
-	// wb.push_debug_line(wb.rendermode_world, tf.position, tf.position + wb.quaternion_right(q) * 10, wb.COLOR_BLUE);
-}
-
-//
 // Terrain
 //
 // @Component
@@ -194,7 +180,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 			mesh_id,
 			tf.position + offset_from_transform,
 			tf.scale,
-			tf.rotation,
+			tf.orientation,
 			texture_handle,
 			shader_handle,
 			color,

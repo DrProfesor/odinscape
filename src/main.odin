@@ -34,7 +34,7 @@ main_init :: proc() {
 	focus_camera_on_guy(player_input_manager.player_entity);
 
 	//
-	wb.client_debug_window_proc = debug_window_proc;
+	wb.register_debug_program("Odinscape Debug", debug_window_proc, nil);
 }
 
 last_mouse_pos: Vec2;
@@ -57,7 +57,7 @@ main_end :: proc() {
 	key_config_save();
 }
 
-debug_window_proc :: proc() {
+debug_window_proc :: proc(_: rawptr) {
 	imgui.checkbox("Debug Colliders", &debugging_colliders);
 	imgui.checkbox("Entity Handles", &debug_draw_entity_handles);
 	imgui.checkbox("Ability Editor", &ability_manager.show_ability_editor);
