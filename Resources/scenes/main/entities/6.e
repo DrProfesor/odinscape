@@ -17,6 +17,13 @@ Transform
 		1.000
 	]
 
+	orientation {
+		x 0.000
+		y 0.000
+		z 0.000
+		w 1.000
+	}
+
 	rotation [
 		0.000
 		0.000
@@ -52,7 +59,7 @@ Mesh_Renderer
 		a 1.000
 	}
 
-	texture_handle 2
+	texture_handle 3
 
 	shader_handle 6
 

@@ -17,6 +17,13 @@ Transform
 		10.000
 	]
 
+	orientation {
+		x 0.000
+		y 0.000
+		z 0.000
+		w 1.000
+	}
+
 	rotation [
 		0.000
 		0.000
