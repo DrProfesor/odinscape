@@ -209,7 +209,9 @@ do_move_command :: proc(me: ^Transform, target: Vec3, speed: f32, range : f32 = 
 	if close_enough(me.position, target, range) {
 		return true;
 	}
-	dir := norm0(target - me.position);
+	offset := target - me.position;
+	offset.y = 0;
+	dir := norm0(offset);
 	me.position += dir * speed * wb.fixed_delta_time;
 	me.orientation = wbmath.direction_to_quaternion(dir);
 	return false;
