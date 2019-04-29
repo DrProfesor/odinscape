@@ -69,7 +69,7 @@ Mesh_Renderer
 
 	texture_handle 0
 
-	shader_handle 12
+	shader_handle 2
 
 }
 

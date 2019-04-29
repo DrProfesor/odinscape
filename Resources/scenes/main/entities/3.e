@@ -6,9 +6,9 @@ Transform
 	}
 
 	position [
-		-3.190
+		-4.000
 		0.000
-		-3.062
+		0.660
 	]
 
 	scale [
@@ -19,9 +19,9 @@ Transform
 
 	orientation {
 		x 0.000
-		y -0.960
+		y -0.096
 		z 0.000
-		w 0.280
+		w 0.995
 	}
 
 	rotation [
@@ -59,7 +59,7 @@ Mesh_Renderer
 		a 1.000
 	}
 
-	texture_handle 4
+	texture_handle 5
 
 	shader_handle 6
 

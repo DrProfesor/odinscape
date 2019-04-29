@@ -263,7 +263,7 @@ draw_player_hud :: proc() {
 						}
 					}
 
-					wb.ui_text(wb.font_default, input_to_nice_name(input^), 0.5, COLOR_GREEN);
+					wb.ui_text(wb.default_font, input_to_nice_name(input^), 0.5, COLOR_GREEN);
 				}
 			}
 			assert(idx <= 4);

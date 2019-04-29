@@ -175,7 +175,7 @@ render__Mesh_Renderer :: inline proc(using mesh_comp: ^Mesh_Renderer) {
 	model_asset := get_model(model);
 	assert(model_asset != nil);
 
-	for mesh_id in model_asset.asset.meshes {
+	for mesh_id in model_asset.model.mesh_ids {
 		wb.push_mesh(
 			mesh_id,
 			tf.position + offset_from_transform,

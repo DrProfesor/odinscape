@@ -49,20 +49,20 @@ scene_init :: proc(scene_id : string) -> Scene {
 							defer delete(entry_data);
 							existing, ok := loaded_models[entry.id];
 							if ok {
-								path := strings.clone_to_cstring(tprint(RESOURCES, entry.path));
-								defer delete(path);
-								new_model := wb.buffer_model(wb.load_model_from_file(path));
+								path := tprint(RESOURCES, entry.path);
+								new_model := wb.load_model_from_file(path);
+								wb.load_model_to_gpu(&new_model);
 
-								wb.release_model(existing.asset);
-								existing.asset = new_model;
+								wb.delete_model(existing.model);
+								existing.model = new_model;
 
 								loaded_models[entry.id] = existing;
 							} else {
 								// TODO (jake): don't do this, use load_model_from_memory, same with #43
 								// too lazy to figure it out now though
-								path := strings.clone_to_cstring(tprint(RESOURCES, entry.path));
-								defer delete(path);
-								model := wb.buffer_model(wb.load_model_from_file(path));
+								path := tprint(RESOURCES, entry.path);
+								model := wb.load_model_from_file(path);
+								wb.load_model_to_gpu(&model);
 								// end of bad
 
 								/*
@@ -89,9 +89,9 @@ scene_init :: proc(scene_id : string) -> Scene {
 						proc(entry: ^Manifest_Entry, entry_data: []u8) {
 							defer delete(entry_data);
 							if existing, ok := loaded_textures[entry.id]; ok {
-								wb.rebuffer_texture(existing.asset, entry_data);
+								wb.update_texture(existing.asset, entry_data);
 							} else {
-								texture := wb.load_texture(entry_data);
+								texture := wb.create_texture(entry_data);
 								loaded_textures[entry.id] = Texture_Asset{texture, 1};
 							}
 						});
@@ -174,7 +174,7 @@ scene_end :: proc(using scene: Scene) {
 					if asset.count <= 1 {
 						subscription, ok2 := catalog_subscriptions[entry.id];
 						if ok2 {
-							wb.release_model(asset.asset);
+							wb.delete_model(asset.model);
 							wb.catalog_unsubscribe(subscription);
 						}
 						delete_key(&loaded_models, entry.id);
@@ -191,7 +191,7 @@ scene_end :: proc(using scene: Scene) {
 					if asset.count <= 1 {
 						subscription, ok2 := catalog_subscriptions[entry.id];
 						if ok2 {
-							wb.release_texture(asset.asset);
+							wb.delete_texture(asset.asset);
 							wb.catalog_unsubscribe(subscription);
 						}
 						delete_key(&loaded_textures, entry.id);
@@ -223,7 +223,7 @@ scene_end :: proc(using scene: Scene) {
 loaded_models : map[string]^Model_Asset;
 
 Model_Asset :: struct {
-	asset: wb.Model,
+	model: wb.Model,
 	count: int,
 }
 

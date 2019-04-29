@@ -21,7 +21,6 @@ gameplay_camera := wb.Camera{true, 65, {}, {}, {}};
 
 main_init :: proc() {
 	//
-	load_fonts();
 	init_key_config();
 	init_entities();
 	init_abilities();
@@ -35,6 +34,7 @@ main_init :: proc() {
 
 	//
 	wb.register_debug_program("Odinscape Debug", debug_window_proc, nil);
+	logln(wb.shader_texture);
 }
 
 last_mouse_pos: Vec2;
@@ -62,18 +62,6 @@ debug_window_proc :: proc(_: rawptr) {
 	imgui.checkbox("Entity Handles", &debug_draw_entity_handles);
 	imgui.checkbox("Ability Editor", &ability_manager.show_ability_editor);
 }
-
-load_fonts :: proc() {
-	data, ok1 := os.read_entire_file("resources/fonts/OpenSans-Regular.ttf");
-	assert(ok1);
-
-	ok2: bool;
-	wb.font_default, ok2 = wb.load_font(data, 72);
-	assert(ok2);
-}
-
-
-
 
 
 
