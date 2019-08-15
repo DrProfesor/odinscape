@@ -11,6 +11,8 @@ import wbml "shared:workbench/wbml"
 Game_Input :: platform.Input;
 
 Key_Config :: struct {
+	toggle_editor: Game_Input,
+
 	camera_up:      Game_Input,
 	camera_down:    Game_Input,
 	camera_forward: Game_Input,
@@ -63,6 +65,8 @@ default_key_config :: proc() -> Key_Config {
 	using platform.Input;
     
 	return Key_Config{
+		toggle_editor = F1,
+
 		camera_up      = Space,
 		camera_down    = Left_Control,
 		camera_forward = W,

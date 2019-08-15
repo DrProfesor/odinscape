@@ -328,7 +328,7 @@ draw_entity_window :: proc() {
 			if imgui.collapsing_header(name) {
 				imgui.indent(); defer imgui.unindent();
                 
-				@static entity_name_buffer: [64]u8;
+				entity_name_buffer: [64]u8;
 				if imgui.input_text("Name", entity_name_buffer[:], .EnterReturnsTrue) {
 					// note(josh): @Leak @Alloc, we stomp on the current name and leak it but that should be fine because this is debug only!!
 					e_data.name = aprint(cast(string)cast(cstring)&entity_name_buffer[0]);
@@ -354,7 +354,7 @@ draw_entity_window :: proc() {
                 
                 
                 
-				@static comp_name_buffer: [64]byte;
+				comp_name_buffer: [64]byte;
 				just_opened := false;
 				if imgui.button("+") {
 					comp_name_buffer = {};

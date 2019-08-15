@@ -1,4 +1,5 @@
 {
+	toggle_editor F1
 	camera_up Space
 	camera_down Left_Control
 	camera_forward W
