@@ -5,9 +5,10 @@ import "core:mem"
 using import "core:fmt"
 
 import wb   "shared:workbench"
+import platform "shared:workbench/platform"
 import wbml "shared:workbench/wbml"
 
-Game_Input :: wb.Input;
+Game_Input :: platform.Input;
 
 Key_Config :: struct {
 	camera_up:      Game_Input,
@@ -16,18 +17,18 @@ Key_Config :: struct {
 	camera_back:    Game_Input,
 	camera_left:    Game_Input,
 	camera_right:   Game_Input,
-
+    
 	camera_snap_to_unit: Game_Input,
 	free_camera: Game_Input,
 	camera_enable_mouse_rotation: Game_Input,
-
+    
 	select_unit: Game_Input,
-
+    
 	add_unit_to_selection_modifier: Game_Input,
-
+    
 	queue_command_modifier: Game_Input,
 	move_command: Game_Input,
-
+    
 	ability1: Game_Input,
 	ability2: Game_Input,
 	ability3: Game_Input,
@@ -59,8 +60,8 @@ key_config_save :: proc() {
 }
 
 default_key_config :: proc() -> Key_Config {
-	using wb.Input;
-
+	using platform.Input;
+    
 	return Key_Config{
 		camera_up      = Space,
 		camera_down    = Left_Control,
@@ -68,17 +69,17 @@ default_key_config :: proc() -> Key_Config {
 		camera_back    = S,
 		camera_left    = A,
 		camera_right   = D,
-
+        
 		camera_snap_to_unit = Mouse_Middle,
 		free_camera = Tab,
 		camera_enable_mouse_rotation = Mouse_Right,
-
+        
 		select_unit = Mouse_Left,
 		add_unit_to_selection_modifier = Left_Shift,
-
+        
 		queue_command_modifier = Left_Shift,
 		move_command = Mouse_Right,
-
+        
 		ability1 = NR_1,
 		ability2 = NR_2,
 		ability3 = NR_3,
@@ -86,9 +87,9 @@ default_key_config :: proc() -> Key_Config {
 	};
 }
 
-input_to_nice_name :: proc(input: wb.Input) -> string {
-	using wb.Input;
-
+input_to_nice_name :: proc(input: platform.Input) -> string {
+	using platform.Input;
+    
 	switch input {
 		case Mouse_Button_1:          return "LMB";
 		case Mouse_Button_2:          return "RMB";
@@ -219,7 +220,7 @@ input_to_nice_name :: proc(input: wb.Input) -> string {
 		case Right_Super:             return "Right Super";
 		case Key_Menu:                return "Key Menu";
 	}
-
+    
 	assert(false, tprint(input));
 	return "";
 }
