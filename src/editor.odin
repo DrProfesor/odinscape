@@ -14,7 +14,15 @@ editor_update :: proc() {
 		editor_enabled = !editor_enabled;
 	}
 
-	if (editor_enabled) {
-		draw_entity_window();
+	if !editor_enabled do return;
+
+	// Editor move camera
+	if platform.get_input(key_config.camera_scroll) {
+
+	} 
+	else if platform.get_input(key_config.camera_free_move) {
+
 	}
+
+	draw_entity_window();
 }

@@ -13,24 +13,39 @@ import coll      "shared:workbench/collision"
 import wbmath    "shared:workbench/math"
 import ai        "shared:workbench/external/assimp"
 import imgui     "shared:workbench/external/imgui"
+import gpu       "shared:workbench/gpu"
 
 DEVELOPER :: true;
 
+asset_catalog: wb.Asset_Catalog;
 main_collision_scene: coll.Collision_Scene;
-gameplay_camera := wb.current_camera;
+shader_texture_lit: gpu.Shader_Program;
 
 game_init :: proc() {
+
+	{
+		wb.load_asset_folder("resources", &asset_catalog, "material", "txt", "e");
+	}
+
+	// shaders
+	{
+		ok: bool;
+		shader_texture_lit, ok = gpu.load_shader_text(SHADER_TEXTURE_LIT_VERT, SHADER_TEXTURE_LIT_FRAG);
+		assert(ok);
+	}
+
 	// camera
 	{
-		wb.current_camera.is_perspective = true;
-		wb.current_camera.size = 70;
-		wb.current_camera.position = Vec3{};
-		wb.current_camera.rotation = Quat{};
+		gpu.current_camera.is_perspective = true;
+		gpu.current_camera.size = 70;
+		gpu.current_camera.position = Vec3{};
+		gpu.current_camera.rotation = Quat{};
 	}
     
     // entities
 	{
 		em_add_component_type(Transform, nil, nil);
+		em_add_component_type(Model_Renderer, nil, render_model_renderer, init_model_renderer);
         
 		scene_init("main");
 	}
@@ -43,10 +58,14 @@ game_init :: proc() {
 	wb.register_debug_program("Odinscape Debug", debug_window_proc, nil);
 }
 
-game_update :: proc() {
+game_update :: proc(dt: f32) {
+	em_update(dt);
 
+	em_render();
 }
 
 game_end :: proc() {
 	scene_end("main");
+
+	wb.delete_asset_catalog(asset_catalog);
 }

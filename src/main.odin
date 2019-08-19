@@ -23,7 +23,7 @@ main_update :: proc(dt: f32) {
     if platform.get_input_down(platform.Input.Escape) do wb.end_workspace(wb.current_workspace);
 
     //
-    game_update();
+    game_update(dt);
 
     //
     editor_update();

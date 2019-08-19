@@ -67,17 +67,18 @@ default_key_config :: proc() -> Key_Config {
 	return Key_Config{
 		toggle_editor = F1,
 
+		// Editor
 		camera_up      = Space,
-		camera_down    = Left_Control,
+		camera_down    = Left_Shit,
 		camera_forward = W,
 		camera_back    = S,
 		camera_left    = A,
 		camera_right   = D,
         
-		camera_snap_to_unit = Mouse_Middle,
-		free_camera = Tab,
-		camera_enable_mouse_rotation = Mouse_Right,
+		camera_scroll = Mouse_Middle,
+		camera_free_move = Mouse_Right,
         
+		// Game
 		select_unit = Mouse_Left,
 		add_unit_to_selection_modifier = Left_Shift,
         

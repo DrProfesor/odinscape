@@ -217,7 +217,7 @@ _em_add_component_internal :: proc(eid: Entity, tid: typeid) -> rawptr {
 	assert(ok2);
 	append(&e_data.components, tid);
 	entity_data[eid] = e_data;
-    
+	
 	return ptr;
 }
 
