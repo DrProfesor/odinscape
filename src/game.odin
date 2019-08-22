@@ -22,24 +22,24 @@ main_collision_scene: coll.Collision_Scene;
 shader_texture_lit: gpu.Shader_Program;
 
 game_init :: proc() {
-
+    
 	{
 		wb.load_asset_folder("resources", &asset_catalog, "material", "txt", "e");
 	}
-
+    
 	// shaders
 	{
 		ok: bool;
 		shader_texture_lit, ok = gpu.load_shader_text(SHADER_TEXTURE_LIT_VERT, SHADER_TEXTURE_LIT_FRAG);
 		assert(ok);
 	}
-
+    
 	// camera
 	{
 		gpu.current_camera.is_perspective = true;
 		gpu.current_camera.size = 70;
-		gpu.current_camera.position = Vec3{};
-		gpu.current_camera.rotation = Quat{};
+		gpu.current_camera.position = Vec3{0, 6.09, 4.82};
+		gpu.current_camera.rotation = Quat{-0.500628, 0, 0, 0.865663};
 	}
     
     // entities
@@ -60,12 +60,14 @@ game_init :: proc() {
 
 game_update :: proc(dt: f32) {
 	em_update(dt);
+}
 
-	em_render();
+game_render :: proc() {
+    em_render();
 }
 
 game_end :: proc() {
 	scene_end("main");
-
+    
 	wb.delete_asset_catalog(asset_catalog);
 }

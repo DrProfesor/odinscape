@@ -21,15 +21,16 @@ main_init :: proc() {
 
 main_update :: proc(dt: f32) {
     if platform.get_input_down(platform.Input.Escape) do wb.end_workspace(wb.current_workspace);
-
+    
     //
     game_update(dt);
-
+    
     //
     editor_update();
 }
 
 main_render :: proc(dt: f32) {
+    game_render();
 }
 
 main_end :: proc() {
@@ -45,6 +46,6 @@ debug_window_proc :: proc(_: rawptr) {
 
 main :: proc() {
     wb.make_simple_window("OdinScape", 1920, 1080, 3, 3, 120, 
-    	wb.Workspace{"Main", main_init, main_update, main_render, main_end});
+                          wb.Workspace{"Main", main_init, main_update, main_render, main_end});
 }
 

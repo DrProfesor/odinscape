@@ -6,9 +6,9 @@
 	camera_back S
 	camera_left A
 	camera_right D
-	camera_snap_to_unit Mouse_Button_3
-	free_camera Tab
-	camera_enable_mouse_rotation Mouse_Button_2
+	camera_speed_boost Left_Shift
+	camera_free_move Mouse_Button_2
+	camera_scroll Mouse_Button_3
 	select_unit Mouse_Button_1
 	add_unit_to_selection_modifier Left_Shift
 	queue_command_modifier Left_Shift
