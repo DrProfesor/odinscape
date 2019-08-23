@@ -72,11 +72,11 @@ vec4 calculate_point_light(int, vec3, vec4);
 void main() {
     vec3 norm = normalize(normal);
 
-    vec4 unlit_color = vec4(1, 1, 1, 1);
+    vec4 unlit_color = material.ambient;
     if (has_texture == 1) {
         unlit_color *= texture(atlas_texture, tex_coord);
     }
-    out_color = vec4(0, 0, 0, 0);
+    out_color = unlit_color;
     for (int i = 0; i < num_lights; i++) {
         out_color += calculate_point_light(i, norm, unlit_color);
     }
@@ -90,9 +90,6 @@ vec4 calculate_point_light(int light_index, vec3 norm, vec4 unlit_color) {
     vec3  light_dir = normalize(position - frag_position);
     vec3  view_dir  = normalize(camera_position - frag_position);
 
-    // ambient
-    vec4 ambient = color * material.ambient;
-
     // diffuse
     float diff    = max(dot(norm, light_dir), 0.0);
     vec4  diffuse = color * diff * material.diffuse;
@@ -104,10 +101,9 @@ vec4 calculate_point_light(int light_index, vec3 norm, vec4 unlit_color) {
 
     float attenuation = 1.0 / distance;
 
-    ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
 
-    return unlit_color * vec4((ambient + diffuse + specular).xyz, 1.0);
+    return unlit_color * vec4((diffuse + specular).xyz, 1.0);
 }
 `;
