@@ -26,6 +26,7 @@ Key_Config :: struct {
     
 	camera_free_move: Game_Input,
 	camera_scroll: Game_Input,
+    editor_select: Game_Input,
     
     // Game
     
@@ -70,11 +71,11 @@ default_key_config :: proc() -> Key_Config {
 	using platform.Input;
     
 	return Key_Config{
-		toggle_editor = F1,
+		toggle_editor = F2,
         
 		// Editor
-		camera_up      = Space,
-		camera_down    = Left_Control,
+		camera_up      = E,
+		camera_down    = Q,
 		camera_forward = W,
 		camera_back    = S,
 		camera_left    = A,
@@ -83,6 +84,7 @@ default_key_config :: proc() -> Key_Config {
         
 		camera_scroll = Mouse_Middle,
 		camera_free_move = Mouse_Right,
+        editor_select = Mouse_Left,
         
 		// Game
 		select_unit = Mouse_Left,

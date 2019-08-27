@@ -1,7 +1,7 @@
 {
-	toggle_editor F1
-	camera_up Space
-	camera_down Left_Control
+	toggle_editor F2
+	camera_up E
+	camera_down Q
 	camera_forward W
 	camera_back S
 	camera_left A
@@ -9,6 +9,7 @@
 	camera_speed_boost Left_Shift
 	camera_free_move Mouse_Button_2
 	camera_scroll Mouse_Button_3
+	editor_select Mouse_Button_1
 	select_unit Mouse_Button_1
 	add_unit_to_selection_modifier Left_Shift
 	queue_command_modifier Left_Shift

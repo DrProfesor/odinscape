@@ -26,7 +26,7 @@ main_update :: proc(dt: f32) {
     game_update(dt);
     
     //
-    editor_update();
+    editor_update(dt);
 }
 
 main_render :: proc(dt: f32) {

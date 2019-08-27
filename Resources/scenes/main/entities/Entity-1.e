@@ -7,7 +7,7 @@ Transform
 	position [
 		0.000
 		0.000
-		10.000
+		0.000
 	]
 
 	rotation {
@@ -33,7 +33,7 @@ Model_Renderer
 	shader 18
 
 	color {
-		r 1.000
+		r 0.000
 		g 1.000
 		b 1.000
 		a 1.000
@@ -65,4 +65,35 @@ Model_Renderer
 		0.010
 	]
 
+}
+Collider
+{
+	base {
+		enabled true
+	}
+	internal_collider {
+		position [
+			0.000
+			0.000
+			0.000
+		]
+
+		box {
+			size [
+				0.000
+				0.000
+				0.000
+			]
+
+		}
+	}
+	type Box
+	box {
+		size [
+			1.000
+			1.000
+			1.000
+		]
+
+	}
 }

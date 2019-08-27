@@ -354,7 +354,7 @@ draw_entity_window :: proc() {
                 
                 
                 
-				comp_name_buffer: [64]byte;
+				@static comp_name_buffer: [64]byte;
 				just_opened := false;
 				if imgui.button("+") {
 					comp_name_buffer = {};

@@ -22,11 +22,11 @@ out vec4 desired_color;
 
 void main() {
     vec4 result = ((projection_matrix * view_matrix) * model_matrix) * vec4(vbo_vertex_position, 1);
-
+    
     // commenting this out fixes specularity, hopefully it wasn't here for a reason :DDDDDDDD
     // https://i.imgur.com/UqXbIMe.png
     // if (result.w > 0) { result /= result.w; }
-
+    
     gl_Position = result;
     tex_coord = vbo_tex_coord;
     normal = mat3(transpose(inverse(model_matrix))) * vbo_normal;
@@ -85,7 +85,7 @@ void main() {
 vec4 calculate_point_light(int light_index, vec3 norm, vec4 unlit_color) {
     vec3  position = light_positions[light_index];
     vec4  color    = light_colors   [light_index];
-
+    
     float distance = length(position - frag_position);
     vec3  light_dir = normalize(position - frag_position);
     vec3  view_dir  = normalize(camera_position - frag_position);
@@ -93,12 +93,12 @@ vec4 calculate_point_light(int light_index, vec3 norm, vec4 unlit_color) {
     // diffuse
     float diff    = max(dot(norm, light_dir), 0.0);
     vec4  diffuse = color * diff * material.diffuse;
-
+    
     // specular
     vec3  reflect_dir = reflect(-light_dir, norm);
     float spec        = pow(max(dot(view_dir, reflect_dir), 0.0), material.shine);
     vec4  specular    = color * spec * material.specular;
-
+    
     float attenuation = 1.0 / distance;
 
     diffuse  *= attenuation;
