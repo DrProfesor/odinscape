@@ -13,9 +13,10 @@ import wb_math  "shared:workbench/math"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"
 
-editor_enabled := false;
-
 Base_Speed := Vec3{1,1,1};
+
+editor_enabled := false;
+selected_entity : Entity;
 
 editor_init :: proc() {
     
@@ -76,17 +77,19 @@ editor_update :: proc(dt: f32) {
         wb.wb_camera.rotation = mul(mul(qy, qx), wb.wb_camera.rotation);
 	}
     
-    //if wb_plat.get_input_down(key_config.editor_select) 
-    {
+    if wb_plat.get_input_down(key_config.editor_select) {
         mouse_world := wb_gpu.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
         mouse_direction := wb_gpu.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
         
-        wb.draw_debug_line(mouse_world, mouse_world + mouse_direction * 10, COLOR_GREEN);
+        wb.draw_debug_line(wb.wb_camera.position, mouse_direction * 100, COLOR_GREEN);
         
         hits := make([dynamic]RaycastHit, 0, 10);
-        hit := raycast(mouse_world, mouse_direction * 100, &hits);
+        hit := raycast(wb.wb_camera.position, mouse_direction * 100, &hits);
         
-        logln(mouse_world, "  ", mouse_direction, "  ", hit);
+        if hit > 0 {
+            first_hit := hits[0];
+            selected_entity = first_hit.e;
+        }
     }
     
     draw_entity_window();

@@ -10,6 +10,8 @@ using import     "shared:workbench/logging"
 import wb        "shared:workbench"
 import platform  "shared:workbench/platform"
 
+using import "editor"
+
 main_init :: proc() {
 	//
 	init_key_config();

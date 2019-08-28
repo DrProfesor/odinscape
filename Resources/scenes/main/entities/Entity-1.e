@@ -71,22 +71,6 @@ Collider
 	base {
 		enabled true
 	}
-	internal_collider {
-		position [
-			0.000
-			0.000
-			0.000
-		]
-
-		box {
-			size [
-				0.000
-				0.000
-				0.000
-			]
-
-		}
-	}
 	type Box
 	box {
 		size [
