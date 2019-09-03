@@ -96,7 +96,16 @@ editor_update :: proc(dt: f32) {
     }
     
     if selected_entity != -1 {
-        manipulate(gpu.construct_view_matrix(wb.wb_camera), gpu.construct_projection_matrix(wb.wb_camera), Operation.Translate, Mode.World, );
+        using gizmo;
+        
+        selected_transform, ok := get_component(selected_entity, Transform);
+        
+        model_p := wb_math.translate(identity(Mat4), selected_transform.position);
+        model_s := math.scale(identity(Mat4), selected_transform.scale);
+        model_r := quat_to_mat4(selected_transform.rotation);
+        model_matrix := mul(mul(model_p, model_r), model_s);
+        
+        manipulate(wb_gpu.construct_view_matrix(&wb.wb_camera), wb_gpu.construct_projection_matrix(&wb.wb_camera), Operation.Translate, Mode.World, model_matrix);
     }
     
     draw_scene_window();
