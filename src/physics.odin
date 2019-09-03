@@ -8,6 +8,7 @@ using import    "shared:workbench/types"
 using import    "shared:workbench/basic"
 using import    "shared:workbench/logging"
 
+using import wb_ecs "shared:workbench/ecs"
 import wb_col  "shared:workbench/collision"
 import wb_plat "shared:workbench/platform"
 import wb      "shared:workbench"
@@ -37,7 +38,7 @@ RaycastHit :: struct {
 
 init_collider :: proc(using col : ^Collider) {
     
-    entity_transform, ok := em_get_component(e, Transform);
+    entity_transform, ok := get_component(e, Transform);
     
     col.internal_collider = wb_col.Collider {
         entity_transform.position,
@@ -48,7 +49,7 @@ init_collider :: proc(using col : ^Collider) {
 }
 
 update_collider :: proc(using col : ^Collider, dt : f32) {
-    entity_transform, ok := em_get_component(e, Transform);
+    entity_transform, ok := get_component(e, Transform);
     
     internal_collider = wb_col.Collider {
         entity_transform.position,
@@ -61,7 +62,7 @@ update_collider :: proc(using col : ^Collider, dt : f32) {
 render_collider :: proc(using col : ^Collider) {
     if !editor_enabled do return;
     
-    entity_transform, ok := em_get_component(e, Transform);
+    entity_transform, ok := get_component(e, Transform);
     wb.draw_debug_box(entity_transform.position, col.box.size, COLOR_GREEN);
 }
 

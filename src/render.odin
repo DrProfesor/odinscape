@@ -8,6 +8,7 @@ import        "shared:workbench/gpu"
 using import        "shared:workbench/basic"
 using import        "shared:workbench/logging"
 using import        "shared:workbench/types"
+using import        "shared:workbench/ecs"
 
 Model_Renderer :: struct {
     using base: Component_Base,
@@ -29,7 +30,7 @@ init_model_renderer :: proc(using mr: ^Model_Renderer) {
 }
 
 render_model_renderer :: proc(using mr: ^Model_Renderer) {
-	tf, exists := em_get_component(e, Transform);
+	tf, exists := get_component(e, Transform);
 	if tf == nil {
 		logln("Error: no transform for entity ", e);
 		return;

@@ -6,6 +6,7 @@ using import "core:fmt"
 using import    "shared:workbench/types"
 using import    "shared:workbench/basic"
 using import    "shared:workbench/logging"
+using import    "shared:workbench/ecs"
 
 import "gizmo"
 
@@ -18,7 +19,7 @@ import         "shared:workbench/external/imgui"
 Base_Speed := Vec3{1,1,1};
 
 editor_enabled := false;
-selected_entity : Entity;
+selected_entity : Entity = -1;
 
 editor_init :: proc() {
     
@@ -94,5 +95,9 @@ editor_update :: proc(dt: f32) {
         }
     }
     
-    draw_entity_window();
+    if selected_entity != -1 {
+        manipulate(gpu.construct_view_matrix(wb.wb_camera), gpu.construct_projection_matrix(wb.wb_camera), Operation.Translate, Mode.World, );
+    }
+    
+    draw_scene_window();
 }

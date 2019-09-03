@@ -7,8 +7,9 @@ import "core:os"
 
 using import     "shared:workbench/basic"
 using import     "shared:workbench/logging"
+using import     "shared:workbench/ecs"
 import wb        "shared:workbench"
-import wb_gpu       "shared:workbench/gpu"
+import wb_gpu    "shared:workbench/gpu"
 
 DEVELOPER :: true;
 
@@ -38,9 +39,9 @@ game_init :: proc() {
     
     // entities
 	{
-		em_add_component_type(Transform, nil, nil);
-		em_add_component_type(Model_Renderer, nil, render_model_renderer, init_model_renderer);
-        em_add_component_type(Collider, update_collider, render_collider, init_collider);
+		add_component_type(Transform, nil, nil);
+		add_component_type(Model_Renderer, nil, render_model_renderer, init_model_renderer);
+        add_component_type(Collider, update_collider, render_collider, init_collider);
         
 		scene_init("main");
 	}
@@ -54,11 +55,11 @@ game_init :: proc() {
 }
 
 game_update :: proc(dt: f32) {
-	em_update(dt);
+	update(dt);
 }
 
 game_render :: proc() {
-    em_render();
+    render();
 }
 
 game_end :: proc() {
