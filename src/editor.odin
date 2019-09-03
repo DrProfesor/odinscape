@@ -7,6 +7,8 @@ using import    "shared:workbench/types"
 using import    "shared:workbench/basic"
 using import    "shared:workbench/logging"
 
+import "gizmo"
+
 import wb_plat "shared:workbench/platform"
 import wb_gpu  "shared:workbench/gpu"
 import wb_math  "shared:workbench/math"
@@ -33,7 +35,7 @@ editor_update :: proc(dt: f32) {
     if imgui.begin("Scene View", nil) {
 	    window_size := imgui.get_window_size();
         
-		imgui.image(rawptr(uintptr(wb.wb_camera.framebuffer.texture)),
+		imgui.image(rawptr(uintptr(wb.wb_camera.framebuffer.texture.gpu_id)),
                     imgui.Vec2{window_size.x - 10, window_size.y - 30},
                     imgui.Vec2{0,1},
                     imgui.Vec2{1,0});

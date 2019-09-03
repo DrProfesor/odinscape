@@ -37,7 +37,7 @@ RaycastHit :: struct {
 
 init_collider :: proc(using col : ^Collider) {
     
-    entity_transform := em_get_component(e, Transform);
+    entity_transform, ok := em_get_component(e, Transform);
     
     col.internal_collider = wb_col.Collider {
         entity_transform.position,
@@ -48,7 +48,7 @@ init_collider :: proc(using col : ^Collider) {
 }
 
 update_collider :: proc(using col : ^Collider, dt : f32) {
-    entity_transform := em_get_component(e, Transform);
+    entity_transform, ok := em_get_component(e, Transform);
     
     internal_collider = wb_col.Collider {
         entity_transform.position,
@@ -61,7 +61,7 @@ update_collider :: proc(using col : ^Collider, dt : f32) {
 render_collider :: proc(using col : ^Collider) {
     if !editor_enabled do return;
     
-    entity_transform := em_get_component(e, Transform);
+    entity_transform, ok := em_get_component(e, Transform);
     wb.draw_debug_box(entity_transform.position, col.box.size, COLOR_GREEN);
 }
 

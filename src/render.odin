@@ -29,31 +29,31 @@ init_model_renderer :: proc(using mr: ^Model_Renderer) {
 }
 
 render_model_renderer :: proc(using mr: ^Model_Renderer) {
-	tf := em_get_component(e, Transform);
+	tf, exists := em_get_component(e, Transform);
 	if tf == nil {
 		logln("Error: no transform for entity ", e);
 		return;
 	}
-
+    
 	if shader == 0 {
 		logln("No shader, returning.");
 		return;
 	}
-
+    
 	model, ok := asset_catalog.models[model_id];
 	if !ok {
 		logln("Couldn't find model in catalog: ", model_id);
 		return;
 	}
-
+    
 	t, tok := asset_catalog.textures[texture_id];
 	if !tok {
 		t = {};
 	}
-
+    
 	gpu.use_program(shader);
 	gpu.rendermode_world();
-
+    
     flush_lights_to_shader(shader);
 	set_current_material(shader, material);
 	gpu.draw_model(model, tf.position, tf.scale * scale, tf.rotation, t, color, true);
