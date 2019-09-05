@@ -5,6 +5,7 @@ using import "core:fmt"
 
 using import "shared:workbench/basic"
 using import "shared:workbench/types"
+using import "shared:workbench/logging"
 
 import wb_plat "shared:workbench/platform"
 import wb_gpu  "shared:workbench/gpu"
@@ -17,54 +18,54 @@ selection_color := 0x8A1080FF;
 inactive_color := 0x99999999;
 direction_color := [3]int{ 0xFF0000AA, 0xFF00AA00, 0xFFAA0000 };
 
+direction_unary := [3]Vec3{Vec3{1,0,0}, Vec3{0,1,0}, Vec3{0,0,1}};
+
 current_context := Context{};
 
-world_to_pos :: proc(worldPos: Vec3, mat: Mat4) -> imgui.Vec2 {
-    trans: Vec4;
-    trans.x = trans.x * mat[0][0] + trans.y * mat[1][0] + trans.z * mat[2][0] + mat[3][0];
-    trans.y = trans.x * mat[0][1] + trans.y * mat[1][1] + trans.z * mat[2][1] + mat[3][1];
-    trans.z = trans.x * mat[0][2] + trans.y * mat[1][2] + trans.z * mat[2][2] + mat[3][2];
-    trans.w = trans.x * mat[0][3] + trans.y * mat[1][3] + trans.z * mat[2][3] + mat[3][3];
+begin_frame :: proc() {
+    io := imgui.get_io();
     
-    trans *= 0.5 / trans.w;
-    trans += Vec4{0.5, 0.5, 0, 0};
-    trans.y = 1 - trans.y;
+    current_context.width = io.display_size.x;
+    current_context.height = io.display_size.y;
+    current_context.display_ratio = io.display_size.x / io.display_size.y;
     
+    imgui.set_next_window_size(io.display_size);
+    imgui.set_next_window_pos(imgui.Vec2{0,0});
     
-    return imgui.Vec2{};
+    imgui.push_style_color(imgui.Color.WindowBg, 0);
+    imgui.push_style_color(imgui.Color.Border, 0);
+    imgui.push_style_var(imgui.Style_Var.WindowRounding, 0);
+    
+    imgui.begin("gizmo", nil, imgui.Window_Flags.NoTitleBar | imgui.Window_Flags.NoResize | imgui.Window_Flags.NoScrollbar | imgui.Window_Flags.NoInputs | imgui.Window_Flags.NoSavedSettings | imgui.Window_Flags.NoFocusOnAppearing | imgui.Window_Flags.NoBringToFrontOnFocus);
+    
+    current_context.draw_list = imgui.get_window_draw_list();
+    imgui.end();
+    imgui.pop_style_var();
+    imgui.pop_style_color(2);
 }
-
-transform_point :: proc(pt : Vec4, matrix : Mat4) -> Vec4 {
-    out := pt;
-    
-    out.x = pt.x * matrix[0][0] + pt.y * matrix[1][0] + pt.z * matrix[2][0];
-    out.y = pt.x * matrix[0][1] + pt.y * matrix[1][1] + pt.z * matrix[2][1];
-    out.z = pt.x * matrix[0][2] + pt.y * matrix[1][2] + pt.z * matrix[2][2];
-    out.w = pt.x * matrix[0][3] + pt.y * matrix[1][3] + pt.z * matrix[2][3];
-    
-    return out;
-}
-
-direction_unary := [3]Vec3{Vec3{1,0,0}, Vec3{0,1,0}, Vec3{0,0,1}};
 
 manipulate :: proc(view, projection : Mat4, o: Operation, m: Mode, entity: Mat4) -> Mat4 {
     
-    draw_lists := imgui.get_window_draw_list();
     entity_pos := Vec3{ entity[3][0], entity[3][1], entity[3][2] };
     
     current_context.vp = mul(view, projection);
-    current_context.mvp = mul(current_context.vp , entity);
-    current_context.display_ratio = wb.wb_camera.pixel_width / wb.wb_camera.pixel_height;
+    current_context.mvp = mul(entity, current_context.vp);
     
-    current_context.screen_factor = 1;
+    current_context.model_inverse = inverse(entity);
+    current_context.view_inverse = inverse(view);
+    
+    right_view_inverse := Vec4{ current_context.view_inverse[0][0],current_context.view_inverse[0][1],current_context.view_inverse[0][2],current_context.view_inverse[0][3] };
+    transform_point(right_view_inverse, current_context.model_inverse);
+    right_length := get_segment_length_clip_space(Vec3{0,0,0}, Vec3{right_view_inverse.x,right_view_inverse.y,right_view_inverse.z});
+    current_context.screen_factor = 0.1 / right_length;
     
     switch o
     {
         case Operation.Translate: {
-            origin := world_to_pos(entity_pos, view);
+            origin := world_to_pos(entity_pos, current_context.vp);
             colors := compute_colors(MoveType.NONE, Operation.Translate);
             
-            for i in 0..3 {
+            for i in 0..2 {
                 dir_axis, dir_plane_x, dir_plane_y :=  compute_tripod_axis_and_vis(i);
                 
                 if current_context.below_axis_limit[i] {
@@ -72,7 +73,16 @@ manipulate :: proc(view, projection : Mat4, o: Operation, m: Mode, entity: Mat4)
                     
                     world_dir_s_space := world_to_pos(dir_axis * current_context.screen_factor, current_context.mvp);
                     
-                    imgui.draw_list_add_line(draw_lists, base_s_space, world_dir_s_space, u32(colors[i+1]), 3);
+                    imgui.draw_list_add_line(current_context.draw_list, make_imvec2(base_s_space), make_imvec2(world_dir_s_space), u32(colors[i+1]), 3);
+                    
+                    dir := norm(origin - world_dir_s_space);
+                    dir *= 6;
+                    
+                    ortogonal_dir := Vec2{dir.y, -dir.x};
+                    a := world_dir_s_space + dir;
+                    
+                    imgui.draw_list_add_triangle_filled(current_context.draw_list, make_imvec2(world_dir_s_space - dir), make_imvec2(a + ortogonal_dir), make_imvec2(a - ortogonal_dir), u32(colors[i+1]));
+                    
                 }
                 
                 if current_context.below_plane_limit[i] {
@@ -101,7 +111,7 @@ compute_colors :: proc(mt : MoveType, op : Operation) -> [7]int {
             if mt == MoveType.MOVE_SCREEN do colors[0] = selection_color;
             else do colors[0] = 0xFFFFFFFF;
             
-            for i in 0..3 {
+            for i in 0..2 {
                 if mt == MoveType.MOVE_X do colors[i+1] = selection_color;
                 else do colors[i+1] = direction_color[i];
                 
@@ -197,7 +207,7 @@ get_segment_length_clip_space :: proc(start, end : Vec3) -> f32 {
 
 get_parallelogram :: proc(pt1, pt2, pt3: Vec3) -> f32 {
     pts := [3]Vec4{make_vec4(pt1), make_vec4(pt2), make_vec4(pt3)};
-    for i in 0..3 {
+    for i in 0..2 {
         pts[i] = transform_point(pts[i], current_context.mvp);
         if abs(pts[i].w) > F32_EPSILON do pts[i] *= 1/pts[i].w;
     }
@@ -216,11 +226,44 @@ get_parallelogram :: proc(pt1, pt2, pt3: Vec3) -> f32 {
     return surface;
 }
 
+world_to_pos :: proc(worldPos: Vec3, mat: Mat4) -> Vec2 {
+    trans: Vec4;
+    trans.x = trans.x * mat[0][0] + trans.y * mat[1][0] + trans.z * mat[2][0] + mat[3][0];
+    trans.y = trans.x * mat[0][1] + trans.y * mat[1][1] + trans.z * mat[2][1] + mat[3][1];
+    trans.z = trans.x * mat[0][2] + trans.y * mat[1][2] + trans.z * mat[2][2] + mat[3][2];
+    trans.w = trans.x * mat[0][3] + trans.y * mat[1][3] + trans.z * mat[2][3] + mat[3][3];
+    
+    trans *= 0.5 / trans.w;
+    trans += Vec4{0.5, 0.5, 0, 0};
+    trans.y = 1 - trans.y;
+    trans.x *= current_context.width;
+    trans.y *= current_context.height;
+    
+    return Vec2{trans.x, trans.y};
+}
+
+transform_point :: proc(pt : Vec4, matrix : Mat4) -> Vec4 {
+    out := pt;
+    
+    out.x = pt.x * matrix[0][0] + pt.y * matrix[1][0] + pt.z * matrix[2][0];
+    out.y = pt.x * matrix[0][1] + pt.y * matrix[1][1] + pt.z * matrix[2][1];
+    out.z = pt.x * matrix[0][2] + pt.y * matrix[1][2] + pt.z * matrix[2][2];
+    out.w = pt.x * matrix[0][3] + pt.y * matrix[1][3] + pt.z * matrix[2][3];
+    
+    return out;
+}
+
 make_vec4 :: proc(input: Vec3) -> Vec4 {
     return Vec4{input.x, input.y, input.z, 0};
 }
 
+make_imvec2 :: proc(input : Vec2) -> imgui.Vec2 {
+    return imgui.Vec2{input.x, input.y};
+}
+
 Context :: struct {
+    draw_list : ^imgui.DrawList,
+    
     is_using : bool,
     
     below_axis_limit : [3]bool,
@@ -229,9 +272,13 @@ Context :: struct {
     
     vp : Mat4,
     mvp : Mat4,
+    view_inverse : Mat4,
+    model_inverse : Mat4,
     
     display_ratio : f32,
     screen_factor : f32,
+    width : f32,
+    height : f32,
 }
 
 Operation :: enum {

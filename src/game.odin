@@ -11,6 +11,8 @@ using import     "shared:workbench/ecs"
 import wb        "shared:workbench"
 import wb_gpu    "shared:workbench/gpu"
 
+import "gizmo"
+
 DEVELOPER :: true;
 
 asset_catalog: wb.Asset_Catalog;
@@ -55,6 +57,9 @@ game_init :: proc() {
 }
 
 game_update :: proc(dt: f32) {
+    
+    gizmo.begin_frame();
+    
 	update(dt);
 }
 
