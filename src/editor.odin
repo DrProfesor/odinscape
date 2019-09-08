@@ -84,8 +84,6 @@ editor_update :: proc(dt: f32) {
         mouse_world := wb_gpu.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
         mouse_direction := wb_gpu.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
         
-        wb.draw_debug_line(wb.wb_camera.position, mouse_direction * 100, COLOR_GREEN);
-        
         hits := make([dynamic]RaycastHit, 0, 10);
         hit := raycast(wb.wb_camera.position, mouse_direction * 100, &hits);
         
@@ -93,19 +91,15 @@ editor_update :: proc(dt: f32) {
             first_hit := hits[0];
             selected_entity = first_hit.e;
         }
+        gizmo.reset();
+    }
+    
+    if !wb_plat.get_input(key_config.editor_select) {
+        gizmo.reset();
     }
     
     if selected_entity != -1 {
-        using gizmo;
-        
-        selected_transform, ok := get_component(selected_entity, Transform);
-        
-        model_p := wb_math.translate(identity(Mat4), selected_transform.position);
-        model_s := math.scale(identity(Mat4), selected_transform.scale);
-        model_r := quat_to_mat4(selected_transform.rotation);
-        model_matrix := mul(mul(model_p, model_r), model_s);
-        
-        manipulate(wb_gpu.construct_view_matrix(&wb.wb_camera), wb_gpu.construct_projection_matrix(&wb.wb_camera), Operation.Translate, Mode.World, model_matrix);
+        gizmo.manipulate(selected_entity, wb_plat.get_input(key_config.editor_select));
     }
     
     draw_scene_window();

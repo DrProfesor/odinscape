@@ -6,87 +6,133 @@ using import "core:fmt"
 using import "shared:workbench/basic"
 using import "shared:workbench/types"
 using import "shared:workbench/logging"
+using import "shared:workbench/ecs"
 
 import wb_plat "shared:workbench/platform"
+import wb_col  "shared:workbench/collision"
 import wb_gpu  "shared:workbench/gpu"
-import wb_math  "shared:workbench/math"
+import wb_math "shared:workbench/math"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"
+import         "shared:workbench/external/gl"
 
-plane_color := [3]int{ 0x610000AA, 0x6100AA00, 0x61AA0000 };
-selection_color := 0x8A1080FF;
-inactive_color := 0x99999999;
-direction_color := [3]int{ 0xFF0000AA, 0xFF00AA00, 0xFFAA0000 };
+direction_unary := [3]Vec3{ Vec3{1,0,0}, Vec3{0,1,0}, Vec3{0,0,1}  };
+direction_color := [3]Colorf{ Colorf{1,0,0,1}, Colorf{0,1,0,1}, Colorf{0,0,1,1}  };
+selection_color := Colorf{1,1,0.1,1};
 
-direction_unary := [3]Vec3{Vec3{1,0,0}, Vec3{0,1,0}, Vec3{0,0,1}};
+operation : Operation;
+active_entity: Entity;
 
-current_context := Context{};
+size: f32 = 0;
+is_hovering:= [3]bool{};
+is_active := false;
+hovering := -1;
+last_point := Vec3{};
 
-begin_frame :: proc() {
-    io := imgui.get_io();
-    
-    current_context.width = io.display_size.x;
-    current_context.height = io.display_size.y;
-    current_context.display_ratio = io.display_size.x / io.display_size.y;
-    
-    imgui.set_next_window_size(io.display_size);
-    imgui.set_next_window_pos(imgui.Vec2{0,0});
-    
-    imgui.push_style_color(imgui.Color.WindowBg, 0);
-    imgui.push_style_color(imgui.Color.Border, 0);
-    imgui.push_style_var(imgui.Style_Var.WindowRounding, 0);
-    
-    imgui.begin("gizmo", nil, imgui.Window_Flags.NoTitleBar | imgui.Window_Flags.NoResize | imgui.Window_Flags.NoScrollbar | imgui.Window_Flags.NoInputs | imgui.Window_Flags.NoSavedSettings | imgui.Window_Flags.NoFocusOnAppearing | imgui.Window_Flags.NoBringToFrontOnFocus);
-    
-    current_context.draw_list = imgui.get_window_draw_list();
-    imgui.end();
-    imgui.pop_style_var();
-    imgui.pop_style_color(2);
+should_reset := true;
+
+gizmo_mesh : wb_gpu.Model;
+
+rad : f32 = 0.05;
+
+init :: proc() {
+    wb_gpu.add_mesh_to_model(&gizmo_mesh, "translation", []wb_gpu.Vertex3D{}, []u32{});
 }
 
-manipulate :: proc(view, projection : Mat4, o: Operation, m: Mode, entity: Mat4) -> Mat4 {
+reset :: proc() {
+    should_reset = true;
+    is_active = false;
+    hovering = -1;
+}
+
+manipulate :: proc(entity: Entity, do_move: bool) {
     
-    entity_pos := Vec3{ entity[3][0], entity[3][1], entity[3][2] };
+    transform, ok := get_component(entity, Transform);
+    camera_pos := wb.wb_camera.position;
+    origin := transform.position;
     
-    current_context.vp = mul(view, projection);
-    current_context.mvp = mul(entity, current_context.vp);
+    active_entity = entity;
+    size = length(transform.position - camera_pos) * 0.15;
+    is_hovering[0] = false;
+    is_hovering[1] = false;
+    is_hovering[2] = false;
     
-    current_context.model_inverse = inverse(entity);
-    current_context.view_inverse = inverse(view);
+    new_pos := Vec3{};
     
-    right_view_inverse := Vec4{ current_context.view_inverse[0][0],current_context.view_inverse[0][1],current_context.view_inverse[0][2],current_context.view_inverse[0][3] };
-    transform_point(right_view_inverse, current_context.model_inverse);
-    right_length := get_segment_length_clip_space(Vec3{0,0,0}, Vec3{right_view_inverse.x,right_view_inverse.y,right_view_inverse.z});
-    current_context.screen_factor = 0.1 / right_length;
-    
-    switch o
+    switch operation
     {
         case Operation.Translate: {
-            origin := world_to_pos(entity_pos, current_context.vp);
-            colors := compute_colors(MoveType.NONE, Operation.Translate);
             
-            for i in 0..2 {
-                dir_axis, dir_plane_x, dir_plane_y :=  compute_tripod_axis_and_vis(i);
+            mouse_world := wb_gpu.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
+            mouse_direction := wb_gpu.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
+            
+            intersect: Vec3;
+            
+            if !is_active || hovering == 1 { // get new axis, need to rotate plane for y move to guna skip that for now
+                outer: for i in 0..2 {
+                    casted : f32 = 0;
+                    step := 0;
+                    for casted < size {
+                        info, hit := 
+                            wb_col.cast_line_box(wb.wb_camera.position, 
+                                                 mouse_direction * 100, origin + direction_unary[i]* rad + (direction_unary[i] * rad*f32(step)), 
+                                                 Vec3{rad,rad,rad} * 2);
+                        intersect = info.point0;
+                        
+                        if hit {
+                            hovering = i;
+                            break outer;
+                        }
+                        
+                        casted += rad;
+                        step += 1;
+                    }
+                }
+            } else {
                 
-                if current_context.below_axis_limit[i] {
-                    base_s_space := world_to_pos(dir_axis * .1 * current_context.screen_factor, current_context.mvp);
-                    
-                    world_dir_s_space := world_to_pos(dir_axis * current_context.screen_factor, current_context.mvp);
-                    
-                    imgui.draw_list_add_line(current_context.draw_list, make_imvec2(base_s_space), make_imvec2(world_dir_s_space), u32(colors[i+1]), 3);
-                    
-                    dir := norm(origin - world_dir_s_space);
-                    dir *= 6;
-                    
-                    ortogonal_dir := Vec2{dir.y, -dir.x};
-                    a := world_dir_s_space + dir;
-                    
-                    imgui.draw_list_add_triangle_filled(current_context.draw_list, make_imvec2(world_dir_s_space - dir), make_imvec2(a + ortogonal_dir), make_imvec2(a - ortogonal_dir), u32(colors[i+1]));
-                    
+                plane_pos_mod := Vec3{0,5000,0};
+                // TODO y axis
+                
+                if transform.position.y > wb.wb_camera.position.y do plane_pos_mod *= -1;
+                
+                info, hit := wb_col.cast_line_box(wb.wb_camera.position, 
+                                                  mouse_direction*10000,
+                                                  last_point - plane_pos_mod,
+                                                  Vec3{10000, 10000, 10000});
+                intersect = info.point0;
+            }
+            
+            if hovering >= 0 {
+                
+                is_hovering[hovering] = true;
+                is_active = true;
+                
+                if should_reset {
+                    last_point = intersect;
                 }
                 
-                if current_context.below_plane_limit[i] {
+                if do_move {
+                    delta_move := intersect - last_point;
                     
+                    switch hovering
+                    {
+                        case 0: {
+                            delta_move = Vec3{ dot(delta_move, direction_unary[0]), 0, 0  };
+                            break;
+                        }
+                        case 1: {
+                            delta_move = Vec3{ 0, dot(delta_move, direction_unary[1]), 0 };
+                            break;
+                        }
+                        case 2: {
+                            delta_move = Vec3{ 0, 0, dot(delta_move, direction_unary[2]) };
+                            break;
+                        }
+                    }
+                    
+                    transform.position += delta_move;
+                    
+                    last_point = intersect;
                 }
             }
             
@@ -100,26 +146,118 @@ manipulate :: proc(view, projection : Mat4, o: Operation, m: Mode, entity: Mat4)
         }
     }
     
-    return Mat4{};
+    should_reset = false;
 }
 
-compute_colors :: proc(mt : MoveType, op : Operation) -> [7]int {
-    colors : [7]int = {};
+render :: proc() {
     
-    switch op {
+    if should_reset do return;
+    
+    transform, ok := get_component(active_entity, Transform);
+    origin := transform.position;
+    
+    switch operation
+    {
         case Operation.Translate: {
-            if mt == MoveType.MOVE_SCREEN do colors[0] = selection_color;
-            else do colors[0] = 0xFFFFFFFF;
+            
+            wb_gpu.use_program(wb.shader_rgba_3d);
+            detail :: 30;
+            
+            verts: [detail*4]wb_gpu.Vertex3D;
+            head_verts: [detail*3]wb_gpu.Vertex3D;
+            
+            size := size;
             
             for i in 0..2 {
-                if mt == MoveType.MOVE_X do colors[i+1] = selection_color;
-                else do colors[i+1] = direction_color[i];
+                dir := direction_unary[i] * size;
+                dir_x := direction_unary[(i+1) %3] * size;
+                dir_y := direction_unary[(i+2) %3] * size;
                 
-                if mt == MoveType.MOVE_YZ do colors[i+4] = selection_color;
-                else do colors[i+4] = plane_color[i];
+                color := direction_color[i];
                 
-                if mt == MoveType.MOVE_SCREEN do colors[i+4] = selection_color;
-                else do colors[i+4] = colors[i+4];
+                if is_hovering[i] {
+                    color = selection_color;
+                }
+                
+                step := 0;
+                for i := 0; i < int(detail)*4; i+=4 {
+                    
+                    theta := TAU * f32(step) / f32(detail);
+                    theta2 := TAU * f32(step+1) / f32(detail);
+                    
+                    pt := dir_x * cos(theta) * rad;
+                    pt += dir_y * sin(theta) * rad;
+                    pt += dir;
+                    pt += origin;
+                    verts[i] = wb_gpu.Vertex3D {
+                        pt, {}, color, {}
+                    };
+                    
+                    pt = dir_x * cos(theta2) * rad;
+                    pt  += dir_y *sin(theta2) * rad;
+                    pt += dir;
+                    pt += origin;
+                    verts[i+1] = wb_gpu.Vertex3D {
+                        pt, {}, color, {}
+                    };
+                    
+                    pt = dir_x * cos(theta) * rad;
+                    pt += dir_y *sin(theta) * rad;
+                    pt += origin;
+                    verts[i+2] = wb_gpu.Vertex3D{ 
+                        pt, {}, color, {}
+                    };
+                    
+                    pt = dir_x * cos(theta2) * rad;
+                    pt += dir_y *sin(theta2) * rad;
+                    pt += origin;
+                    verts[i+3] = wb_gpu.Vertex3D{ 
+                        pt, {}, color, {}
+                    };
+                    
+                    step += 1;
+                }
+                
+                rad2 : f32 = 0.1;
+                step = 0;
+                for i:= 0; i < int(detail*3); i+=3 {
+                    theta := TAU * f32(step) / f32(detail);
+                    theta2 := TAU * f32(step+1) / f32(detail);
+                    
+                    pt := dir_x * cos(theta) * rad2;
+                    pt += dir_y * sin(theta) * rad2;
+                    pt += dir;
+                    pt += origin;
+                    head_verts[i] = wb_gpu.Vertex3D {
+                        pt, {}, color, {}
+                    };
+                    
+                    pt = dir_x * cos(theta2) * rad2;
+                    pt  += dir_y *sin(theta2) * rad2;
+                    pt += dir;
+                    pt += origin;
+                    head_verts[i+1] = wb_gpu.Vertex3D {
+                        pt, {}, color, {}
+                    };
+                    
+                    pt = origin + (dir * 1.25);
+                    head_verts[i+2] = wb_gpu.Vertex3D{ 
+                        pt, {}, color, {}
+                    };
+                    
+                    step += 1;
+                }
+                
+                prev_draw_mode := wb.wb_camera.draw_mode;
+                wb.wb_camera.draw_mode = wb_gpu.Draw_Mode.Triangle_Fan;
+                
+                wb_gpu.update_mesh(&gizmo_mesh, "translation", head_verts[:], []u32{});
+                wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
+                
+                wb_gpu.update_mesh(&gizmo_mesh, "translation", verts[:], []u32{});
+                wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
+                
+                wb.wb_camera.draw_mode = prev_draw_mode;
             }
             break;
         }
@@ -130,155 +268,13 @@ compute_colors :: proc(mt : MoveType, op : Operation) -> [7]int {
             break;
         }
     }
-    
-    return colors;
 }
 
-compute_tripod_axis_and_vis :: proc(i: int) -> (Vec3, Vec3, Vec3) {
-    dir_axis := direction_unary[i];
-    dir_plane_x := direction_unary[(i+1) % 3];
-    dir_plane_y := direction_unary[(i+2) % 3];
-    
-    below_axis_limit := false;
-    below_plane_limit := false;
-    
-    if current_context.is_using {
-        dir_axis *= current_context.axis_factor[i];
-        dir_plane_x *= current_context.axis_factor[(i+1) % 3];
-        dir_plane_y *= current_context.axis_factor[(i+2) % 3];
-    }
-    else {
-        len_dir := get_segment_length_clip_space(Vec3{0,0,0}, dir_axis);
-        len_dir_minus := get_segment_length_clip_space(Vec3{0,0,0}, -dir_axis);
-        
-        len_dir_plane_x := get_segment_length_clip_space(Vec3{0,0,0}, dir_plane_x);
-        len_dir_plane_x_minus := get_segment_length_clip_space(Vec3{0,0,0}, -dir_plane_x);
-        
-        len_dir_plane_y := get_segment_length_clip_space(Vec3{0,0,0}, dir_plane_x);
-        len_dir_plane_y_minus := get_segment_length_clip_space(Vec3{0,0,0}, -dir_plane_y);
-        
-        mul_axis : f32 = 1;
-        if len_dir < len_dir_minus && abs(len_dir-len_dir_minus) > F32_EPSILON {
-            mul_axis = -1;
-        }
-        dir_axis *= mul_axis;
-        
-        mul_axis_x : f32 = 1;
-        if len_dir_plane_x < len_dir_plane_x_minus && abs(len_dir_plane_x-len_dir_plane_x_minus) > F32_EPSILON {
-            mul_axis_x = -1;
-        }
-        dir_plane_x *= mul_axis_x;
-        
-        mul_axis_y : f32 = 1;
-        if len_dir_plane_y < len_dir_plane_y_minus && abs(len_dir_plane_y-len_dir_plane_y_minus) > F32_EPSILON { 
-            mul_axis_y = -1;
-        }
-        dir_plane_y *= mul_axis_y;
-        
-        axis_length_clip_space := get_segment_length_clip_space(Vec3{0,0,0}, dir_axis * current_context.screen_factor);
-        para_surf := get_parallelogram(Vec3{0,0,0}, dir_plane_x * current_context.screen_factor, dir_plane_y * current_context.screen_factor);
-        below_plane_limit = para_surf > 0.0025;
-        below_axis_limit = axis_length_clip_space > 0.02;
-        
-        current_context.axis_factor[i] = mul_axis;
-        current_context.axis_factor[(i+1) % 3] = mul_axis_x;
-        current_context.axis_factor[(i+2) % 3] = mul_axis_y;
-        current_context.below_axis_limit[i] = below_axis_limit;
-        current_context.below_plane_limit[i] = below_plane_limit;
-    }
-    
-    return dir_axis, dir_plane_x, dir_plane_y;
-}
-
-get_segment_length_clip_space :: proc(start, end : Vec3) -> f32 {
-    start_of_segment := transform_point(make_vec4(start), current_context.mvp);
-    
-    if abs(start_of_segment.w) > F32_EPSILON do start_of_segment *= 1 / start_of_segment.w;
-    
-    end_of_segment := transform_point(make_vec4(end), current_context.mvp);
-    
-    if abs(end_of_segment.w) > F32_EPSILON do end_of_segment *= 1 / end_of_segment.w;
-    
-    clip_space_axis := end_of_segment - start_of_segment;
-    clip_space_axis.y /= current_context.display_ratio;
-    
-    return sqrt(clip_space_axis.x * clip_space_axis.x + clip_space_axis.y * clip_space_axis.y);
-}
-
-get_parallelogram :: proc(pt1, pt2, pt3: Vec3) -> f32 {
-    pts := [3]Vec4{make_vec4(pt1), make_vec4(pt2), make_vec4(pt3)};
-    for i in 0..2 {
-        pts[i] = transform_point(pts[i], current_context.mvp);
-        if abs(pts[i].w) > F32_EPSILON do pts[i] *= 1/pts[i].w;
-    }
-    
-    seg_a := pts[1] - pts[0];
-    seg_b := pts[2] - pts[0];
-    seg_a.y /= current_context.display_ratio;
-    seg_b.y /= current_context.display_ratio;
-    
-    seg_a_ortho := Vec4{-seg_a.y, seg_a.x, 0, 0};
-    seg_a_ortho = norm(seg_a_ortho);
-    
-    dt := dot(seg_a_ortho, seg_b);
-    surface := sqrt(seg_a.x*seg_a.x + seg_a.y * seg_a.y) * abs(dt);
-    
-    return surface;
-}
-
-world_to_pos :: proc(worldPos: Vec3, mat: Mat4) -> Vec2 {
-    trans: Vec4;
-    trans.x = trans.x * mat[0][0] + trans.y * mat[1][0] + trans.z * mat[2][0] + mat[3][0];
-    trans.y = trans.x * mat[0][1] + trans.y * mat[1][1] + trans.z * mat[2][1] + mat[3][1];
-    trans.z = trans.x * mat[0][2] + trans.y * mat[1][2] + trans.z * mat[2][2] + mat[3][2];
-    trans.w = trans.x * mat[0][3] + trans.y * mat[1][3] + trans.z * mat[2][3] + mat[3][3];
-    
-    trans *= 0.5 / trans.w;
-    trans += Vec4{0.5, 0.5, 0, 0};
-    trans.y = 1 - trans.y;
-    trans.x *= current_context.width;
-    trans.y *= current_context.height;
-    
-    return Vec2{trans.x, trans.y};
-}
-
-transform_point :: proc(pt : Vec4, matrix : Mat4) -> Vec4 {
-    out := pt;
-    
-    out.x = pt.x * matrix[0][0] + pt.y * matrix[1][0] + pt.z * matrix[2][0];
-    out.y = pt.x * matrix[0][1] + pt.y * matrix[1][1] + pt.z * matrix[2][1];
-    out.z = pt.x * matrix[0][2] + pt.y * matrix[1][2] + pt.z * matrix[2][2];
-    out.w = pt.x * matrix[0][3] + pt.y * matrix[1][3] + pt.z * matrix[2][3];
-    
-    return out;
-}
-
-make_vec4 :: proc(input: Vec3) -> Vec4 {
-    return Vec4{input.x, input.y, input.z, 0};
-}
-
-make_imvec2 :: proc(input : Vec2) -> imgui.Vec2 {
-    return imgui.Vec2{input.x, input.y};
-}
-
-Context :: struct {
-    draw_list : ^imgui.DrawList,
-    
-    is_using : bool,
-    
-    below_axis_limit : [3]bool,
-    below_plane_limit : [3]bool,
-    axis_factor : [3]f32,
-    
-    vp : Mat4,
-    mvp : Mat4,
-    view_inverse : Mat4,
-    model_inverse : Mat4,
-    
-    display_ratio : f32,
-    screen_factor : f32,
-    width : f32,
-    height : f32,
+Collision_Box :: struct {
+    origin: Vec3,
+    direction: Vec3,
+    width: f32,
+    length: f32,
 }
 
 Operation :: enum {

@@ -54,17 +54,18 @@ game_init :: proc() {
     
 	//
 	wb.register_debug_program("Odinscape Debug", debug_window_proc, nil);
+    
+    gizmo.init();
 }
 
 game_update :: proc(dt: f32) {
-    
-    gizmo.begin_frame();
-    
 	update(dt);
 }
 
 game_render :: proc() {
     render();
+    
+    gizmo.render();
 }
 
 game_end :: proc() {
