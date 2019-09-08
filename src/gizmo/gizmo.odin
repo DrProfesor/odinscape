@@ -28,6 +28,7 @@ is_hovering:= [3]bool{};
 is_active := false;
 hovering := -1;
 last_point := Vec3{};
+move_type := MoveType.NONE;
 
 should_reset := true;
 
@@ -36,7 +37,7 @@ gizmo_mesh : wb_gpu.Model;
 rad : f32 = 0.05;
 
 init :: proc() {
-    wb_gpu.add_mesh_to_model(&gizmo_mesh, "translation", []wb_gpu.Vertex3D{}, []u32{});
+    wb_gpu.add_mesh_to_model(&gizmo_mesh, []wb_gpu.Vertex3D{}, []u32{});
 }
 
 reset :: proc() {
@@ -47,17 +48,17 @@ reset :: proc() {
 
 manipulate :: proc(entity: Entity, do_move: bool) {
     
-    transform, ok := get_component(entity, Transform);
+    active_entity = entity;
+    transform, ok := get_component(active_entity, Transform);
+    
     camera_pos := wb.wb_camera.position;
     origin := transform.position;
     
-    active_entity = entity;
     size = length(transform.position - camera_pos) * 0.15;
     is_hovering[0] = false;
     is_hovering[1] = false;
     is_hovering[2] = false;
     
-    new_pos := Vec3{};
     
     switch operation
     {
@@ -81,6 +82,7 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                         
                         if hit {
                             hovering = i;
+                            //move_type = MoveType(i + 1);
                             break outer;
                         }
                         
@@ -251,10 +253,10 @@ render :: proc() {
                 prev_draw_mode := wb.wb_camera.draw_mode;
                 wb.wb_camera.draw_mode = wb_gpu.Draw_Mode.Triangle_Fan;
                 
-                wb_gpu.update_mesh(&gizmo_mesh, "translation", head_verts[:], []u32{});
+                wb_gpu.update_mesh(&gizmo_mesh, 0, head_verts[:], []u32{});
                 wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
                 
-                wb_gpu.update_mesh(&gizmo_mesh, "translation", verts[:], []u32{});
+                wb_gpu.update_mesh(&gizmo_mesh, 0, verts[:], []u32{});
                 wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
                 
                 wb.wb_camera.draw_mode = prev_draw_mode;
@@ -270,13 +272,6 @@ render :: proc() {
     }
 }
 
-Collision_Box :: struct {
-    origin: Vec3,
-    direction: Vec3,
-    width: f32,
-    length: f32,
-}
-
 Operation :: enum {
     Translate,
     Rotate,
@@ -289,19 +284,15 @@ Mode :: enum {
 
 MoveType :: enum {
     NONE,
+    
     MOVE_X,
     MOVE_Y,
     MOVE_Z,
     MOVE_YZ,
     MOVE_ZX,
     MOVE_XY,
-    MOVE_SCREEN,
+    
     ROTATE_X,
     ROTATE_Y,
     ROTATE_Z,
-    ROTATE_SCREEN,
-    SCALE_X,
-    SCALE_Y,
-    SCALE_Z,
-    SCALE_XYZ
 }

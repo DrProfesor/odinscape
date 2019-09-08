@@ -19,7 +19,7 @@ import         "shared:workbench/external/imgui"
 Base_Speed := Vec3{1,1,1};
 
 editor_enabled := false;
-selected_entity : Entity = -1;
+entity_selection: Entity = -1;
 
 editor_init :: proc() {
     
@@ -89,7 +89,7 @@ editor_update :: proc(dt: f32) {
         
         if hit > 0 {
             first_hit := hits[0];
-            selected_entity = first_hit.e;
+            entity_selection = first_hit.e;
         }
         gizmo.reset();
     }
@@ -98,8 +98,8 @@ editor_update :: proc(dt: f32) {
         gizmo.reset();
     }
     
-    if selected_entity != -1 {
-        gizmo.manipulate(selected_entity, wb_plat.get_input(key_config.editor_select));
+    if entity_selection != -1 {
+        gizmo.manipulate(entity_selection, wb_plat.get_input(key_config.editor_select));
     }
     
     draw_scene_window();
