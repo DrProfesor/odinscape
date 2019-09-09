@@ -44,6 +44,7 @@ reset :: proc() {
     should_reset = true;
     is_active = false;
     hovering = -1;
+    move_type = .NONE;
 }
 
 manipulate :: proc(entity: Entity, do_move: bool) {
@@ -69,7 +70,7 @@ manipulate :: proc(entity: Entity, do_move: bool) {
             
             intersect: Vec3;
             
-            if !is_active || hovering == 1 { // get new axis, need to rotate plane for y move to guna skip that for now
+            if !is_active { // get new axis
                 outer: for i in 0..2 {
                     casted : f32 = 0;
                     step := 0;
@@ -82,7 +83,7 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                         
                         if hit {
                             hovering = i;
-                            //move_type = MoveType(i + 1);
+                            move_type = MoveType(i + 1);
                             break outer;
                         }
                         
@@ -90,22 +91,63 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                         step += 1;
                     }
                 }
+                
+                if move_type == .NONE {
+                    for i in  0..2 {
+                        dir := direction_unary[i] * size;
+                        dir_x := direction_unary[(i+1) %3] * size;
+                        dir_y := direction_unary[(i+2) %3] * size;
+                        
+                        quad_size: f32 = 0.5;
+                        quad_origin := origin + (dir_y + dir_x) * 0.2;
+                        
+                        plane_norm := direction_unary[i];
+                        
+                        diff := mouse_world - quad_origin;
+                        prod := dot(diff, plane_norm);
+                        prod2 := dot(mouse_direction, plane_norm);
+                        prod3 := prod / prod2;
+                        q_i := mouse_world - mouse_direction * prod3;
+                        
+                        using wb_math;
+                        
+                        q_p1 := quad_origin;
+                        q_p2 := quad_origin + (dir_y + dir_x)*quad_size;
+                        min := Vec3{ minv(q_p1.x, q_p2.x), minv(q_p1.y, q_p2.y), minv(q_p1.z, q_p2.z) };
+                        max := Vec3{ maxv(q_p1.x, q_p2.x), maxv(q_p1.y, q_p2.y), maxv(q_p1.z, q_p2.z) };
+                        
+                        contains := 
+                            q_i.x >= min.x && 
+                            q_i.x <= max.x && 
+                            q_i.y >= min.y && 
+                            q_i.y <= max.y &&
+                            q_i.z >= min.z &&
+                            q_i.z <= max.z;
+                        
+                        if contains {
+                            hovering = i;
+                            move_type = MoveType.MOVE_YZ + MoveType(i);
+                            break;
+                        }
+                        
+                    }
+                }
+                
             } else {
+                plane_norm := Vec3{0,1,0};
+                if move_type == .MOVE_Y {
+                    plane_norm = wb_gpu.camera_back(&wb.wb_camera);
+                    plane_norm.y = 0;
+                }
                 
-                plane_pos_mod := Vec3{0,5000,0};
-                // TODO y axis
-                
-                if transform.position.y > wb.wb_camera.position.y do plane_pos_mod *= -1;
-                
-                info, hit := wb_col.cast_line_box(wb.wb_camera.position, 
-                                                  mouse_direction*10000,
-                                                  last_point - plane_pos_mod,
-                                                  Vec3{10000, 10000, 10000});
-                intersect = info.point0;
+                diff := mouse_world - origin;
+                prod := dot(diff, plane_norm);
+                prod2 := dot(mouse_direction, plane_norm);
+                prod3 := prod / prod2;
+                intersect = mouse_world - mouse_direction * prod3;
             }
             
-            if hovering >= 0 {
-                
+            if move_type != .NONE {
                 is_hovering[hovering] = true;
                 is_active = true;
                 
@@ -116,24 +158,23 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                 if do_move {
                     delta_move := intersect - last_point;
                     
-                    switch hovering
+                    switch move_type
                     {
-                        case 0: {
+                        case .MOVE_X: {
                             delta_move = Vec3{ dot(delta_move, direction_unary[0]), 0, 0  };
                             break;
                         }
-                        case 1: {
+                        case .MOVE_Y: {
                             delta_move = Vec3{ 0, dot(delta_move, direction_unary[1]), 0 };
                             break;
                         }
-                        case 2: {
+                        case .MOVE_Z: {
                             delta_move = Vec3{ 0, 0, dot(delta_move, direction_unary[2]) };
                             break;
                         }
                     }
                     
                     transform.position += delta_move;
-                    
                     last_point = intersect;
                 }
             }
@@ -167,8 +208,7 @@ render :: proc() {
             
             verts: [detail*4]wb_gpu.Vertex3D;
             head_verts: [detail*3]wb_gpu.Vertex3D;
-            
-            size := size;
+            quad_verts : [4]wb_gpu.Vertex3D;
             
             for i in 0..2 {
                 dir := direction_unary[i] * size;
@@ -250,8 +290,18 @@ render :: proc() {
                     step += 1;
                 }
                 
+                quad_size: f32 = 0.5;
+                quad_origin := origin + (dir_y + dir_x) * 0.2;
+                quad_verts[0] = wb_gpu.Vertex3D{quad_origin, {}, color, {} };
+                quad_verts[1] = wb_gpu.Vertex3D{quad_origin + dir_y*quad_size, {}, color, {} };
+                quad_verts[2] = wb_gpu.Vertex3D{quad_origin + (dir_y + dir_x)*quad_size, {}, color, {} };
+                quad_verts[3] = wb_gpu.Vertex3D{quad_origin + dir_x*quad_size, {}, color, {} };
+                
                 prev_draw_mode := wb.wb_camera.draw_mode;
                 wb.wb_camera.draw_mode = wb_gpu.Draw_Mode.Triangle_Fan;
+                
+                wb_gpu.update_mesh(&gizmo_mesh, 0, quad_verts[:], []u32{});
+                wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
                 
                 wb_gpu.update_mesh(&gizmo_mesh, 0, head_verts[:], []u32{});
                 wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
