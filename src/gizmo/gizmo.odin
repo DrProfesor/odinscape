@@ -79,11 +79,11 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                             wb_col.cast_line_box(wb.wb_camera.position, 
                                                  mouse_direction * 100, origin + direction_unary[i]* rad + (direction_unary[i] * rad*f32(step)), 
                                                  Vec3{rad,rad,rad} * 2);
-                        intersect = info.point0;
                         
                         if hit {
                             hovering = i;
                             move_type = MoveType(i + 1);
+                            intersect = info.point0;
                             break outer;
                         }
                         
@@ -108,6 +108,7 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                         prod2 := dot(mouse_direction, plane_norm);
                         prod3 := prod / prod2;
                         q_i := mouse_world - mouse_direction * prod3;
+                        intersect = q_i;
                         
                         using wb_math;
                         
@@ -129,7 +130,6 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                             move_type = MoveType.MOVE_YZ + MoveType(i);
                             break;
                         }
-                        
                     }
                 }
                 
@@ -138,6 +138,10 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                 if move_type == .MOVE_Y {
                     plane_norm = wb_gpu.camera_back(&wb.wb_camera);
                     plane_norm.y = 0;
+                }
+                
+                if move_type == .MOVE_XY || move_type == .MOVE_YZ {
+                    plane_norm = direction_unary[hovering];
                 }
                 
                 diff := mouse_world - origin;
@@ -161,15 +165,45 @@ manipulate :: proc(entity: Entity, do_move: bool) {
                     switch move_type
                     {
                         case .MOVE_X: {
-                            delta_move = Vec3{ dot(delta_move, direction_unary[0]), 0, 0  };
+                            delta_move = Vec3{
+                                dot(delta_move, direction_unary[0]), 
+                                0, 
+                                0};
                             break;
                         }
                         case .MOVE_Y: {
-                            delta_move = Vec3{ 0, dot(delta_move, direction_unary[1]), 0 };
+                            delta_move = Vec3{
+                                0, 
+                                dot(delta_move, direction_unary[1]), 
+                                0};
                             break;
                         }
                         case .MOVE_Z: {
-                            delta_move = Vec3{ 0, 0, dot(delta_move, direction_unary[2]) };
+                            delta_move = Vec3{
+                                0, 
+                                0, 
+                                dot(delta_move, direction_unary[2])};
+                            break;
+                        }
+                        case .MOVE_YZ: {
+                            delta_move = Vec3 { 
+                                0,
+                                dot(delta_move, direction_unary[1]), 
+                                dot(delta_move, direction_unary[2]) };
+                            break;
+                        }
+                        case .MOVE_ZX: {
+                            delta_move = Vec3 { 
+                                dot(delta_move, direction_unary[0]), 
+                                0,
+                                dot(delta_move, direction_unary[2]) };
+                            break;
+                        }
+                        case . MOVE_XY: {
+                            delta_move = Vec3 { 
+                                dot(delta_move, direction_unary[0]), 
+                                dot(delta_move, direction_unary[1]),
+                                0};
                             break;
                         }
                     }
