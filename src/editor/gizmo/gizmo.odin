@@ -237,7 +237,7 @@ render :: proc() {
     {
         case Operation.Translate: {
             
-            wb_gpu.use_program(wb.shader_rgba_3d);
+            wb_gpu.use_program(wb.shader_texture_lit);
             detail :: 30;
             
             verts: [detail*4]wb_gpu.Vertex3D;

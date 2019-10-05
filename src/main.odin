@@ -19,10 +19,14 @@ main_init :: proc() {
 	init_key_config();
     
     //
+    init_render();
     game_init();
+    
     
     //
     editor.init();
+    
+    wb.post_render_proc = on_post_render;
 }
 
 main_update :: proc(dt: f32) {
@@ -38,8 +42,9 @@ main_update :: proc(dt: f32) {
 main_render :: proc(dt: f32) {
     //
     game_render();
-    
-    //
+}
+
+on_post_render :: proc() {
     editor.render();
 }
 

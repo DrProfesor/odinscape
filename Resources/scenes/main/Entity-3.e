@@ -30,7 +30,7 @@ Model_Renderer
 	}
 	model_id "PBOX33_Grass_01"
 	texture_id "Plane_Grass_01"
-	shader 18
+	shader "lit"
 
 	color {
 		r 1.000

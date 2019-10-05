@@ -10,11 +10,17 @@ using import        "shared:workbench/logging"
 using import        "shared:workbench/types"
 using import        "shared:workbench/ecs"
 
+shaders: map[string]gpu.Shader_Program;
+
+init_render :: proc() {
+    shaders["lit"] = wb.shader_texture_lit;
+}
+
 Model_Renderer :: struct {
     using base: Component_Base,
     model_id: string,
     texture_id: string,
-    shader: gpu.Shader_Program,
+    shader_id: string,
     color: Colorf,
     material: wb.Material,
     scale: Vec3,
@@ -23,7 +29,7 @@ Model_Renderer :: struct {
 init_model_renderer :: proc(using mr: ^Model_Renderer) {
 	scale = Vec3{1, 1, 1};
 	color = Colorf{1, 1, 1, 1};
-	shader = wb.shader_texture_lit;
+	shader_id = "lit";
 	material = wb.Material {
         {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
     };
@@ -33,11 +39,6 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
 	tf, exists := get_component(e, Transform);
 	if tf == nil {
 		logln("Error: no transform for entity ", e);
-		return;
-	}
-    
-	if shader == 0 {
-		logln("No shader, returning.");
 		return;
 	}
     
@@ -52,6 +53,9 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
 		logln("Couldn't find texture in catalog: ", texture_id);
         return;
 	}
+    
+    shader, sok := shaders[shader_id];
+    assert(sok);
     
 	wb.submit_model(model, shader, texture, material, tf.position, tf.scale * scale, tf.rotation,  color);
 }
