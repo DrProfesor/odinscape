@@ -9,6 +9,8 @@ using import    "shared:workbench/logging"
 using import    "shared:workbench/ecs"
 
 import "gizmo"
+using import "../configs"
+using import "../physics"
 
 import wb_plat "shared:workbench/platform"
 import wb_gpu  "shared:workbench/gpu"
@@ -21,11 +23,11 @@ Base_Speed := Vec3{1,1,1};
 editor_enabled := false;
 entity_selection: Entity = -1;
 
-editor_init :: proc() {
-    
+init :: proc() {
+    gizmo.init();
 }
 
-editor_update :: proc(dt: f32) {
+update :: proc(dt: f32) {
     
 	if (wb_plat.get_input_down(key_config.toggle_editor)) {
 		editor_enabled = !editor_enabled;
@@ -103,4 +105,8 @@ editor_update :: proc(dt: f32) {
     }
     
     draw_scene_window();
+}
+
+render :: proc() {
+    gizmo.render();
 }

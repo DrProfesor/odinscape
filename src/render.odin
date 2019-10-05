@@ -16,7 +16,7 @@ Model_Renderer :: struct {
     texture_id: string,
     shader: gpu.Shader_Program,
     color: Colorf,
-    material: Material,
+    material: wb.Material,
     scale: Vec3,
 }
 
@@ -24,7 +24,7 @@ init_model_renderer :: proc(using mr: ^Model_Renderer) {
 	scale = Vec3{1, 1, 1};
 	color = Colorf{1, 1, 1, 1};
 	shader = shader_texture_lit;
-	material = Material {
+	material = wb.Material {
         {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
     };
 }
@@ -52,10 +52,5 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
 		t = {};
 	}
     
-	gpu.use_program(shader);
-	gpu.rendermode_world();
-    
-    flush_lights_to_shader(shader);
-	set_current_material(shader, material);
-	gpu.draw_model(model, tf.position, tf.scale * scale, tf.rotation, t, color, true);
+	wb.submit_model(model, shader, t, material, tf.position, tf.scale * scale, tf.rotation,  color);
 }

@@ -13,6 +13,8 @@ import wb_col  "shared:workbench/collision"
 import wb_plat "shared:workbench/platform"
 import wb      "shared:workbench"
 
+DEBUG :: true;
+
 collision_scene : wb_col.Collision_Scene;
 internal_hits : [dynamic]wb_col.Hit_Info;
 
@@ -60,7 +62,7 @@ update_collider :: proc(using col : ^Collider, dt : f32) {
 }
 
 render_collider :: proc(using col : ^Collider) {
-    if !editor_enabled do return;
+    if !DEBUG do return;
     
     entity_transform, ok := get_component(e, Transform);
     wb.draw_debug_box(entity_transform.position, col.box.size, COLOR_GREEN);

@@ -1,17 +1,11 @@
 package main
 
 using import "core:math"
-import wb"shared:workbench"
+import wb "shared:workbench"
 using import "shared:workbench/logging"
 using import "shared:workbench/types"
 import "shared:workbench/gpu"
 
-Material :: struct {
-	ambient:  Colorf,
-	diffuse:  Colorf,
-	specular: Colorf,
-	shine:    f32,
-}
 
 MAX_LIGHTS :: 100;
 light_positions: [dynamic]Vec3;
@@ -35,7 +29,7 @@ flush_lights_to_shader :: proc(program: gpu.Shader_Program) {
 	}
 }
 
-set_current_material :: proc(program: gpu.Shader_Program, material: Material) {
+set_current_material :: proc(program: gpu.Shader_Program, material: wb.Material) {
 	gpu.uniform_vec4 (program, "material.ambient",  transmute(Vec4)material.ambient);
 	gpu.uniform_vec4 (program, "material.diffuse",  transmute(Vec4)material.diffuse);
 	gpu.uniform_vec4 (program, "material.specular", transmute(Vec4)material.specular);

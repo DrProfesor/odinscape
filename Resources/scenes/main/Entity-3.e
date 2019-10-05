@@ -5,9 +5,9 @@ Transform
 		enabled true
 	}
 	position [
-		0.000
-		0.000
-		0.000
+		-0.726
+		-0.934
+		0.482
 	]
 
 	rotation {
@@ -17,8 +17,8 @@ Transform
 		w 1.000
 	}
 	scale [
-		0.010
-		0.010
+		0.200
+		0.200
 		0.010
 	]
 
@@ -65,4 +65,19 @@ Model_Renderer
 		1.000
 	]
 
+}
+Collider
+{
+	base {
+		enabled true
+	}
+	type Box
+	box {
+		size [
+			35.000
+			1.800
+			35.000
+		]
+
+	}
 }
