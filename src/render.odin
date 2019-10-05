@@ -23,7 +23,7 @@ Model_Renderer :: struct {
 init_model_renderer :: proc(using mr: ^Model_Renderer) {
 	scale = Vec3{1, 1, 1};
 	color = Colorf{1, 1, 1, 1};
-	shader = shader_texture_lit;
+	shader = wb.shader_texture_lit;
 	material = wb.Material {
         {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
     };
@@ -47,10 +47,11 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
 		return;
 	}
     
-	t, tok := asset_catalog.textures[texture_id];
+	texture, tok := asset_catalog.textures[texture_id];
 	if !tok {
-		t = {};
+		logln("Couldn't find texture in catalog: ", texture_id);
+        return;
 	}
     
-	wb.submit_model(model, shader, t, material, tf.position, tf.scale * scale, tf.rotation,  color);
+	wb.submit_model(model, shader, texture, material, tf.position, tf.scale * scale, tf.rotation,  color);
 }
