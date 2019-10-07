@@ -12,11 +12,15 @@ import platform  "shared:workbench/platform"
 
 using import "configs"
 import "editor"
+import "net"
 //import "game"
 
 main_init :: proc() {
 	//
 	init_key_config();
+    
+    //
+    net.init();
     
     //
     init_render();
@@ -31,6 +35,9 @@ main_init :: proc() {
 
 main_update :: proc(dt: f32) {
     if platform.get_input_down(platform.Input.Escape) do wb.exit();
+    
+    //
+    net.update();
     
     //
     game_update(dt);
@@ -51,6 +58,9 @@ on_post_render :: proc() {
 main_end :: proc() {
     //
 	key_config_save();
+    
+    //
+    net.shutdown();
     
     //
 	game_end();
