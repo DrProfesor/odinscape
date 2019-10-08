@@ -1,13 +1,16 @@
 package net
 
 using import "core:fmt"
-import enet "shared:odin-enet"
+using import "core:math"
 import "core:mem"
 
-using import     "shared:workbench/basic"
-using import     "shared:workbench/logging"
+import enet "shared:odin-enet"
 
-IS_CLIENT :: false;
+using import "shared:workbench/basic"
+using import "shared:workbench/logging"
+using import "shared:workbench/ecs"
+
+SERVER :: false;
 
 address: enet.Address;
 peer: ^enet.Peer;
@@ -16,20 +19,29 @@ event: enet.Event;
 init :: proc() {
     enet.initialize();
     
-    if IS_CLIENT do client_init();
-    else do server_init();
+    when SERVER {
+        server_init();
+    } else {
+        client_init();
+    }
 }
 
 update :: proc() {
-    if IS_CLIENT do client_update();
-    else do server_update();
+    when SERVER {
+        server_update();
+    } else {
+        client_update();
+    }
 }
 
 shutdown :: proc() {
     enet.deinitialize();
     
-    if IS_CLIENT do client_shutdown();
-    else do server_shutdown();
+    when SERVER {
+        server_shutdown();
+    } else {
+        client_shutdown();
+    }
 }
 
 // client
@@ -42,8 +54,8 @@ client_init :: proc() {
         return;
     }
     
-    host_name := "ec2-34-220-114-38.us-west-2.compute.amazonaws.com\x00";
-    enet.address_set_host_ip(&address, & host_name[0]);
+    host_name := "127.0.0.1\x00";
+    enet.address_set_host(&address, & host_name[0]);
     address.port = 27010;
     
     logln("Set Host IP");
@@ -56,12 +68,24 @@ client_init :: proc() {
 }
 
 client_update :: proc() {
-    data := []u32 {1,2,3};
-    packet := enet.packet_create(&data[0], size_of(u32) * 3, enet.Packet_Flag.Reliable);
+    transform, ok := get_component(Entity(1), Transform);
+    p := Packet{
+        1,
+        Entity_Packet {
+            Entity(1),
+            Transform_Packet {
+                transform.position,
+                transform.rotation,
+                transform.scale,
+            }
+        }
+    };
+    
+    packet := enet.packet_create(&p, size_of(Packet), enet.Packet_Flag.Reliable);
     enet.peer_send(peer, 0, packet);
     enet.host_flush(client);
     
-    for enet.host_service(client, &event, 1000) > 0 {
+    for enet.host_service(client, &event, 1) > 0 {
         switch event.event_type {
             case enet.Event_Type.Connect: {
             }
@@ -78,38 +102,77 @@ client_shutdown :: proc() {
     enet.peer_reset(peer);
 }
 
-// server
-server: ^enet.Host;
-
-server_init :: proc() {
-    address.host = enet.HOST_ANY;
-    address.port = 27010;
+Packet :: struct {
+    type_code: u8,
     
-    server = enet.host_create(&address, 32, 4, 0, 0);
-    if server == nil {
-        logln("Couldn't create socket!");
-        return;
+    data: union {
+        Entity_Packet
     }
 }
 
-server_update :: proc() {
-    for enet.host_service(server, &event, 1000) > 0 {
-        switch event.event_type {
-            case enet.Event_Type.Connect: {
-            }
-            case enet.Event_Type.Receive: {
-                data := event.packet.data;
-                length := event.packet.data_len;
-                slice: []u8 = mem.slice_ptr(data, int(length));
-                
-                logln("Received ", slice, "size", length);
-            }
-            case enet.Event_Type.Disconnect: {
+Entity_Packet :: struct {
+    id: Entity,
+    
+    data: union {
+        Transform_Packet
+    }
+}
+
+Transform_Packet :: struct {
+    position: Vec3,
+	rotation: Quat,
+	scale: Vec3,
+}
+
+when SERVER {
+    // server
+    server: ^enet.Host;
+    
+    server_init :: proc() {
+        address.host = enet.HOST_ANY;
+        address.port = 27010;
+        
+        server = enet.host_create(&address, 32, 4, 0, 0);
+        if server == nil {
+            logln("Couldn't create server host!");
+            return;
+        }
+        
+        logln("Created server host");
+    }
+    
+    server_update :: proc() {
+        for enet.host_service(server, &event, 0) > 0 {
+            switch event.event_type {
+                case enet.Event_Type.Connect: {
+                }
+                case enet.Event_Type.Receive: {
+                    data := event.packet.data;
+                    packet := transmute(^Packet) data;
+                    
+                    switch packet.type_code {
+                        case 0: { // invalid packet
+                            logln("Received invalid packet from client");
+                            return;
+                        }
+                        case 1: { 
+                            packet_data := packet.data.(Entity_Packet);
+                            net_transform := packet_data.data.(Transform_Packet);
+                            
+                            transform, ok := get_component(packet_data.id, Transform);
+                            transform.position = net_transform.position;
+                            transform.rotation = net_transform.rotation;
+                            transform.scale = net_transform.scale;
+                        }
+                    }
+                }
+                case enet.Event_Type.Disconnect: {
+                }
             }
         }
     }
-}
-
-server_shutdown :: proc() {
-    enet.host_destroy(server);
+    
+    server_shutdown :: proc() {
+        enet.host_destroy(server);
+    }
 }
