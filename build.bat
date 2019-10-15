@@ -6,7 +6,12 @@ echo Copying dlls...
 xcopy /s/q/y src\includes\windows . > NUL
 
 echo Building src...
-odin build src -out=odinscape.exe
+if "%2" == "server" (
+	odin build src -out=odinscape.exe
+) else (
+	odin build src -out=odinscape.exe
+)
+
 
 if "%1" == "run" (
 	echo Running odinscape.exe...

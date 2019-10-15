@@ -10,12 +10,5 @@
 	camera_free_move Mouse_Button_2
 	camera_scroll Mouse_Button_3
 	editor_select Mouse_Button_1
-	select_unit Mouse_Button_1
-	add_unit_to_selection_modifier Left_Shift
-	queue_command_modifier Left_Shift
-	move_command Mouse_Button_2
-	ability1 NR_1
-	ability2 NR_2
-	ability3 NR_3
-	ability4 NR_4
+	move_to Mouse_Button_2
 }

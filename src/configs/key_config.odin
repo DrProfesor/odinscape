@@ -29,18 +29,7 @@ Key_Config :: struct {
     editor_select: Game_Input,
     
     // Game
-    
-	select_unit: Game_Input,
-    
-	add_unit_to_selection_modifier: Game_Input,
-    
-	queue_command_modifier: Game_Input,
-	move_command: Game_Input,
-    
-	ability1: Game_Input,
-	ability2: Game_Input,
-	ability3: Game_Input,
-	ability4: Game_Input,
+    move_to : Game_Input,
 }
 
 key_config: Key_Config;
@@ -87,16 +76,7 @@ default_key_config :: proc() -> Key_Config {
         editor_select = Mouse_Left,
         
 		// Game
-		select_unit = Mouse_Left,
-		add_unit_to_selection_modifier = Left_Shift,
-        
-		queue_command_modifier = Left_Shift,
-		move_command = Mouse_Right,
-        
-		ability1 = NR_1,
-		ability2 = NR_2,
-		ability3 = NR_3,
-		ability4 = NR_4,
+		move_to = Mouse_Right,
 	};
 }
 

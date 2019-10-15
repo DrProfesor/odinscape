@@ -11,8 +11,6 @@ import "shared:workbench/ecs"
 import wb        "shared:workbench"
 import wb_gpu    "shared:workbench/gpu"
 
-import "physics"
-
 DEVELOPER :: true;
 
 asset_catalog: wb.Asset_Catalog;
@@ -33,12 +31,6 @@ game_init :: proc() {
     
     // entities
 	{
-		using ecs;
-		add_component_type(Transform, nil, nil);
-		add_component_type(Model_Renderer, nil, render_model_renderer, init_model_renderer);
-        add_component_type(physics.Collider,
-                           physics.update_collider, physics.render_collider, physics.init_collider);
-        
 		scene_init("main");
 	}
 }
