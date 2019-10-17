@@ -1,4 +1,4 @@
-package main
+package game
 
 using import "core:fmt"
 using import "core:math"

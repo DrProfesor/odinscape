@@ -26,16 +26,16 @@ main_init :: proc() {
     net.network_init();
     
     //
-    init_render();
+    game.init_render();
     
     using ecs;
     add_component_type(Transform, nil, nil);
-    add_component_type(Model_Renderer, nil, render_model_renderer, init_model_renderer);
+    add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
     add_component_type(physics.Collider, physics.update_collider, physics.render_collider, physics.init_collider);
     add_component_type(Player_Entity, nil, nil, game.player_init);
     add_component_type(net.Network_Id, nil, nil);
     
-    game_init();
+    game.game_init();
     
     
     //
@@ -51,7 +51,7 @@ main_update :: proc(dt: f32) {
     net.network_update();
     
     //
-    game_update(dt);
+    game.game_update(dt);
     
     //
     editor.update(dt);
@@ -59,7 +59,7 @@ main_update :: proc(dt: f32) {
 
 main_render :: proc(dt: f32) {
     //
-    game_render();
+    game.game_render();
 }
 
 on_post_render :: proc() {
@@ -74,7 +74,7 @@ main_end :: proc() {
     net.network_shutdown();
     
     //
-	game_end();
+	game.game_end();
 }
 
 main :: proc() {

@@ -3,14 +3,15 @@ package game
 using import "core:math"
 using import "core:fmt"
 
-using import    "shared:workbench/basic"
-using import    "shared:workbench/logging"
+using import "shared:workbench/basic"
+using import "shared:workbench/logging"
+using import "shared:workbench/types"
 using import "shared:workbench/ecs"
 
-import wb_plat "shared:workbench/platform"
-import wb_gpu  "shared:workbench/gpu"
+import wb_plat  "shared:workbench/platform"
+import wb_gpu   "shared:workbench/gpu"
 import wb_math  "shared:workbench/math"
-import wb      "shared:workbench"
+import wb       "shared:workbench"
 
 using import "../configs"
 using import "../physics"
@@ -27,6 +28,16 @@ player_init :: proc(using player: ^Player_Entity) {
     logln("PlayerInit:", net_id.controlling_client, net.client_id);
     
     if is_local do local_player = e;
+    
+    model := add_component(e, Model_Renderer);
+    model.model_id = "mrknight";
+    model.texture_id = "red_knight";
+    model.scale = Vec3{1, 1, 1};
+	model.color = Colorf{1, 1, 1, 1};
+	model.shader_id = "lit";
+	model.material = wb.Material {
+        {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
+    };
 }
 
 player_update :: proc(dt: f32) {
