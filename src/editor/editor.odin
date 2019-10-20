@@ -1,4 +1,4 @@
-package main
+package editor
 
 using import "core:math"
 using import "core:fmt"
@@ -35,10 +35,12 @@ update :: proc(dt: f32) {
     
 	if !editor_enabled do return;
     
+    update_resources_window(dt);
+    
     if imgui.begin("Scene View", nil) {
 	    window_size := imgui.get_window_size();
         
-		imgui.image(rawptr(uintptr(wb.wb_camera.framebuffer.texture.gpu_id)),
+		imgui.image(imgui.TextureID(uintptr(wb.wb_camera.framebuffer.texture.gpu_id)),
                     imgui.Vec2{window_size.x - 10, window_size.y - 30},
                     imgui.Vec2{0,1},
                     imgui.Vec2{1,0});
