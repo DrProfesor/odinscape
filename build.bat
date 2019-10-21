@@ -7,9 +7,9 @@ xcopy /s/q/y src\includes\windows . > NUL
 
 echo Building src...
 if "%2" == "server" (
-	odin build src -out=odinscape.exe
+	odin build src -out=odinscape.exe -define:SERVER=true
 ) else (
-	odin build src -out=odinscape.exe
+	odin build src -out=odinscape.exe -define:SERVER=false
 )
 
 

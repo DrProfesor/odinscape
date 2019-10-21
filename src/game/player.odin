@@ -30,8 +30,10 @@ player_init :: proc(using player: ^Player_Entity) {
     if is_local do local_player = e;
     
     model := add_component(e, Model_Renderer);
-    model.model_id = "mrknight";
-    model.texture_id = "red_knight";
+    
+    model.model_id = configs.player_config.model_id;
+    model.texture_id = configs.player_config.texture_id;
+    
     model.scale = Vec3{1, 1, 1};
 	model.color = Colorf{1, 1, 1, 1};
 	model.shader_id = "lit";

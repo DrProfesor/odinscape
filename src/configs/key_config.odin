@@ -1,4 +1,4 @@
-package main
+package configs
 
 import "core:os"
 import "core:mem"

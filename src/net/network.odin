@@ -15,8 +15,6 @@ using import "shared:workbench/ecs"
 
 using import "../shared"
 
-SERVER :: false;
-
 address: enet.Address;
 peer: ^enet.Peer;
 event: enet.Event;

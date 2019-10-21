@@ -21,6 +21,7 @@ import "physics"
 main_init :: proc() {
 	//
 	init_key_config();
+    init_config();
     
     //
     net.network_init();
@@ -69,6 +70,7 @@ on_post_render :: proc() {
 main_end :: proc() {
     //
 	key_config_save();
+    config_save();
     
     //
     net.network_shutdown();
@@ -79,7 +81,7 @@ main_end :: proc() {
 
 main :: proc() {
     name := "Odinscape";
-    if net.SERVER do name = tprintf(name, "-server");
+    when SERVER do name = tprint(name, "-server");
     wb.make_simple_window(1920, 1080, 3, 3, 120,
                           wb.Workspace{name, main_init, main_update, main_render, main_end});
 }

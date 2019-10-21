@@ -36,6 +36,7 @@ update :: proc(dt: f32) {
 	if !editor_enabled do return;
     
     update_resources_window(dt);
+    update_player_window(dt);
     
     if imgui.begin("Scene View", nil) {
 	    window_size := imgui.get_window_size();

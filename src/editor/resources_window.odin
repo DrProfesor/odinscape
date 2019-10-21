@@ -41,9 +41,10 @@ update_resources_window :: proc(dt:f32) {
                 if path.is_directory do 
                     recurse_into_path(path.path);
                 
-                if imgui.begin_drag_drop_source(imgui.Drag_Drop_Flags.AcceptBeforeDelivery, 0) {
+                if imgui.begin_drag_drop_source(imgui.Drag_Drop_Flags(0), 0) {
                     
-                    current_drag_drop_payload = path.path;
+                    if current_drag_drop_payload == "" do
+                        current_drag_drop_payload = clone(path.path);
                     
                     imgui.set_drag_drop_payload("resource", &current_drag_drop_payload, uint(len(current_drag_drop_payload)), imgui.Set_Cond.Always);
                     imgui.text(path.path);
