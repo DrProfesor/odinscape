@@ -13,7 +13,6 @@ using import "../configs"
 using import "../physics"
 
 import wb_plat "shared:workbench/platform"
-import wb_gpu  "shared:workbench/gpu"
 import wb_math  "shared:workbench/math"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"
@@ -61,33 +60,33 @@ update :: proc(dt: f32) {
         speed = speed * Vec3{dt, dt, dt};
         
         if wb_plat.get_input(key_config.camera_forward) {
-            wb.wb_camera.position += wb_gpu.camera_forward(&wb.wb_camera) * speed;
+            wb.wb_camera.position += wb_math.quaternion_forward(wb.wb_camera.rotation) * speed;
         }
         if wb_plat.get_input(key_config.camera_back) {
-            wb.wb_camera.position += wb_gpu.camera_back(&wb.wb_camera) * speed;
+            wb.wb_camera.position += wb_math.quaternion_back(wb.wb_camera.rotation) * speed;
         }
         if wb_plat.get_input(key_config.camera_left) {
-            wb.wb_camera.position += wb_gpu.camera_left(&wb.wb_camera) * speed;
+            wb.wb_camera.position += wb_math.quaternion_left(wb.wb_camera.rotation) * speed;
         }
         if wb_plat.get_input(key_config.camera_right) {
-            wb.wb_camera.position += wb_gpu.camera_right(&wb.wb_camera) * speed;
+            wb.wb_camera.position += wb_math.quaternion_right(wb.wb_camera.rotation) * speed;
         }
         if wb_plat.get_input(key_config.camera_up) {
-            wb.wb_camera.position += wb_gpu.camera_up(&wb.wb_camera) * speed;
+            wb.wb_camera.position += wb_math.quaternion_up(wb.wb_camera.rotation) * speed;
         }
         if wb_plat.get_input(key_config.camera_down) {
-            wb.wb_camera.position += wb_gpu.camera_down(&wb.wb_camera) * speed;
+            wb.wb_camera.position += wb_math.quaternion_down(wb.wb_camera.rotation) * speed;
         }
         
         mouse_delta := wb_plat.mouse_screen_position_delta;
         qx := axis_angle(Vec3{0,1,0}, -mouse_delta.x * dt);
-        qy := axis_angle(wb_gpu.camera_right(&wb.wb_camera), mouse_delta.y * dt);
+        qy := axis_angle(wb_math.quaternion_right(wb.wb_camera.rotation), mouse_delta.y * dt);
         wb.wb_camera.rotation = mul(mul(qy, qx), wb.wb_camera.rotation);
 	}
     
     if wb_plat.get_input_down(key_config.editor_select) {
-        mouse_world := wb_gpu.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
-        mouse_direction := wb_gpu.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
+        mouse_world := wb.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
+        mouse_direction := wb.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
         
         hits := make([dynamic]RaycastHit, 0, 10);
         hit := raycast(wb.wb_camera.position, mouse_direction * 100, &hits);

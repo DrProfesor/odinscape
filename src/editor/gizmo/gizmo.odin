@@ -10,8 +10,8 @@ using import "shared:workbench/ecs"
 
 import wb_plat "shared:workbench/platform"
 import wb_col  "shared:workbench/collision"
-import wb_gpu  "shared:workbench/gpu"
 import wb_math "shared:workbench/math"
+import wb_gpu  "shared:workbench/gpu"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"
 import         "shared:workbench/external/gl"
@@ -32,12 +32,12 @@ move_type := MoveType.NONE;
 
 should_reset := true;
 
-gizmo_mesh : wb_gpu.Model;
+gizmo_mesh : wb.Model;
 
 rad : f32 = 0.05;
 
 init :: proc() {
-    wb_gpu.add_mesh_to_model(&gizmo_mesh, []wb_gpu.Vertex3D{}, []u32{});
+    wb.add_mesh_to_model(&gizmo_mesh, []wb.Vertex3D{}, []u32{});
 }
 
 reset :: proc() {
@@ -65,8 +65,8 @@ manipulate :: proc(entity: Entity, do_move: bool) {
     {
         case Operation.Translate: {
             
-            mouse_world := wb_gpu.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
-            mouse_direction := wb_gpu.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
+            mouse_world := wb.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
+            mouse_direction := wb.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
             
             intersect: Vec3;
             
@@ -136,7 +136,7 @@ manipulate :: proc(entity: Entity, do_move: bool) {
             } else {
                 plane_norm := Vec3{0,1,0};
                 if move_type == .MOVE_Y {
-                    plane_norm = wb_gpu.camera_back(&wb.wb_camera);
+                    plane_norm = wb_math.quaternion_back(wb.wb_camera.rotation);
                     plane_norm.y = 0;
                 }
                 
@@ -240,9 +240,9 @@ render :: proc() {
             wb_gpu.use_program(wb.shader_texture_lit);
             detail :: 30;
             
-            verts: [detail*4]wb_gpu.Vertex3D;
-            head_verts: [detail*3]wb_gpu.Vertex3D;
-            quad_verts : [4]wb_gpu.Vertex3D;
+            verts: [detail*4]wb.Vertex3D;
+            head_verts: [detail*3]wb.Vertex3D;
+            quad_verts : [4]wb.Vertex3D;
             
             for i in 0..2 {
                 dir := direction_unary[i] * size;
@@ -265,7 +265,7 @@ render :: proc() {
                     pt += dir_y * sin(theta) * rad;
                     pt += dir;
                     pt += origin;
-                    verts[i] = wb_gpu.Vertex3D {
+                    verts[i] = wb.Vertex3D {
                         pt, {}, color, {}
                     };
                     
@@ -273,21 +273,21 @@ render :: proc() {
                     pt  += dir_y *sin(theta2) * rad;
                     pt += dir;
                     pt += origin;
-                    verts[i+1] = wb_gpu.Vertex3D {
+                    verts[i+1] = wb.Vertex3D {
                         pt, {}, color, {}
                     };
                     
                     pt = dir_x * cos(theta) * rad;
                     pt += dir_y *sin(theta) * rad;
                     pt += origin;
-                    verts[i+2] = wb_gpu.Vertex3D{ 
+                    verts[i+2] = wb.Vertex3D{ 
                         pt, {}, color, {}
                     };
                     
                     pt = dir_x * cos(theta2) * rad;
                     pt += dir_y *sin(theta2) * rad;
                     pt += origin;
-                    verts[i+3] = wb_gpu.Vertex3D{ 
+                    verts[i+3] = wb.Vertex3D{ 
                         pt, {}, color, {}
                     };
                     
@@ -304,7 +304,7 @@ render :: proc() {
                     pt += dir_y * sin(theta) * rad2;
                     pt += dir;
                     pt += origin;
-                    head_verts[i] = wb_gpu.Vertex3D {
+                    head_verts[i] = wb.Vertex3D {
                         pt, {}, color, {}
                     };
                     
@@ -312,12 +312,12 @@ render :: proc() {
                     pt  += dir_y *sin(theta2) * rad2;
                     pt += dir;
                     pt += origin;
-                    head_verts[i+1] = wb_gpu.Vertex3D {
+                    head_verts[i+1] = wb.Vertex3D {
                         pt, {}, color, {}
                     };
                     
                     pt = origin + (dir * 1.25);
-                    head_verts[i+2] = wb_gpu.Vertex3D{ 
+                    head_verts[i+2] = wb.Vertex3D{ 
                         pt, {}, color, {}
                     };
                     
@@ -326,22 +326,22 @@ render :: proc() {
                 
                 quad_size: f32 = 0.5;
                 quad_origin := origin + (dir_y + dir_x) * 0.2;
-                quad_verts[0] = wb_gpu.Vertex3D{quad_origin, {}, color, {} };
-                quad_verts[1] = wb_gpu.Vertex3D{quad_origin + dir_y*quad_size, {}, color, {} };
-                quad_verts[2] = wb_gpu.Vertex3D{quad_origin + (dir_y + dir_x)*quad_size, {}, color, {} };
-                quad_verts[3] = wb_gpu.Vertex3D{quad_origin + dir_x*quad_size, {}, color, {} };
+                quad_verts[0] = wb.Vertex3D{quad_origin, {}, color, {} };
+                quad_verts[1] = wb.Vertex3D{quad_origin + dir_y*quad_size, {}, color, {} };
+                quad_verts[2] = wb.Vertex3D{quad_origin + (dir_y + dir_x)*quad_size, {}, color, {} };
+                quad_verts[3] = wb.Vertex3D{quad_origin + dir_x*quad_size, {}, color, {} };
                 
                 prev_draw_mode := wb.wb_camera.draw_mode;
                 wb.wb_camera.draw_mode = wb_gpu.Draw_Mode.Triangle_Fan;
                 
-                wb_gpu.update_mesh(&gizmo_mesh, 0, quad_verts[:], []u32{});
-                wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
+                wb.update_mesh(&gizmo_mesh, 0, quad_verts[:], []u32{});
+                wb.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
                 
-                wb_gpu.update_mesh(&gizmo_mesh, 0, head_verts[:], []u32{});
-                wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
+                wb.update_mesh(&gizmo_mesh, 0, head_verts[:], []u32{});
+                wb.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
                 
-                wb_gpu.update_mesh(&gizmo_mesh, 0, verts[:], []u32{});
-                wb_gpu.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
+                wb.update_mesh(&gizmo_mesh, 0, verts[:], []u32{});
+                wb.draw_model(gizmo_mesh, {}, {1,1,1}, {0,0,0,1}, {}, color, false);
                 
                 wb.wb_camera.draw_mode = prev_draw_mode;
             }

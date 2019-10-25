@@ -30,8 +30,7 @@ Model_Renderer
 	}
 	model_id "gronk"
 	texture_id "OrcGreen"
-	shader "lit"
-
+	shader_id "lit"
 	color {
 		r 1.000
 		g 1.000

@@ -45,8 +45,8 @@ player_init :: proc(using player: ^Player_Entity) {
 player_update :: proc(dt: f32) {
     
     if wb_plat.get_input(key_config.move_to) {
-        mouse_world := wb_gpu.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
-        mouse_direction := wb_gpu.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
+        mouse_world := wb.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
+        mouse_direction := wb.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
         
         hits := make([dynamic]RaycastHit, 0, 10);
         hit := raycast(wb.wb_camera.position, mouse_direction * 100, &hits);

@@ -30,8 +30,7 @@ Model_Renderer
 	}
 	model_id "gronk"
 	texture_id "OrcGreen"
-	shader "lit"
-
+	shader_id "lit"
 	color {
 		r 0.000
 		g 1.000
@@ -70,6 +69,22 @@ Collider
 {
 	base {
 		enabled true
+	}
+	internal_collider {
+		position [
+			-2.011
+			-0.034
+			0.000
+		]
+
+		box {
+			size [
+				1.000
+				1.000
+				1.000
+			]
+
+		}
 	}
 	type Box
 	box {

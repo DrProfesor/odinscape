@@ -11,15 +11,15 @@ Transform
 	]
 
 	rotation {
-		x -1.000
+		x 0.000
 		y 0.000
 		z 0.000
 		w 1.000
 	}
 	scale [
+		1.000
 		0.200
-		0.200
-		0.010
+		1.000
 	]
 
 }
@@ -30,8 +30,7 @@ Model_Renderer
 	}
 	model_id "PBOX33_Grass_01"
 	texture_id "Plane_Grass_01"
-	shader "lit"
-
+	shader_id "lit"
 	color {
 		r 1.000
 		g 1.000
@@ -70,6 +69,22 @@ Collider
 {
 	base {
 		enabled true
+	}
+	internal_collider {
+		position [
+			-0.726
+			-0.934
+			0.482
+		]
+
+		box {
+			size [
+				35.000
+				1.800
+				35.000
+			]
+
+		}
 	}
 	type Box
 	box {

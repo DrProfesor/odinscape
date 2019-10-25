@@ -82,7 +82,7 @@ main_end :: proc() {
 main :: proc() {
     name := "Odinscape";
     when SERVER do name = tprint(name, "-server");
-    wb.make_simple_window(1920, 1080, 3, 3, 120,
+    wb.make_simple_window(1920, 1080, 120,
                           wb.Workspace{name, main_init, main_update, main_render, main_end});
 }
 
