@@ -1,15 +1,14 @@
 package game
 
-using import "core:math"
 using import "core:fmt"
 
 using import "shared:workbench/basic"
 using import "shared:workbench/logging"
 using import "shared:workbench/types"
 using import "shared:workbench/ecs"
+using import "shared:workbench/math"
 
 import wb_plat  "shared:workbench/platform"
-import wb_gpu   "shared:workbench/gpu"
 import wb_math  "shared:workbench/math"
 import wb       "shared:workbench"
 

@@ -1,6 +1,5 @@
 package editor
 
-using import "core:math"
 using import "core:fmt"
 
 using import    "shared:workbench/types"
@@ -13,7 +12,7 @@ using import "../configs"
 using import "../physics"
 
 import wb_plat "shared:workbench/platform"
-import wb_math  "shared:workbench/math"
+using import wb_math  "shared:workbench/math"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"
 

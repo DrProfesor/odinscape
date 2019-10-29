@@ -1,6 +1,5 @@
 package editor
 
-using import "core:math"
 using import "core:fmt"
 using import "core:strings"
 

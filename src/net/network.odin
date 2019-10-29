@@ -1,7 +1,6 @@
 package net
 
 using import "core:fmt"
-using import "core:math"
 import reflect "core:reflect"
 import "core:mem"
 import "core:strings"

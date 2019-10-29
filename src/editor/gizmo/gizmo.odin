@@ -1,6 +1,5 @@
 package gizmo
 
-using import "core:math"
 using import "core:fmt"
 
 using import "shared:workbench/basic"
@@ -10,7 +9,7 @@ using import "shared:workbench/ecs"
 
 import wb_plat "shared:workbench/platform"
 import wb_col  "shared:workbench/collision"
-import wb_math "shared:workbench/math"
+using import wb_math "shared:workbench/math"
 import wb_gpu  "shared:workbench/gpu"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"

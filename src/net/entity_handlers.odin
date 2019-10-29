@@ -1,12 +1,12 @@
 package net
 
 using import "core:fmt"
-using import "core:math"
 import "core:strings"
 
 using import "shared:workbench/basic"
 using import "shared:workbench/logging"
 using import "shared:workbench/ecs"
+using import "shared:workbench/math"
 
 update_networked_entites :: proc() {
     when SERVER {

@@ -1,7 +1,6 @@
 package game
 
 using import "core:fmt"
-using import "core:math"
 
 import wb    "shared:workbench"
 import       "shared:workbench/gpu"
@@ -9,6 +8,7 @@ using import "shared:workbench/basic"
 using import "shared:workbench/logging"
 using import "shared:workbench/types"
 using import "shared:workbench/ecs"
+using import "shared:workbench/math"
 
 shaders: map[string]gpu.Shader_Program;
 

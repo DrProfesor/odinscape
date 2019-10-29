@@ -1,12 +1,12 @@
 package main
 
-using import "core:math"
 using import "core:fmt"
 using import "core:runtime"
 
 using import    "shared:workbench/types"
 using import    "shared:workbench/basic"
 using import    "shared:workbench/logging"
+using import    "shared:workbench/math"
 
 using import wb_ecs "shared:workbench/ecs"
 import wb_col  "shared:workbench/collision"

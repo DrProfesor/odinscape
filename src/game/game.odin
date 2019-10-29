@@ -1,12 +1,13 @@
 package game
 
 using import "core:fmt"
-using import "core:math"
 import "core:mem"
 import "core:os"
 
-using import     "shared:workbench/basic"
-using import     "shared:workbench/logging"
+using import "shared:workbench/basic"
+using import "shared:workbench/logging"
+using import "shared:workbench/math"
+
 import "shared:workbench/ecs"
 import wb        "shared:workbench"
 import wb_gpu    "shared:workbench/gpu"
