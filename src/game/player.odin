@@ -21,10 +21,13 @@ target_position : Vec3;
 local_player : Entity;
 
 player_init :: proc(using player: ^Player_Entity) {
-    net_id,ok := get_component(e, Network_Id);
-    is_local = net_id.controlling_client == net.client_id;
-    
-    logln("PlayerInit:", net_id.controlling_client, net.client_id);
+    when DEVELOPER {
+        is_local = true;
+    } else {
+        net_id,ok := get_component(e, Network_Id);
+        is_local = net_id.controlling_client == net.client_id;
+        logln("PlayerInit:", net_id.controlling_client, net.client_id);
+    }
     
     if is_local do local_player = e;
     
@@ -35,7 +38,7 @@ player_init :: proc(using player: ^Player_Entity) {
     
     model.scale = Vec3{1, 1, 1};
 	model.color = Colorf{1, 1, 1, 1};
-	model.shader_id = "lit";
+	model.shader_id = "skinned";
 	model.material = wb.Material {
         {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
     };

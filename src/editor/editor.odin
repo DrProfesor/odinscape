@@ -16,7 +16,7 @@ using import wb_math  "shared:workbench/math"
 import wb      "shared:workbench"
 import         "shared:workbench/external/imgui"
 
-Base_Speed := Vec3{1,1,1};
+Base_Speed : f32 = 5;
 
 editor_enabled := false;
 entity_selection: Entity = -1;
@@ -51,36 +51,7 @@ update :: proc(dt: f32) {
 	}
     
 	if wb_plat.get_input(key_config.camera_free_move) {
-        
-        speed := Base_Speed;
-        if wb_plat.get_input(key_config.camera_speed_boost) do
-            speed = speed * Vec3{2,2,2};
-        
-        speed = speed * Vec3{dt, dt, dt};
-        
-        if wb_plat.get_input(key_config.camera_forward) {
-            wb.wb_camera.position += wb_math.quaternion_forward(wb.wb_camera.rotation) * speed;
-        }
-        if wb_plat.get_input(key_config.camera_back) {
-            wb.wb_camera.position += wb_math.quaternion_back(wb.wb_camera.rotation) * speed;
-        }
-        if wb_plat.get_input(key_config.camera_left) {
-            wb.wb_camera.position += wb_math.quaternion_left(wb.wb_camera.rotation) * speed;
-        }
-        if wb_plat.get_input(key_config.camera_right) {
-            wb.wb_camera.position += wb_math.quaternion_right(wb.wb_camera.rotation) * speed;
-        }
-        if wb_plat.get_input(key_config.camera_up) {
-            wb.wb_camera.position += wb_math.quaternion_up(wb.wb_camera.rotation) * speed;
-        }
-        if wb_plat.get_input(key_config.camera_down) {
-            wb.wb_camera.position += wb_math.quaternion_down(wb.wb_camera.rotation) * speed;
-        }
-        
-        mouse_delta := wb_plat.mouse_screen_position_delta;
-        qx := axis_angle(Vec3{0,1,0}, -mouse_delta.x * dt);
-        qy := axis_angle(wb_math.quaternion_right(wb.wb_camera.rotation), mouse_delta.y * dt);
-        wb.wb_camera.rotation = mul(mul(qy, qx), wb.wb_camera.rotation);
+        wb.do_camera_movement(&wb.wb_camera, dt, Base_Speed, Base_Speed * 3, Base_Speed * 0.3);
 	}
     
     if wb_plat.get_input_down(key_config.editor_select) {

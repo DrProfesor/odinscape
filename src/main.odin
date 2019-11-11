@@ -1,6 +1,7 @@
 package main
 
 using import "core:fmt"
+using import "core:math"
 import "core:mem"
 import "core:os"
 

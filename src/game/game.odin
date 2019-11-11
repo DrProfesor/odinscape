@@ -12,6 +12,8 @@ import "shared:workbench/ecs"
 import wb        "shared:workbench"
 import wb_gpu    "shared:workbench/gpu"
 
+using import "../shared"
+
 DEVELOPER :: true;
 
 asset_catalog: wb.Asset_Catalog;
@@ -34,6 +36,11 @@ game_init :: proc() {
 	{
 		scene_init("main");
 	}
+    
+    when DEVELOPER {
+        p := ecs.make_entity("Player");
+        pe := ecs.add_component(p, Player_Entity);
+    }
 }
 
 game_update :: proc(dt: f32) {

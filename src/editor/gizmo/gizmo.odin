@@ -36,7 +36,7 @@ gizmo_mesh : wb.Model;
 rad : f32 = 0.05;
 
 init :: proc() {
-    wb.add_mesh_to_model(&gizmo_mesh, []wb.Vertex3D{}, []u32{});
+    wb.add_mesh_to_model(&gizmo_mesh, []wb.Vertex3D{}, []u32{}, {}, {});
 }
 
 reset :: proc() {
@@ -265,7 +265,7 @@ render :: proc() {
                     pt += dir;
                     pt += origin;
                     verts[i] = wb.Vertex3D {
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     pt = dir_x * cos(theta2) * rad;
@@ -273,21 +273,21 @@ render :: proc() {
                     pt += dir;
                     pt += origin;
                     verts[i+1] = wb.Vertex3D {
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     pt = dir_x * cos(theta) * rad;
                     pt += dir_y *sin(theta) * rad;
                     pt += origin;
                     verts[i+2] = wb.Vertex3D{ 
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     pt = dir_x * cos(theta2) * rad;
                     pt += dir_y *sin(theta2) * rad;
                     pt += origin;
                     verts[i+3] = wb.Vertex3D{ 
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     step += 1;
@@ -304,7 +304,7 @@ render :: proc() {
                     pt += dir;
                     pt += origin;
                     head_verts[i] = wb.Vertex3D {
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     pt = dir_x * cos(theta2) * rad2;
@@ -312,12 +312,12 @@ render :: proc() {
                     pt += dir;
                     pt += origin;
                     head_verts[i+1] = wb.Vertex3D {
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     pt = origin + (dir * 1.25);
                     head_verts[i+2] = wb.Vertex3D{ 
-                        pt, {}, color, {}
+                        pt, {}, color, {}, {}, {}
                     };
                     
                     step += 1;
@@ -325,10 +325,10 @@ render :: proc() {
                 
                 quad_size: f32 = 0.5;
                 quad_origin := origin + (dir_y + dir_x) * 0.2;
-                quad_verts[0] = wb.Vertex3D{quad_origin, {}, color, {} };
-                quad_verts[1] = wb.Vertex3D{quad_origin + dir_y*quad_size, {}, color, {} };
-                quad_verts[2] = wb.Vertex3D{quad_origin + (dir_y + dir_x)*quad_size, {}, color, {} };
-                quad_verts[3] = wb.Vertex3D{quad_origin + dir_x*quad_size, {}, color, {} };
+                quad_verts[0] = wb.Vertex3D{quad_origin, {}, color, {}, {}, {} };
+                quad_verts[1] = wb.Vertex3D{quad_origin + dir_y*quad_size, {}, color, {}, {}, {} };
+                quad_verts[2] = wb.Vertex3D{quad_origin + (dir_y + dir_x)*quad_size, {}, color, {}, {}, {} };
+                quad_verts[3] = wb.Vertex3D{quad_origin + dir_x*quad_size, {}, color, {}, {}, {} };
                 
                 prev_draw_mode := wb.wb_camera.draw_mode;
                 wb.wb_camera.draw_mode = wb_gpu.Draw_Mode.Triangle_Fan;

@@ -14,6 +14,7 @@ shaders: map[string]gpu.Shader_Program;
 
 init_render :: proc() {
     shaders["lit"] = wb.shader_texture_lit;
+    shaders["skinned"] = wb.shader_skinned;
 }
 
 Model_Renderer :: struct {
