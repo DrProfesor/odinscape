@@ -42,6 +42,9 @@ player_init :: proc(using player: ^Player_Entity) {
 	model.material = wb.Material {
         {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
     };
+    
+    animator := add_component(e, Animator);
+    animator.current_animation = "idle";
 }
 
 player_update :: proc(dt: f32) {

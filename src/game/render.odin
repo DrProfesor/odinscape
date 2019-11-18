@@ -55,8 +55,14 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
         return;
 	}
     
+    anim_state : wb.Model_Animation_State = {};
+    animator, aok := get_component(e, Animator);
+    if aok {
+        anim_state = animator.animation_state;
+    }
+    
     shader, sok := shaders[shader_id];
     assert(sok);
     
-	wb.submit_model(model, shader, texture, material, tf.position, tf.scale * scale, tf.rotation,  color);
+	wb.submit_model(model, shader, texture, material, tf.position, tf.scale * scale, tf.rotation,  color, anim_state);
 }
