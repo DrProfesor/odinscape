@@ -10,11 +10,8 @@ using import "shared:workbench/types"
 using import "shared:workbench/ecs"
 using import "shared:workbench/math"
 
-shaders: map[string]gpu.Shader_Program;
 
 init_render :: proc() {
-    shaders["lit"] = wb.shader_texture_lit;
-    shaders["skinned"] = wb.shader_skinned;
 }
 
 Model_Renderer :: struct {
@@ -61,7 +58,7 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
         anim_state = animator.animation_state;
     }
     
-    shader, sok := shaders[shader_id];
+    shader, sok := wb.try_get_shader(&asset_catalog, shader_id);
     assert(sok);
     
 	wb.submit_model(model, shader, texture, material, tf.position, tf.scale * scale, tf.rotation,  color, anim_state);
