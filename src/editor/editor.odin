@@ -2,18 +2,18 @@ package editor
 
 using import "core:fmt"
 
-using import    "shared:workbench/types"
-using import    "shared:workbench/basic"
-using import    "shared:workbench/logging"
-using import    "shared:workbench/ecs"
+using import "shared:workbench/types"
+using import "shared:workbench/basic"
+using import "shared:workbench/logging"
+using import "shared:workbench/ecs"
+using import "shared:workbench/math"
 
 using import "../configs"
 using import "../physics"
 
 import wb_plat "shared:workbench/platform"
-using import wb_math  "shared:workbench/math"
 import wb      "shared:workbench"
-import         "shared:workbench/external/imgui"
+import "shared:workbench/external/imgui"
 
 Base_Speed : f32 = 5;
 
@@ -63,10 +63,6 @@ update :: proc(dt: f32) {
             first_hit := hits[0];
             entity_selection = first_hit.e;
         }
-    }
-    
-    if !wb_plat.get_input(key_config.editor_select) {
-        //wb.gizmo.reset();
     }
     
     if entity_selection != -1 {
