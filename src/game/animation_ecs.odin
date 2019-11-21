@@ -10,7 +10,9 @@ using import "shared:workbench/logging"
 using import "shared:workbench/types"
 using import "shared:workbench/ecs"
 using import "shared:workbench/math"
+
 import anim  "shared:workbench/animation"
+import "shared:workbench/external/imgui"
 
 init_animator :: proc(using animator: ^Animator) {
     mr, mr_exists := get_component(e, Model_Renderer);
@@ -67,6 +69,34 @@ update_animator :: proc(using animator: ^Animator, dt: f32) {
     
     for mesh, i in model.meshes {
         anim.get_animation_data(mesh, current_animation, time, &animation_state.mesh_states[i].state);
+    }
+}
+
+editor_render_animator :: proc(using animator: ^Animator) {
+    if imgui.collapsing_header("Animator") {
+        imgui.indent();
+        
+        mr, mr_exists := get_component(e, Model_Renderer);
+        if !mr_exists {
+            imgui.label_text("INVALID", "INVALID");
+            return;
+        }
+        
+        available_anims := anim.get_animations_for_target(mr.model_id);
+        if imgui.list_box_header("Animations") {
+            for aa, i in available_anims {
+                if imgui.selectable(aa, aa == current_animation) {
+                    current_animation = aa;
+                    
+                }
+            }
+            imgui.list_box_footer();
+        }
+        
+        current_animation_data := anim.loaded_animations[current_animation];
+        imgui.label_text("Running Time", tprint(time, " / ", current_animation_data.duration));
+        
+        defer imgui.unindent();
     }
 }
 
