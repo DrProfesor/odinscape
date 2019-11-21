@@ -11,8 +11,12 @@ import "shared:workbench/external/imgui"
 
 RESOURCES_DIR :: "resources";
 
-file_paths := make([dynamic]string, 0, 50);
+file_paths : [dynamic]string; 
 current_drag_drop_payload : string;
+
+init_resources_window :: proc() {
+    file_paths = make([dynamic]string, 0, 50);
+}
 
 update_resources_window :: proc(dt:f32) {
     
