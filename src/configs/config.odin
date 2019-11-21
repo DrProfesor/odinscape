@@ -17,7 +17,7 @@ init_config :: proc() {
     
     player_config = default_player_config();
     if p_ok {
-        wbml.deserialize(string(player_c), &player_config);
+        wbml.deserialize(player_c, &player_config);
     }
     
     config_save();

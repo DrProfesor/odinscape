@@ -102,7 +102,7 @@ client_update :: proc() {
             }
             case enet.Event_Type.Receive: {
                 packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
-                packet := wbml.deserialize(Packet, packet_string);
+                packet := wbml.deserialize(Packet, cast([]u8)packet_string);
                 
                 packet_typeid := reflect.union_variant_typeid(packet.data);
                 handler := packet_handlers[packet_typeid];

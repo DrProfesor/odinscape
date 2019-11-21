@@ -45,7 +45,7 @@ init_key_config :: proc() {
 	else {
 		// apply our saved config on top of the default one, so defaults for new keys are preserved
 		default_key_config := default_key_config();
-		wbml.deserialize(cast(string)data, &default_key_config);
+		wbml.deserialize(data, &default_key_config);
 		key_config = default_key_config;
 	}
 }
