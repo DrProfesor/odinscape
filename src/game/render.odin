@@ -39,27 +39,25 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
 		logln("Error: no transform for entity ", e);
 		return;
 	}
-    
+
 	model, ok := asset_catalog.models[model_id];
 	if !ok {
 		logln("Couldn't find model in catalog: ", model_id);
 		return;
 	}
-    
+
 	texture, tok := asset_catalog.textures[texture_id];
 	if !tok {
 		logln("Couldn't find texture in catalog: ", texture_id);
         return;
 	}
-    
+
     anim_state : wb.Model_Animation_State = {};
     animator, aok := get_component(e, Animator);
     if aok {
         anim_state = animator.animation_state;
     }
-    
-    shader, sok := wb.try_get_shader(&asset_catalog, shader_id);
-    assert(sok);
-    
+
+    shader := wb.get_shader(&asset_catalog, shader_id);
 	wb.submit_model(model, shader, texture, material, tf.position, tf.scale * scale, tf.rotation,  color, anim_state);
 }
