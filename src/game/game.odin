@@ -13,6 +13,7 @@ import wb        "shared:workbench"
 import wb_gpu    "shared:workbench/gpu"
 
 using import "../shared"
+using import "../configs"
 
 DEVELOPER :: true;
 
@@ -45,6 +46,10 @@ game_init :: proc() {
 
 game_update :: proc(dt: f32) {
 	ecs.update(dt);
+    
+    if editor_config.enabled do return;
+    
+    update_camera(dt);
 }
 
 game_render :: proc() {

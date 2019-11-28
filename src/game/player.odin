@@ -29,7 +29,12 @@ player_init :: proc(using player: ^Player_Entity) {
         logln("PlayerInit:", net_id.controlling_client, net.client_id);
     }
     
-    if is_local do local_player = e;
+    if is_local {
+        local_player = e;
+        
+        transform, texists := get_component(e, Transform);
+        target_position = transform.position;
+    }
     
     model := add_component(e, Model_Renderer);
     
@@ -47,9 +52,17 @@ player_init :: proc(using player: ^Player_Entity) {
     animator.current_animation = "idle";
 }
 
-player_update :: proc(dt: f32) {
+player_update :: proc(using player: ^Player_Entity, dt: f32) {
     
-    if wb_plat.get_input(key_config.move_to) {
+    if editor_config.enabled do return;
+    
+    // TODO networked players
+    if e != local_player do return;
+    
+    transform, _ := get_component(e, Transform);
+    animator,  _ := get_component(e, Animator);
+    
+    if wb_plat.get_input_down(key_config.move_to) {
         mouse_world := wb.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
         mouse_direction := wb.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
         
@@ -58,12 +71,37 @@ player_update :: proc(dt: f32) {
         
         if hit > 0 {
             first_hit := hits[0];
-            
-            move_point := first_hit.intersection_start;
+            target_position = first_hit.intersection_start;
         }
+    }
+    
+    dist := target_position - transform.position;
+    mag := magnitude(dist);
+    
+    if mag > 0.01 {
+        transform.position = move_towards(transform.position, target_position, 2 * dt);
+        transform.rotation = euler_angles(0, look_y_rot(transform.position, target_position) - PI / 2, 0);
+        
+        animator.current_animation = "enter";
+    } else {
+        animator.current_animation = "idle";
     }
 }
 
 player_end :: proc() {
+}
+
+move_towards :: proc(current, target: Vec3, maxDelta: f32) -> Vec3 {
+    a := target - current;
+    mag := magnitude(a);
+    if (mag <= maxDelta || mag == 0) {
+        return target;
+    }
     
+    return current + a / mag * maxDelta;
+}
+
+look_y_rot :: proc(current, target: Vec3) -> f32 {
+    dir := target - current;
+    return f32(atan2(f64(dir.z), f64(-dir.x)));
 }

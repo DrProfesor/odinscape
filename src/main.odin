@@ -33,7 +33,7 @@ main_init :: proc() {
     add_component_type(Transform, nil, nil);
     add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
     add_component_type(physics.Collider, physics.update_collider, physics.render_collider, physics.init_collider);
-    add_component_type(Player_Entity, nil, nil, game.player_init);
+    add_component_type(Player_Entity, game.player_update, nil, game.player_init);
     add_component_type(net.Network_Id, nil, nil);
     add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
     

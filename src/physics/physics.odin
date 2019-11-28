@@ -58,7 +58,7 @@ update_collider :: proc(using col : ^Collider, dt : f32) {
         box
     };
     
-    //wb_col.update_collider(&collision_scene, e, internal_collider);
+    wb_col.update_collider(&collision_scene, e, internal_collider);
 }
 
 render_collider :: proc(using col : ^Collider) {

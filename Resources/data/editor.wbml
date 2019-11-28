@@ -1,0 +1,15 @@
+{
+	enabled true
+	camera_position [
+		-3.758
+		3.460
+		-4.382
+	]
+
+	camera_rotation {
+		x -0.091
+		y -0.903
+		z -0.239
+		w 0.346
+	}
+}
