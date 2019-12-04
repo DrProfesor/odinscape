@@ -33,11 +33,11 @@ init_config :: proc() {
 config_save :: proc() {
     p_ser := wbml.serialize(&player_config);
     defer delete(p_ser);
-    os.write_entire_file(tprint(CONFIG_PATH, "player.wbml"), cast([]u8)p_ser);
+    os.write_entire_file(tprint(CONFIG_PATH, "player.wbml"), transmute([]u8)p_ser);
     
     e_ser := wbml.serialize(&editor_config);
     defer delete(e_ser);
-    os.write_entire_file(tprint(CONFIG_PATH, "editor.wbml"), cast([]u8)e_ser);
+    os.write_entire_file(tprint(CONFIG_PATH, "editor.wbml"), transmute([]u8)e_ser);
 }
 
 default_player_config :: proc() -> Player_Config {

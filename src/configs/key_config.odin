@@ -53,7 +53,7 @@ init_key_config :: proc() {
 key_config_save :: proc() {
 	serialized := wbml.serialize(&key_config);
 	defer delete(serialized);
-	os.write_entire_file(PATH, cast([]u8)serialized);
+	os.write_entire_file(PATH, transmute([]u8)serialized);
 }
 
 default_key_config :: proc() -> Key_Config {

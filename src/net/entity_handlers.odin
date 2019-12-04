@@ -8,7 +8,7 @@ using import "shared:workbench/logging"
 using import "shared:workbench/ecs"
 using import "shared:workbench/math"
 
-update_networked_entites :: proc() {
+update_networked_entities :: proc() {
     when SERVER {
     } else {
         for net_id in get_component_storage(Network_Id) {
