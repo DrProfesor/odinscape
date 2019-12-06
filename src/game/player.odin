@@ -24,7 +24,7 @@ player_init :: proc(using player: ^Player_Entity) {
     when DEVELOPER {
         is_local = true;
     } else {
-        net_id,ok := get_component(e, Network_Id);
+        net_id, ok := get_component(e, Network_Id);
         is_local = net_id.controlling_client == net.client_id;
         logln("PlayerInit:", net_id.controlling_client, net.client_id);
     }
@@ -50,6 +50,14 @@ player_init :: proc(using player: ^Player_Entity) {
     
     animator := add_component(e, Animator);
     animator.current_animation = "idle";
+    
+    // TODO saving
+    stats := add_component(e, Player_Stats);
+    append(&stats.stats, Stat{ "melee_attack", 0, 1 });
+    append(&stats.stats, Stat{ "health", 0, 1 });
+    append(&stats.stats, Stat{ "magic", 0, 1 });
+    append(&stats.stats, Stat{ "ranged_attack", 0, 1 });
+    append(&stats.stats, Stat{ "speed", 0, 1 });
 }
 
 player_update :: proc(using player: ^Player_Entity, dt: f32) {

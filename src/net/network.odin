@@ -211,7 +211,7 @@ when SERVER {
                 }
                 case enet.Event_Type.Receive: {
                     packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
-                    packet := wbml.deserialize(Packet, cast([]u8)packet_string);
+                    packet := wbml.deserialize(Packet, transmute([]u8)packet_string);
                     
                     client_id := 0;
                     for client in connected_clients {
