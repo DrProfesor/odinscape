@@ -89,21 +89,22 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
             
             if !is_valid(s_node.position) do continue;
             
-            on, open_contains := find_node_in_array(open[:], s_node.position);
-            if open_contains {
-                if abs(on.f_cost - s_node.f_cost) < 0.001 {
-                    continue;
-                }
-            }
+            _, open_contains, _ := find_node_in_array(open[:], s_node.position);
+            if open_contains do continue;
             
-            cn, closed_contains := find_node_in_array(closed[:], s_node.position);
+            cn, closed_contains, idx := find_node_in_array(closed[:], s_node.position);
             if closed_contains {
-                if abs(cn.f_cost - s_node.f_cost) < 0.001 { 
+                if cn.f_cost <=  s_node.f_cost { 
                     continue;
+                } else {
+                    n := closed[idx];
+                    n.parent = s_node.parent;
+                    n.f_cost = s_node.f_cost;
+                    closed[idx] = n;
                 }
+            } else {
+                append(&open, s_node);
             }
-            
-            append(&open, s_node);
         }
     }
     
@@ -111,7 +112,7 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
     for true {
         append(&path, end_node.position);
         //logln(end_node.position, end_node.parent);
-        n, exists := find_node_in_array(closed[:], end_node.parent);
+        n, exists, idx := find_node_in_array(closed[:], end_node.parent);
         if !exists do break;
         end_node = n;
     }
@@ -126,9 +127,9 @@ xz_distance :: proc(p1, p2: Vec3) -> f32 {
     //return d;
 }
 
-find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool) {
+find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool, int) {
     
-    if len(arr) == 0 do return AStar_Node{}, false;
+    if len(arr) == 0 do return AStar_Node{}, false, -1;
     
     contains := false;
     contained_idx := 0;
@@ -140,7 +141,7 @@ find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool) {
         }
     }
     
-    return arr[contained_idx], contains;
+    return arr[contained_idx], contains, contained_idx;
 }
 
 get_neighbors :: proc(pt: Vec3) -> [8]Vec3 {
