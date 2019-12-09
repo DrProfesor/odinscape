@@ -1,25 +1,25 @@
-1 Entity
+7 Pillar
 Transform
 {
 	base {
 		enabled true
 	}
 	position [
-		-2.011
-		-0.034
-		0.000
+		-10.812
+		-1.451
+		-3.781
 	]
 
 	rotation {
-		x 0.000
+		x -0.707
 		y 0.000
 		z 0.000
-		w 1.000
+		w 0.707
 	}
 	scale [
-		1.000
-		1.000
-		1.000
+		0.010
+		0.010
+		0.050
 	]
 
 	parent 0
@@ -29,11 +29,11 @@ Model_Renderer
 	base {
 		enabled true
 	}
-	model_id "gronk"
-	texture_id "OrcGreen"
+	model_id "PBOX33_Grass_01"
+	texture_id "Plane_Grass_01"
 	shader_id "lit"
 	color {
-		r 0.000
+		r 1.000
 		g 1.000
 		b 1.000
 		a 1.000
@@ -60,9 +60,9 @@ Model_Renderer
 		shine 32.000
 	}
 	scale [
-		0.010
-		0.010
-		0.010
+		1.000
+		1.000
+		1.000
 	]
 
 }
@@ -73,16 +73,16 @@ Collider
 	}
 	internal_collider {
 		position [
-			-2.011
-			-0.034
-			0.000
+			-10.812
+			-1.451
+			-3.781
 		]
 
 		box {
 			size [
-				1.000
-				1.000
-				1.000
+				2.000
+				4.000
+				2.000
 			]
 
 		}
@@ -90,9 +90,9 @@ Collider
 	type Box
 	box {
 		size [
-			1.000
-			1.000
-			1.000
+			2.000
+			4.000
+			2.000
 		]
 
 	}

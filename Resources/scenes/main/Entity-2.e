@@ -22,6 +22,7 @@ Transform
 		1.000
 	]
 
+	parent 0
 }
 Model_Renderer
 {

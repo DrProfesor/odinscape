@@ -1,4 +1,4 @@
-package main
+package physics
 
 using import "core:fmt"
 using import "core:runtime"
@@ -68,13 +68,29 @@ render_collider :: proc(using col : ^Collider) {
     wb.draw_debug_box(entity_transform.position, col.box.size, COLOR_GREEN);
 }
 
-raycast :: proc(start : Vec3, direction : Vec3, hits : ^[dynamic]RaycastHit) -> int {
+overlap_point :: proc(point: Vec3, hits: ^[dynamic]RaycastHit = nil) -> int {
+    clear(&internal_hits);
+    
+    wb_col.overlap_point(&collision_scene, point, &internal_hits);
+    
+    if hits != nil {
+        for internal_hit in internal_hits {
+            append(hits, RaycastHit{ Entity(internal_hit.handle), internal_hit.point0, internal_hit.point1  });
+        }
+    }
+    
+    return len(internal_hits);
+}
+
+raycast :: proc(start : Vec3, direction : Vec3, hits : ^[dynamic]RaycastHit = nil) -> int {
     clear(&internal_hits);
     
     wb_col.linecast(&collision_scene, start, direction, &internal_hits);
     
-    for internal_hit in internal_hits {
-        append(hits, RaycastHit{ Entity(internal_hit.handle), internal_hit.point0, internal_hit.point1  });
+    if hits != nil {
+        for internal_hit in internal_hits {
+            append(hits, RaycastHit{ Entity(internal_hit.handle), internal_hit.point0, internal_hit.point1  });
+        }
     }
     
     return len(internal_hits);

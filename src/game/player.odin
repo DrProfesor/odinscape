@@ -52,12 +52,14 @@ player_init :: proc(using player: ^Player_Entity) {
     animator.current_animation = "idle";
     
     // TODO saving
-    stats := add_component(e, Player_Stats);
+    stats := add_component(e, Stats);
     append(&stats.stats, Stat{ "melee_attack", 0, 1 });
     append(&stats.stats, Stat{ "health", 0, 1 });
     append(&stats.stats, Stat{ "magic", 0, 1 });
     append(&stats.stats, Stat{ "ranged_attack", 0, 1 });
     append(&stats.stats, Stat{ "speed", 0, 1 });
+    
+    health := add_component(e, Health);
 }
 
 player_update :: proc(using player: ^Player_Entity, dt: f32) {
@@ -89,6 +91,13 @@ player_update :: proc(using player: ^Player_Entity, dt: f32) {
     if mag > 0.01 {
         transform.position = move_towards(transform.position, target_position, 2 * dt);
         transform.rotation = euler_angles(0, look_y_rot(transform.position, target_position) - PI / 2, 0);
+        
+        
+        points := a_star(transform.position + Vec3{0, 0.5, 0}, target_position + Vec3{0, 0.5, 0});
+        for point in points {
+            wb.draw_debug_box(point, Vec3{0.2,0.2,0.2}, COLOR_RED);
+        }
+        
         
         animator.current_animation = "enter";
     } else {

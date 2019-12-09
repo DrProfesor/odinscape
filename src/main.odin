@@ -45,7 +45,8 @@ main_init :: proc() {
     // game components
     add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
     add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
-    add_component_type(game.Player_Stats, nil, nil);
+    add_component_type(game.Stats, nil, nil);
+    add_component_type(game.Health, nil, nil, game.init_health);
     
     game.game_init();
     

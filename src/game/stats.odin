@@ -8,7 +8,7 @@ using import "shared:workbench/types"
 using import "shared:workbench/ecs"
 using import "shared:workbench/math"
 
-Player_Stats :: struct {
+Stats :: struct {
     using base: Component_Base,
     stats : [dynamic]Stat,
 }
@@ -31,7 +31,7 @@ get_experience_required :: proc(level: int) -> f32 {
 }
 
 get_stat :: proc(entity: Entity, stat_id: string) -> Stat {
-    stat_comp, ok := get_component(entity, Player_Stats);
+    stat_comp, ok := get_component(entity, Stats);
     assert(ok);
     
     for stat in stat_comp.stats {
@@ -43,7 +43,7 @@ get_stat :: proc(entity: Entity, stat_id: string) -> Stat {
 }
 
 add_experience :: proc(entity: Entity, stat_id: string, amount: f32) {
-    stat_comp, ok := get_component(entity, Player_Stats);
+    stat_comp, ok := get_component(entity, Stats);
     assert(ok);
     
     for i := 0; i < len(stat_comp.stats); i += 1 {

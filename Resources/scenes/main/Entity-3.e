@@ -11,10 +11,10 @@ Transform
 	]
 
 	rotation {
-		x -1.000
+		x -0.707
 		y 0.000
 		z 0.000
-		w 1.000
+		w 0.707
 	}
 	scale [
 		0.200
@@ -22,6 +22,7 @@ Transform
 		0.200
 	]
 
+	parent 0
 }
 Model_Renderer
 {
