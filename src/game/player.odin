@@ -89,13 +89,13 @@ player_update :: proc(using player: ^Player_Entity, dt: f32) {
     mag := magnitude(dist);
     
     if mag > 0.01 {
-        transform.position = move_towards(transform.position, target_position, 2 * dt);
+        transform.position = move_towards(transform.position, target_position, 1 * dt);
         transform.rotation = euler_angles(0, look_y_rot(transform.position, target_position) - PI / 2, 0);
         
         
-        points := a_star(transform.position + Vec3{0, 0.5, 0}, target_position + Vec3{0, 0.5, 0});
+        points := a_star(transform.position + Vec3{0, 0.2, 0}, target_position + Vec3{0, 0.2, 0});
         for point in points {
-            wb.draw_debug_box(point, Vec3{0.2,0.2,0.2}, COLOR_RED);
+            wb.draw_debug_box(point, Vec3{0.2,0.2,0.2}, COLOR_BLUE);
         }
         
         
