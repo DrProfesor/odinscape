@@ -16,7 +16,7 @@ MAX : f32 : 100;
 AStar_Node :: struct {
     position: Vec3,
     parent: ^AStar_Node,
-    g_cost, f_cost: f32,
+    g_cost, h_cost, f_cost: f32,
 }
 
 validation_hits : [dynamic]RaycastHit;
@@ -37,97 +37,92 @@ is_destination :: proc(node, dest: Vec3) -> bool {
     return xz_dist(node, dest) < STEP_SIZE;
 }
 
-calculate_h_cost :: proc(current, dest: AStar_Node) -> f32 {
-    return sqrt((current.position.x - dest.position.x) * (current.position.x - dest.position.x) + 
-                (current.position.y - dest.position.y) * (current.position.y - dest.position.y));
-}
-
 a_star :: proc(start, goal: Vec3) -> []Vec3 {
-    open_set : [dynamic]AStar_Node;
-    start_node := AStar_Node{start, nil, 0, 0};
-    append(&open_set, start_node);
+    open : [dynamic]AStar_Node;
+    closed : [dynamic]AStar_Node;
     
-    if is_destination(start, goal) {
-        logln("At destination");
-        return {start};
-    }
+    start_node := AStar_Node{ start, nil, 0, 0, 0 };
+    end_node : AStar_Node;
     
-    if !is_valid(goal) {
-        logln("Invalid destination");
-        return {start};
-    }
+    append(&open, start_node);
     
-    closed_set : [dynamic]AStar_Node;
-    
-    current : ^AStar_Node = nil;
-    outer: for len(open_set) > 0 {
-        lowest_cost : f32 = F32_MAX;
-        lowest_idx := 0;
-        for idx := 0; idx < len(open_set); idx += 1 {
-            node := open_set[idx];
-            if node.f_cost < lowest_cost {
-                lowest_cost = node.f_cost;
-                current = &open_set[idx];
-                lowest_idx = idx;
+    outer: for len(open) > 0 {
+        logln("len: ", len(open));
+        closest_idx := 0;
+        lowest_score : f32 = F32_MAX;
+        for n, idx in open {
+            if n.f_cost < lowest_score {
+                lowest_score = n.f_cost;
+                closest_idx = idx;
             }
         }
         
-        if is_destination(current.position, goal) {
+        closest_node := open[closest_idx];
+        
+        if is_destination(closest_node.position, goal) {
+            end_node = closest_node;
             break;
         }
         
-        append(&closed_set, current^);
-        unordered_remove(&open_set, lowest_idx);
+        append(&closed, closest_node);
+        unordered_remove(&open, closest_idx);
         
-        for neighbor, i in get_neighbors(current.position) {
-            found_in_closed := false;
-            for o in closed_set {
-                if distance(o.position, neighbor) < 0.001 {
-                    found_in_closed = true;
+        successors := get_neighbors(closest_node.position);
+        for s in successors {
+            s_node := AStar_Node{ 
+                s, 
+                &closed[len(closed)-1],
+                closest_node.g_cost + distance(s, closest_node.position),
+                distance(s, goal), 
+                0
+            };
+            s_node.f_cost = s_node.g_cost + s_node.h_cost;
+            
+            if !is_valid(s_node.position) do continue;
+            
+            if is_destination(s_node.position, goal) {
+                end_node = s_node;
+                break outer;
+            }
+            
+            contains := false;
+            contained_idx := 0;
+            for o, idx in open {
+                if distance(o.position, s_node.position) < 0.001 {
+                    contains = true;
+                    contained_idx = idx;
                     break;
                 }
             }
             
-            if found_in_closed || !is_valid(neighbor) {
-                continue;
-            }
+            if contains && open[contained_idx].f_cost < s_node.f_cost do continue;
             
-            found := false;
-            found_idx := 0;
-            for o, idx in open_set {
-                if distance(o.position, neighbor) < 0.001 {
-                    found = true;
-                    found_idx = idx;
+            contains = false;
+            contained_idx = 0;
+            for o, idx in closed {
+                if distance(o.position, s_node.position) < 0.001 {
+                    contains = true;
+                    contained_idx = idx;
                     break;
                 }
             }
             
-            total_cost := current.g_cost;
-            if i < 4 do total_cost += 10;
-            else do total_cost += 14;
+            if contains && closed[contained_idx].f_cost < s_node.f_cost do continue;
             
-            if !found {
-                n_node := AStar_Node{neighbor, current, 0, 0};
-                n_node.g_cost = total_cost;
-                n_node.f_cost = xz_dist(neighbor, goal) * 10;
-                append(&open_set, n_node);
-            } else if total_cost <  open_set[found_idx].g_cost {
-                s := open_set[found_idx];
-                
-                s.parent = current;
-                s.g_cost = total_cost;
-                
-                open_set[found_idx] = s;
-            }
-            
+            append(&open, s_node);
         }
     }
     
-    path : [dynamic]Vec3;
-    for current != nil {
-        append(&path, current.position);
-        current = current.parent;
+    path: [dynamic]Vec3;
+    for true {
+        append(&path, end_node.position);
+        logln("in final loop");
+        
+        if end_node.parent == nil do break;
+        
+        end_node = end_node.parent^;
     }
+    append(&path, goal);
     
     return path[:];
 }
