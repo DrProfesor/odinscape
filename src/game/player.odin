@@ -62,6 +62,9 @@ player_init :: proc(using player: ^Player_Entity) {
     health := add_component(e, Health);
 }
 
+player_path : []Vec3;
+path_idx := 0;
+
 player_update :: proc(using player: ^Player_Entity, dt: f32) {
     
     if editor_config.enabled do return;
@@ -82,6 +85,10 @@ player_update :: proc(using player: ^Player_Entity, dt: f32) {
         if hit > 0 {
             first_hit := hits[0];
             target_position = first_hit.intersection_start;
+            
+            transform.position = Vec3{transform.position.x, target_position.y, transform.position.z};
+            player_path = a_star(transform.position + Vec3{0,0.2,0}, target_position + Vec3{0, 0.2, 0}, 0.25);
+            path_idx = len(player_path) - 2; // start on the second last point
         }
     }
     
@@ -89,13 +96,17 @@ player_update :: proc(using player: ^Player_Entity, dt: f32) {
     mag := magnitude(dist);
     
     if mag > 0.01 {
-        
-        transform.position = Vec3{transform.position.x, target_position.y, transform.position.z};
-        
-        points := a_star(transform.position + Vec3{0, 0.2, 0}, target_position + Vec3{0, 0.2, 0});
         p := target_position;
-        if len(points) >= 2 {
-            p = points[len(points) - 2];
+        if path_idx > 0 {
+            p = player_path[path_idx] - Vec3{0,0.2,0};
+            
+            for point in player_path {
+                wb.draw_debug_box(point, Vec3{0.2,0.2,0.2}, COLOR_BLUE);
+            }
+            
+            if distance(p, transform.position) < 0.00001 {
+                path_idx -= 1;
+            }
         }
         
         transform.position = move_towards(transform.position, p, 2 * dt);

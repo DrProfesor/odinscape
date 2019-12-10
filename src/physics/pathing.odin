@@ -10,9 +10,6 @@ using import    "shared:workbench/math"
 
 import wb       "shared:workbench"
 
-STEP_SIZE : f32 : 0.25;
-MAX : f32 : 100;
-
 AStar_Node :: struct {
     position: Vec3,
     parent: Vec3,
@@ -23,13 +20,11 @@ is_valid :: proc(pos: Vec3) -> bool {
     return overlap_point(pos) <= 0;
 }
 
-is_destination :: proc(node, dest: Vec3) -> bool {
-    return distance(node, dest) <= STEP_SIZE * 2;
-}
-
-a_star :: proc(start, goal: Vec3) -> []Vec3 {
+a_star :: proc(start, goal: Vec3, step_size: f32) -> []Vec3 {
     open : [dynamic]AStar_Node;
     closed : [dynamic]AStar_Node;
+    defer delete(open);
+    defer delete(closed);
     
     start_node := AStar_Node{ start, Vec3{F32_MAX,F32_MAX,F32_MAX}, 0, 0, 0 };
     end_node : AStar_Node;
@@ -48,7 +43,7 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
         
         closest_node := open[closest_idx];
         
-        if is_destination(closest_node.position, goal) {
+        if distance(closest_node.position, goal) <= step_size{
             end_node = closest_node;
             break;
         }
@@ -56,7 +51,7 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
         append(&closed, closest_node);
         unordered_remove(&open, closest_idx);
         
-        successors := get_neighbors_2d(closest_node.position);
+        successors := get_neighbors_2d(closest_node.position, step_size);
         for s in successors {
             s_node := AStar_Node{ 
                 s, 
@@ -116,7 +111,7 @@ find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool, i
     return arr[contained_idx], contains, contained_idx;
 }
 
-get_neighbors_2d :: proc(pt: Vec3) -> [8]Vec3 {
+get_neighbors_2d :: proc(pt: Vec3, step_size: f32) -> [8]Vec3 {
     neighbors : [8]Vec3 = {};
     
     i := 0;
@@ -124,7 +119,7 @@ get_neighbors_2d :: proc(pt: Vec3) -> [8]Vec3 {
         for z := -1; z < 2; z += 1 {
             if x == 0 && z == 0 do continue;
             
-            neighbors[i] = pt + Vec3{STEP_SIZE * f32(x), 0, STEP_SIZE * f32(z)};
+            neighbors[i] = pt + Vec3{step_size * f32(x), 0, step_size * f32(z)};
             i += 1;
         }
     }
@@ -132,7 +127,7 @@ get_neighbors_2d :: proc(pt: Vec3) -> [8]Vec3 {
     return neighbors;
 }
 
-get_neighbors_3d :: proc(pt: Vec3) -> [26]Vec3 {
+get_neighbors_3d :: proc(pt: Vec3, step_size: f32) -> [26]Vec3 {
     neighbors : [26]Vec3 = {};
     
     i := 0;
@@ -140,7 +135,7 @@ get_neighbors_3d :: proc(pt: Vec3) -> [26]Vec3 {
         for y := -1; y < 2; y += 1 {
             for z := -1; z < 2; z += 1 {
                 if x == 0 && y == 0 && z == 0 do continue;
-                neighbors[i] = pt + Vec3{STEP_SIZE * f32(x), STEP_SIZE * f32(y), STEP_SIZE * f32(z)};
+                neighbors[i] = pt + Vec3{step_size * f32(x), step_size * f32(y), step_size * f32(z)};
                 i += 1;
             }
         }
