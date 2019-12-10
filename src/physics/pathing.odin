@@ -19,21 +19,12 @@ AStar_Node :: struct {
     g_cost, h_cost, f_cost: f32,
 }
 
-validation_hits : [dynamic]RaycastHit;
-
 is_valid :: proc(pos: Vec3) -> bool {
-    clear(&validation_hits);
-    hit_num := overlap_point(pos, &validation_hits);
-    
-    for hit in validation_hits {
-        wb.draw_debug_box(hit.intersection_start, Vec3{0.1,0.1,0.1}, COLOR_YELLOW);
-    }
-    
-    return hit_num <= 0;
+    return overlap_point(pos) <= 0;
 }
 
 is_destination :: proc(node, dest: Vec3) -> bool {
-    return xz_distance(node, dest) <= STEP_SIZE * 2;
+    return distance(node, dest) <= STEP_SIZE * 2;
 }
 
 a_star :: proc(start, goal: Vec3) -> []Vec3 {
@@ -45,11 +36,7 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
     
     append(&open, start_node);
     
-    iters := 0;
-    
     outer: for len(open) > 0 {
-        iters += 1;
-        
         closest_idx := 0;
         lowest_score : f32 = F32_MAX;
         for n, idx in open {
@@ -61,14 +48,7 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
         
         closest_node := open[closest_idx];
         
-        if iters > 400 {
-            wb.draw_debug_box(closest_node.position, Vec3{0.15,0.15,0.15}, Colorf{0.5,0,0.5,1});
-            break;
-        }
-        
-        wb.draw_debug_box(closest_node.position, Vec3{0.1,0.1,0.1}, COLOR_YELLOW);
         if is_destination(closest_node.position, goal) {
-            wb.draw_debug_box(closest_node.position, Vec3{0.15,0.15,0.15}, COLOR_BLACK);
             end_node = closest_node;
             break;
         }
@@ -76,13 +56,13 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
         append(&closed, closest_node);
         unordered_remove(&open, closest_idx);
         
-        successors := get_neighbors(closest_node.position);
+        successors := get_neighbors_2d(closest_node.position);
         for s in successors {
             s_node := AStar_Node{ 
                 s, 
                 closest_node.position,
-                closest_node.g_cost + xz_distance(s, closest_node.position),
-                xz_distance(s, goal), 
+                closest_node.g_cost + distance(s, closest_node.position),
+                distance(s, goal), 
                 0
             };
             s_node.f_cost = s_node.g_cost + s_node.h_cost;
@@ -111,20 +91,12 @@ a_star :: proc(start, goal: Vec3) -> []Vec3 {
     path: [dynamic]Vec3;
     for true {
         append(&path, end_node.position);
-        //logln(end_node.position, end_node.parent);
         n, exists, idx := find_node_in_array(closed[:], end_node.parent);
         if !exists do break;
         end_node = n;
     }
-    //append(&path, goal);
     
     return path[:];
-}
-
-xz_distance :: proc(p1, p2: Vec3) -> f32 {
-    return distance(p1, p2);
-    //d := distance(Vec3{p1.x, 0, p1.y}, Vec3{p2.x, 0, p2.z});
-    //return d;
 }
 
 find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool, int) {
@@ -144,18 +116,35 @@ find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool, i
     return arr[contained_idx], contains, contained_idx;
 }
 
-get_neighbors :: proc(pt: Vec3) -> [8]Vec3 {
+get_neighbors_2d :: proc(pt: Vec3) -> [8]Vec3 {
     neighbors : [8]Vec3 = {};
     
-    neighbors[0] = pt + Vec3{  STEP_SIZE, 0,  0   };
-    neighbors[1] = pt + Vec3{ -STEP_SIZE, 0,  0   };
-    neighbors[2] = pt + Vec3{ 0,    0,  STEP_SIZE };
-    neighbors[3] = pt + Vec3{ 0,    0, -STEP_SIZE };
+    i := 0;
+    for x := -1; x < 2; x += 1 {
+        for z := -1; z < 2; z += 1 {
+            if x == 0 && z == 0 do continue;
+            
+            neighbors[i] = pt + Vec3{STEP_SIZE * f32(x), 0, STEP_SIZE * f32(z)};
+            i += 1;
+        }
+    }
     
-    neighbors[4] = pt + Vec3{  STEP_SIZE, 0,  STEP_SIZE };
-    neighbors[5] = pt + Vec3{ -STEP_SIZE, 0,  STEP_SIZE };
-    neighbors[6] = pt + Vec3{ -STEP_SIZE, 0, -STEP_SIZE };
-    neighbors[7] = pt + Vec3{  STEP_SIZE, 0, -STEP_SIZE };
+    return neighbors;
+}
+
+get_neighbors_3d :: proc(pt: Vec3) -> [26]Vec3 {
+    neighbors : [26]Vec3 = {};
+    
+    i := 0;
+    for x := -1; x < 2; x += 1 {
+        for y := -1; y < 2; y += 1 {
+            for z := -1; z < 2; z += 1 {
+                if x == 0 && y == 0 && z == 0 do continue;
+                neighbors[i] = pt + Vec3{STEP_SIZE * f32(x), STEP_SIZE * f32(y), STEP_SIZE * f32(z)};
+                i += 1;
+            }
+        }
+    }
     
     return neighbors;
 }

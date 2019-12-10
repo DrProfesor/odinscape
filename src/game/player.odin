@@ -90,23 +90,16 @@ player_update :: proc(using player: ^Player_Entity, dt: f32) {
     
     if mag > 0.01 {
         
+        transform.position = Vec3{transform.position.x, target_position.y, transform.position.z};
+        
         points := a_star(transform.position + Vec3{0, 0.2, 0}, target_position + Vec3{0, 0.2, 0});
         p := target_position;
         if len(points) >= 2 {
             p = points[len(points) - 2];
         }
         
-        transform.position = move_towards(transform.position, p, 1 * dt);
-        
-        transform.position = Vec3{transform.position.x, target_position.y, transform.position.z};
+        transform.position = move_towards(transform.position, p, 2 * dt);
         transform.rotation = euler_angles(0, look_y_rot(transform.position, p) - PI / 2, 0);
-        
-        
-        for point, i in points {
-            if i == 1 do wb.draw_debug_box(point, Vec3{0.12,0.12,0.12}, Colorf{0.25, 0.1, 0.7, 1});
-            wb.draw_debug_box(point, Vec3{0.2,0.2,0.2}, COLOR_BLUE);
-        }
-        
         
         animator.current_animation = "enter";
     } else {
