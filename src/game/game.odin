@@ -11,6 +11,7 @@ using import "shared:workbench/math"
 import "shared:workbench/ecs"
 import wb        "shared:workbench"
 import wb_gpu    "shared:workbench/gpu"
+import particles "shared:workbench/particles"
 
 using import "../shared"
 using import "../configs"
@@ -32,6 +33,8 @@ game_init :: proc() {
 		wb.wb_camera.position = Vec3{0, 6.09, 4.82};
 		wb.wb_camera.rotation = Quat{0,0,0,1};
 	}
+    
+    particles.init();
     
     // entities
 	{

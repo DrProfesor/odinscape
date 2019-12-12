@@ -47,6 +47,7 @@ main_init :: proc() {
     add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
     add_component_type(game.Stats, nil, nil);
     add_component_type(game.Health, nil, nil, game.init_health);
+    add_component_type(game.Particle_Emitter, game.update_emitter, game.render_emitter, game.init_emitter);
     
     game.game_init();
     
