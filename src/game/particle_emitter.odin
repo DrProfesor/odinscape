@@ -4,6 +4,7 @@ using import "core:fmt"
 import       "core:mem"
 import       "core:os"
 
+import "shared:workbench/gpu"
 import wb    "shared:workbench"
 using import "shared:workbench/basic"
 using import "shared:workbench/logging"
@@ -28,5 +29,9 @@ update_emitter :: proc(using emitter: ^Particle_Emitter, dt: f32) {
 }
 
 render_emitter :: proc(using emitter: ^Particle_Emitter) {
+    
+    shader := wb.get_shader(&wb.wb_catalog, "particles");
+    gpu.use_program(shader);
+    
     p.render_particle_emitter(&emitter.base_emitter);
 }
