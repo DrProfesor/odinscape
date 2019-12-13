@@ -34,4 +34,8 @@ render_emitter :: proc(using emitter: ^Particle_Emitter) {
     gpu.use_program(shader);
     
     p.render_particle_emitter(&emitter.base_emitter);
+    
+    for particle in base_emitter.particles {
+        wb.draw_debug_box(particle.position, Vec3{0.05,0.05,0.05}, Colorf{1,0,0,1});
+    }
 }
