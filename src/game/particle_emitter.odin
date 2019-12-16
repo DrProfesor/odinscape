@@ -22,20 +22,25 @@ Particle_Emitter :: struct {
 
 init_emitter :: proc(using emitter: ^Particle_Emitter) {
     p.init_particle_emitter(&emitter.base_emitter, 1);
+    base_emitter.shader = wb.get_shader(&wb.wb_catalog, "particle");
+    base_emitter.emission = p.Spheric_Emission{Vec3{0,1,0}, -45, 45};
 }
 
 update_emitter :: proc(using emitter: ^Particle_Emitter, dt: f32) {
+    t, ok := get_component(e, Transform);
+    base_emitter.position = t.position;
     p.update_particle_emitter(&emitter.base_emitter, dt);
 }
 
 render_emitter :: proc(using emitter: ^Particle_Emitter) {
     
-    shader := wb.get_shader(&wb.wb_catalog, "particles");
-    gpu.use_program(shader);
+	projection_matrix := wb.construct_rendermode_matrix(wb.current_camera);
+	view_matrix := wb.construct_view_matrix(wb.current_camera);
     
-    p.render_particle_emitter(&emitter.base_emitter);
+    p.render_particle_emitter(&emitter.base_emitter, projection_matrix, view_matrix);
     
     for particle in base_emitter.particles {
+        if particle.dead do continue;
         wb.draw_debug_box(particle.position, Vec3{0.05,0.05,0.05}, Colorf{1,0,0,1});
     }
 }

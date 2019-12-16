@@ -20,6 +20,8 @@ Base_Speed : f32 = 5;
 
 init :: proc() {
     init_resources_window();
+    
+    
 }
 
 update :: proc(dt: f32) {
