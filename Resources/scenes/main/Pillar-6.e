@@ -27,7 +27,7 @@ Transform
 Model_Renderer
 {
 	base {
-		enabled true
+		enabled false
 	}
 	model_id "PBOX33_Grass_01"
 	texture_id "Plane_Grass_01"
@@ -94,6 +94,67 @@ Collider
 			4.000
 			2.000
 		]
+
+	}
+}
+Particle_Emitter
+{
+	base {
+		enabled true
+	}
+	base_emitter {
+		position [
+			-6.496
+			-1.493
+			0.482
+		]
+
+		rotation {
+			x 0.000
+			y 0.000
+			z 0.000
+			w 1.000
+		}
+		emit true
+		emission_rate 4
+		max_particles 100
+		min_ttl 2.000
+		max_ttl 3.000
+		initial_colour {
+			r 1.000
+			g 0.000
+			b 0.000
+			a 1.000
+		}
+		final_colour {
+			r 0.000
+			g 1.000
+			b 0.000
+			a 0.000
+		}
+		initial_scale [
+			0.100
+			0.100
+			0.100
+		]
+
+		final_scale [
+			0.300
+			0.300
+			0.300
+		]
+
+		texture_id "particle"
+		emission .Spheric_Emission {
+			direction [
+				0.000
+				1.000
+				0.000
+			]
+
+			angle_min -45.000
+			angle_max 45.000
+		}
 
 	}
 }

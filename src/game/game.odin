@@ -33,6 +33,8 @@ game_init :: proc() {
 		wb.wb_camera.rotation = Quat{0,0,0,1};
 	}
     
+    wb.init_particles();
+    
     // entities
 	{
 		scene_init("main");

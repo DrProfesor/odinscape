@@ -43,6 +43,7 @@ main_init :: proc() {
     add_component_type(net.Network_Id, nil, nil);
     
     // game components
+    add_component_type(game.Particle_Emitter, game.update_emitter, nil, game.init_emitter);
     add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
     add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
     add_component_type(game.Stats, nil, nil);
@@ -76,6 +77,7 @@ main_render :: proc(dt: f32) {
 }
 
 on_post_render :: proc() {
+    game.render_emitters();
     editor.render();
 }
 
