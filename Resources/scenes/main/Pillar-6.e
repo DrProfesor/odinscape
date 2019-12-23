@@ -121,14 +121,14 @@ Particle_Emitter
 		min_ttl 2.000
 		max_ttl 3.000
 		initial_colour {
-			r 0.000
+			r 1.000
 			g 0.000
 			b 0.000
-			a 0.000
+			a 1.000
 		}
 		final_colour {
 			r 0.000
-			g 0.000
+			g 1.000
 			b 0.000
 			a 0.000
 		}
@@ -144,11 +144,17 @@ Particle_Emitter
 			0.300
 		]
 
-		active_particles 23
-		rstate {
-			state 5966530501058417409
-			inc 3
+		texture_id "particle"
+		emission .Spheric_Emission {
+			direction [
+				0.000
+				1.000
+				0.000
+			]
+
+			angle_min -45.000
+			angle_max 45.000
 		}
-		last_emission 0.017
+
 	}
 }
