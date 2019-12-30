@@ -20,8 +20,10 @@ Base_Speed : f32 = 5;
 
 init :: proc() {
     init_resources_window();
-    
-    
+
+    wb.register_debug_program("Resources", update_resources_window, nil);
+    wb.register_debug_program("Player", update_player_window, nil);
+    wb.register_debug_program("Scene", draw_scene_window, nil);
 }
 
 update :: proc(dt: f32) {
@@ -38,18 +40,6 @@ update :: proc(dt: f32) {
     }
     
     if !editor_config.enabled do return;
-    
-    update_resources_window(dt);
-    update_player_window(dt);
-    
-    if imgui.begin("Scene View", nil) {
-        window_size := imgui.get_window_size();
-        
-        imgui.image(imgui.TextureID(uintptr(wb.wb_camera.framebuffer.textures[0].gpu_id)),
-                    imgui.Vec2{window_size.x - 10, window_size.y - 30},
-                    imgui.Vec2{0,1},
-                    imgui.Vec2{1,0});
-    } imgui.end();
     
     if wb_plat.get_input(key_config.camera_free_move) {
         wb.do_camera_movement(&wb.wb_camera, dt, Base_Speed, Base_Speed * 3, Base_Speed * 0.3);
@@ -75,8 +65,6 @@ update :: proc(dt: f32) {
         transform, ok := get_component(selected_entity, Transform);
         wb.gizmo_manipulate(&transform.position, &transform.scale, &transform.rotation);
     }
-    
-    draw_scene_window();
 }
 
 render :: proc() {

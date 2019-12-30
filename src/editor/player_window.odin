@@ -15,7 +15,7 @@ import "shared:workbench/external/imgui"
 import "../configs"
 import "../game"
 
-update_player_window :: proc(dt: f32) {
+update_player_window :: proc(userdata: rawptr) {
     
     if imgui.begin("Player") {
         

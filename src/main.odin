@@ -66,7 +66,7 @@ main_update :: proc(dt: f32) {
     
     //
     game.game_update(dt);
-    
+
     //
     editor.update(dt);
 }

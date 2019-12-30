@@ -18,6 +18,7 @@ using import "../configs"
 DEVELOPER :: true;
 
 asset_catalog: wb.Asset_Catalog;
+prefab_scene: ecs.Prefab_Scene;
 
 game_init :: proc() {
     
@@ -38,6 +39,7 @@ game_init :: proc() {
     // entities
 	{
 		scene_init("main");
+		prefab_scene = ecs.load_prefab_dir("resources/prefabs");
 	}
     
     when DEVELOPER {
