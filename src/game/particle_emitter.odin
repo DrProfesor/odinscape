@@ -52,8 +52,4 @@ render_emitter :: proc(using emitter: ^Particle_Emitter) {
     
     wb.render_particle_emitter(&emitter.base_emitter, projection_matrix, view_matrix);
     
-    //for particle in base_emitter.particles {
-    //if particle.dead do continue;
-    //wb.draw_debug_box(particle.position, Vec3{0.05,0.05,0.05}, Colorf{1,0,0,1});
-    //}
 }
