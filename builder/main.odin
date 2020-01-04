@@ -1,12 +1,12 @@
 package builder
 
 import wb "shared:workbench"
-using import "shared:workbench/logging"
+import "shared:workbench/logging"
 
 when wb.DEVELOPER {
 
 import "core:os"
-using import "core:fmt"
+import "core:fmt"
 
 import    "shared:workbench/wbml"
 

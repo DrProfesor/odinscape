@@ -2,7 +2,7 @@ package configs
 
 import "core:os"
 import "core:mem"
-using import "core:fmt"
+import "core:fmt"
 
 import wb   "shared:workbench"
 import platform "shared:workbench/platform"
@@ -11,11 +11,11 @@ import wbml "shared:workbench/wbml"
 Game_Input :: platform.Input;
 
 Key_Config :: struct {
-    
+
     // Editor
-    
+
 	toggle_editor: Game_Input,
-    
+
 	camera_up:      Game_Input,
 	camera_down:    Game_Input,
 	camera_forward: Game_Input,
@@ -23,11 +23,11 @@ Key_Config :: struct {
 	camera_left:    Game_Input,
 	camera_right:   Game_Input,
     camera_speed_boost: Game_Input,
-    
+
 	camera_free_move: Game_Input,
 	camera_scroll: Game_Input,
     editor_select: Game_Input,
-    
+
     // Game
     move_to : Game_Input,
 }
@@ -58,10 +58,10 @@ key_config_save :: proc() {
 
 default_key_config :: proc() -> Key_Config {
 	using platform.Input;
-    
+
 	return Key_Config{
 		toggle_editor = F2,
-        
+
 		// Editor
 		camera_up      = E,
 		camera_down    = Q,
@@ -70,11 +70,11 @@ default_key_config :: proc() -> Key_Config {
 		camera_left    = A,
 		camera_right   = D,
         camera_speed_boost = Left_Shift,
-        
+
 		camera_scroll = Mouse_Middle,
 		camera_free_move = Mouse_Right,
         editor_select = Mouse_Left,
-        
+
 		// Game
 		move_to = Mouse_Right,
 	};
@@ -82,8 +82,9 @@ default_key_config :: proc() -> Key_Config {
 
 input_to_nice_name :: proc(input: platform.Input) -> string {
 	using platform.Input;
-    
+
 	switch input {
+		case Unknown:                 return "UNKNOWN";
 		case Mouse_Button_1:          return "LMB";
 		case Mouse_Button_2:          return "RMB";
 		case Mouse_Button_3:          return "MMB";
@@ -213,7 +214,7 @@ input_to_nice_name :: proc(input: platform.Input) -> string {
 		case Right_Super:             return "Right Super";
 		case Key_Menu:                return "Key Menu";
 	}
-    
-	assert(false, tprint(input));
+
+	assert(false, fmt.tprint(input));
 	return "";
 }

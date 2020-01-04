@@ -5,24 +5,24 @@ import wb "shared:workbench"
 when wb.DEVELOPER {
 
 import "core:os"
-using import "core:fmt"
-using import "core:strings"
+import "core:fmt"
+import "core:strings"
 
 import "shared:workbench/wbml"
 
-generated_code: Builder;
+generated_code: strings.Builder;
 indent_level: int = 0;
 
 run_code_generator :: proc() {
 	sbprint(&generated_code,
 `package main
 
-using import "core:fmt"
-using import "core:strings"
-using import "shared:workbench/pool"
-      import wb "shared:workbench"
-      import imgui "shared:workbench/external/imgui"
-      import "shared:workbench/wbml"
+import "core:fmt"
+import "core:strings"
+import "shared:workbench/pool"
+import wb "shared:workbench"
+import imgui "shared:workbench/external/imgui"
+import "shared:workbench/wbml"
 
 `);
 
@@ -252,7 +252,7 @@ using import "shared:workbench/pool"
 
 	}
 
-	os.write_entire_file("./src/_odinscape_generated_code.odin", cast([]u8)to_string(generated_code));
+	os.write_entire_file("./src/_odinscape_generated_code.odin", transmute([]u8)strings.to_string(generated_code));
 	//delete(generated_code);
 }
 
@@ -403,3 +403,9 @@ procedure_end :: proc() {
 }
 
 }
+
+
+
+
+sbprint :: fmt.sbprint;
+tprint :: fmt.tprint;
