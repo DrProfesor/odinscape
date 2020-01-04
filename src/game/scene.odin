@@ -1,12 +1,12 @@
 package game
 
-using import "core:fmt"
+import "core:fmt"
 import "core:mem"
 import "core:os"
 
-using import "shared:workbench/basic"
-using import "shared:workbench/logging"
-using import "shared:workbench/ecs"
+import "shared:workbench/basic"
+import "shared:workbench/logging"
+import "shared:workbench/ecs"
 import wb    "shared:workbench"
 import wbml  "shared:workbench/wbml"
 
@@ -14,13 +14,13 @@ RESOURCES := "resources/";
 SCENE_DIRECTORY := "resources/scenes/";
 
 scene_init :: proc(scene_name : string) {
-    load_scene(tprint(SCENE_DIRECTORY, scene_name));
+    ecs.load_scene(fmt.tprint(SCENE_DIRECTORY, scene_name));
 }
 
 scene_end :: proc(scene_name : string) {
-    unload_scene();
+    ecs.unload_scene();
 }
 
 get_entity_path :: proc(scene_name : string) -> string {
-	return tprint(SCENE_DIRECTORY, scene_name, "/entities/");
+	return fmt.tprint(SCENE_DIRECTORY, scene_name, "/entities/");
 }

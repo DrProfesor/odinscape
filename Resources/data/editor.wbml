@@ -1,15 +1,15 @@
 {
-	enabled true
+	enabled false
 	camera_position [
-		-0.125
-		3.090
-		6.903
+		1.138
+		7.556
+		12.243
 	]
 
 	camera_rotation {
-		x 0.000
-		y 0.000
-		z 0.000
-		w 1.000
+		x -0.281
+		y 0.033
+		z 0.010
+		w 0.959
 	}
 }

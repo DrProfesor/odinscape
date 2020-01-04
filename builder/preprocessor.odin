@@ -1,11 +1,12 @@
 package builder
 
-import wb "shared:workbench"
-import    "core:os"
+import "core:os"
+import "core:fmt"
 
-using import "core:fmt"
-using import "shared:workbench/laas"
-using import "shared:workbench/basic"
+import wb "shared:workbench"
+import "shared:workbench/laas"
+import "shared:workbench/basic"
+import "shared:workbench/logging"
 
 import "shared:workbench/wbml"
 
@@ -21,7 +22,7 @@ run_preprocessor :: proc() {
 			if wb.is_directory(source_file) do continue;
 
 			//
-			ext, ok := get_file_extension(source_file);
+			ext, ok := basic.get_file_extension(source_file);
 			if !ok do continue;
 			if ext != ".odin" do continue;
 		}
@@ -29,8 +30,8 @@ run_preprocessor :: proc() {
 		source_code, ok := os.read_entire_file(source_file);
 		assert(ok);
 
-		lexer := Lexer{string(source_code), 0, 0, 0, nil};
-		token: Token;
+		lexer := laas.Lexer{string(source_code), 0, 0, 0, nil};
+		token: laas.Token;
 
 		is_comment := 0;
 		is_tag := false;
@@ -39,10 +40,11 @@ run_preprocessor :: proc() {
 
 		// (jake): Look for tags that are in comments
 		// once found we will collect some data and then process the tagee
-		for get_next_token(&lexer, &token) {
+		for laas.get_next_token(&lexer, &token) {
 
+			#partial
 			switch value_kind in token.kind {
-				case Symbol: {
+				case laas.Symbol: {
 
 					switch value_kind.value {
 						case '/': {
@@ -57,13 +59,13 @@ run_preprocessor :: proc() {
 					}
 
 				}
-				case Identifier: {
+				case laas.Identifier: {
 					if is_tag {
 						append(&current_tags, token.slice_of_text);
 						is_tag = false;
 					}
 				}
-				case New_Line: {
+				case laas.New_Line: {
 
 					if len(current_tags) > 0 {
 
@@ -73,9 +75,10 @@ run_preprocessor :: proc() {
 						// (jake): we need to build up some data about what we are tagging
 						// just keep using the lexer to get the name and type of
 						// thing we are tagging
-						loop: for get_next_token(&lexer, &token) {
+						loop: for laas.get_next_token(&lexer, &token) {
+							#partial
 							switch token_kind in token.kind {
-								case Identifier: {
+								case laas.Identifier: {
 									if entity == "" do
 										entity = token.slice_of_text;
 									else {
@@ -93,6 +96,10 @@ run_preprocessor :: proc() {
 					clear(&current_tags);
 					is_tag = false;
 					is_comment = 0;
+				}
+
+				case: {
+					logging.ln("Not sure if we should ever get into this empty case. Delete this if it's not a problem!");
 				}
 			}
 
