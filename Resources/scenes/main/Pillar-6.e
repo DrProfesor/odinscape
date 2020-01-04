@@ -146,14 +146,6 @@ Particle_Emitter
 
 		texture_id "particle"
 		emission .Spheric_Emission {
-			direction [
-				0.000
-				1.000
-				0.000
-			]
-
-			angle_min -45.000
-			angle_max 45.000
 		}
 
 	}

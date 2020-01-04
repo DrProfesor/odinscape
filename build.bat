@@ -29,5 +29,5 @@ if "%1" == "release" (
 	xcopy /s/q "resources" "release/resources" > NUL
 )
 
-del *.dll
-del *.exe
+#del *.dll
+#del *.exe

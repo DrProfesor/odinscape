@@ -29,8 +29,8 @@ Model_Renderer
 	base {
 		enabled true
 	}
-	model_id "gronk"
-	texture_id "OrcGreen"
+	model_id "AshHen"
+	texture_id "AshHen_Color"
 	shader_id "lit"
 	color {
 		r 1.000
@@ -60,9 +60,9 @@ Model_Renderer
 		shine 32.000
 	}
 	scale [
-		0.010
-		0.010
-		0.010
+		15.000
+		15.000
+		15.000
 	]
 
 }

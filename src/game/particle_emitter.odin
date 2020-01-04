@@ -21,7 +21,7 @@ Particle_Emitter :: struct {
 init_emitter :: proc(using emitter: ^Particle_Emitter) {
     wb.init_particle_emitter(&emitter.base_emitter, 1);
     base_emitter.shader = wb.get_shader(&wb.wb_catalog, "particle");
-    base_emitter.emission = wb.Spheric_Emission{Vec3{0,1,0}, -45, 45};
+    base_emitter.emission = wb.Spheric_Emission{};
     
     //base_emitter.texture = wb.get_texture(&asset_catalog, "particle");
 }
