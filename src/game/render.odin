@@ -66,7 +66,7 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
 Terrain :: struct {
     using base: ecs.Component_Base,
     
-    wb_terrain: wb.Terrain,
+    wb_terrain: wb.Terrain "wbml_noserialize",
     material: wb.Material,
     shader_id: string,
     
@@ -77,7 +77,8 @@ init_terrain :: proc(using tr: ^Terrain) {
     for x in 0..128 {
         hm:= make([dynamic]f32, 0, 128);
         for z in 0..128 {
-            append(&hm, math.get_noise(x, z, 11230978, 0.1, 1, 1));
+            append(&hm, 0);
+            //append(&hm, math.get_noise(x, z, 11230978, 0.01, 1, 0.25));
         }
         
         append(&height_map, hm[:]);
@@ -104,7 +105,7 @@ render_terrain :: proc(using tr: ^Terrain) {
 		return;
 	}
     
-    shader := wb.get_shader(&asset_catalog, shader_id);
+    shader := wb.get_shader(&wb.wb_catalog, shader_id);
     
     wb.submit_model(wb_terrain.model, shader, {}, material, tf.position, tf.scale, tf.rotation, {1,1,1,1}, {});
 }

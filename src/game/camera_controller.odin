@@ -21,6 +21,6 @@ update_camera :: proc(dt: f32) {
 
     if !exists do return;
 
-    wb.wb_camera.position = target_transform.position + math.Vec3{0, 5, 5};
-    wb.wb_camera.rotation = wb.rotate_quat_by_degrees(math.Quat{0,0,0,1}, math.Vec3{-45, 0, 0});
+    wb.main_camera.position = target_transform.position + math.Vec3{0, 5, 5};
+    // wb.main_camera.rotation = wb.rotate_quat_by_degrees(math.Quat{0,0,0,1}, math.Vec3{-45, 0, 0});
 }

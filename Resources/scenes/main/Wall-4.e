@@ -1,27 +1,25 @@
-1 Entity
+4 Wall
 Transform
 {
 	base {
 		enabled true
 	}
 	position [
-		-2.011
-		-0.034
-		0.000
+		-10.220
+		-1.728
+		7.091
 	]
-
 	rotation {
-		x 0.000
-		y 0.000
-		z 0.000
-		w 1.000
+		x -0.479
+		y 0.485
+		z 0.515
+		w 0.520
 	}
 	scale [
-		1.000
-		1.000
-		1.000
+		0.020
+		0.020
+		0.100
 	]
-
 	parent 0
 }
 Model_Renderer
@@ -29,11 +27,11 @@ Model_Renderer
 	base {
 		enabled true
 	}
-	model_id "gronk"
-	texture_id "OrcGreen"
+	model_id "PBOX33_Grass_01"
+	texture_id "Plane_Grass_01"
 	shader_id "lit"
 	color {
-		r 0.000
+		r 1.000
 		g 1.000
 		b 1.000
 		a 1.000
@@ -60,40 +58,22 @@ Model_Renderer
 		shine 32.000
 	}
 	scale [
-		0.010
-		0.010
-		0.010
+		1.000
+		1.000
+		1.000
 	]
-
 }
 Collider
 {
 	base {
 		enabled true
 	}
-	internal_collider {
-		position [
-			-2.011
-			-0.034
-			0.000
-		]
-
-		box {
-			size [
-				1.000
-				1.000
-				1.000
-			]
-
-		}
-	}
 	type Box
 	box {
 		size [
-			1.000
-			1.000
-			1.000
+			4.000
+			10.000
+			4.000
 		]
-
 	}
 }

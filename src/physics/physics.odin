@@ -20,7 +20,7 @@ internal_hits : [dynamic]wb_col.Hit_Info;
 
 Collider :: struct {
     using base : wb_ecs.Component_Base,
-    internal_collider : wb_col.Collider "wbml_unserialized, imgui_hidden",
+    internal_collider : wb_col.Collider "wbml_noserialize, imgui_hidden",
     type : Collider_Type,
     box: wb_col.Box,
 }
@@ -95,8 +95,6 @@ raycast :: proc(start : Vec3, direction : Vec3, hits : ^[dynamic]RaycastHit = ni
 
     return len(internal_hits);
 }
-
-
 
 Vec2 :: math.Vec2;
 Vec3 :: math.Vec3;
