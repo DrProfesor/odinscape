@@ -125,7 +125,6 @@ smooth_a_star :: proc(start, goal: Vec3, step_size: f32, granularity : f32 = 10)
 
     append(&points, raw_path[0]);
 
-    log.ln(raw_path);
     return points[:];
 }
 
