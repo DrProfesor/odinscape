@@ -14,6 +14,9 @@ import "shared:workbench/ecs"
 
 import "../shared"
 
+logln :: logging.logln;
+Entity :: ecs.Entity;
+
 address: enet.Address;
 peer: ^enet.Peer;
 event: enet.Event;
@@ -80,7 +83,7 @@ client_init :: proc() {
 
     host = enet.host_create(nil, 1, 2, 0, 0);
     if host == nil {
-        logging.ln("Failed to create socket!");
+        logln("Failed to create socket!");
         return;
     }
 
@@ -88,11 +91,11 @@ client_init :: proc() {
     enet.address_set_host(&address, cast(^u8)strings.ptr_from_string(host_name));
     address.port = 27010;
 
-    logging.ln("Set Host IP");
+    logln("Set Host IP");
 
     peer = enet.host_connect(host, &address, 0, 0);
     if peer == nil {
-        logging.ln("Failed to connect to peer!");
+        logln("Failed to connect to peer!");
         return;
     }
 }
@@ -165,7 +168,7 @@ handle_add_component :: proc(packet: Packet, client_id: int) {
         }
     }
 
-    logging.ln("Failed to find networked entity locally", ac.network_id);
+    logln("Failed to find networked entity locally", ac.network_id);
 }
 
 // Server side
@@ -180,16 +183,16 @@ when SERVER {
 
         host= enet.host_create(&address, 32, 4, 0, 0);
         if host == nil {
-            logging.ln("Couldn't create server host!");
+            logln("Couldn't create server host!");
             return;
         }
 
-        logging.ln("Created server host");
+        logln("Created server host");
     }
 
     server_update :: proc() {
         for enet.host_service(host, &event, 0) > 0 {
-            switch event.event_type {
+            #partial switch event.event_type {
                 case enet.Event_Type.Connect: {
 
                     last_client_id += 1;
@@ -254,7 +257,7 @@ when SERVER {
     last_net_id : int = 0;
     network_entity :: proc(entity: Entity, controlling_client_id: int) {
         last_net_id += 1;
-        net_id := add_component(entity, Network_Id);
+        net_id := ecs.add_component(entity, Network_Id);
         net_id.network_id = last_net_id;
         net_id.controlling_client = controlling_client_id;
 
@@ -268,7 +271,7 @@ when SERVER {
     }
 
     network_create_entity :: proc(name := "Entity", client_id: int) -> Entity {
-        new_entity := make_entity(name);
+        new_entity := ecs.make_entity(name);
 
         network_entity(new_entity, client_id);
 
@@ -279,7 +282,7 @@ when SERVER {
 
         // TODO optimize this could get real slow
         nid := Network_Id{};
-        for net_id in get_component_storage(Network_Id) {
+        for net_id in ecs.get_component_storage(Network_Id) {
             if net_id.e == entity {
                 nid = net_id;
             }
@@ -287,11 +290,11 @@ when SERVER {
 
         assert(nid.network_id != 0);
 
-        add_component_by_typeid(entity, typeid_of(Type));
+        ecs.add_component_by_typeid(entity, typeid_of(Type));
         add_comp := Packet {
             Net_Add_Component {
                 nid.network_id,
-                tprint(typeid_of(Type)),
+                fmt.tprint(typeid_of(Type)),
             }
         };
 
@@ -303,9 +306,9 @@ when SERVER {
         lp := packet.data.(Login_Packet);
 
         // TODO send player create packet
-        new_player := make_entity("Player");
+        new_player := ecs.make_entity("Player");
         network_entity(new_player, client_id);
-        network_add_component(new_player, Player_Entity);
+        network_add_component(new_player, shared.Player_Entity);
     }
 
     // server side structs

@@ -17,18 +17,18 @@ import "shared:workbench/external/imgui"
 init_animator :: proc(using animator: ^Animator) {
     mr, mr_exists := ecs.get_component(e, Model_Renderer);
     if !mr_exists {
-        logging.ln("No model renderer found on entity ", e);
+        logging.logln("No model renderer found on entity ", e);
         return;
     }
 
     model, model_exists := wb.try_get_model(&asset_catalog, mr.model_id);
 	if !model_exists {
-		logging.ln("Couldn't find model in catalog: ", mr.model_id);
+		logging.logln("Couldn't find model in catalog: ", mr.model_id);
 		return;
 	}
 
     // TODO destroy
-    logging.ln(len(model.meshes));
+    logging.logln(len(model.meshes));
     animation_state.mesh_states =  make([dynamic]wb.Mesh_State, 0, len(model.meshes));
     for i:=0; i < len(model.meshes); i += 1 {
         arr := make([dynamic]math.Mat4, 0, len(model.meshes[i].skin.bones));
@@ -44,13 +44,13 @@ init_animator :: proc(using animator: ^Animator) {
 update_animator :: proc(using animator: ^Animator, dt: f32) {
     mr, mr_exists := ecs.get_component(e, Model_Renderer);
     if !mr_exists {
-        logging.ln("No model renderer found on entity ", e);
+        logging.logln("No model renderer found on entity ", e);
         return;
     }
 
     model, model_exists := wb.try_get_model(&asset_catalog, mr.model_id);
     if !model_exists {
-        logging.ln("Couldn't find model in catalog: ", mr.model_id);
+        logging.logln("Couldn't find model in catalog: ", mr.model_id);
         return;
     }
 

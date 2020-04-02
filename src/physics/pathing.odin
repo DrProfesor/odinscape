@@ -3,12 +3,10 @@ package physics
 import "core:fmt"
 import "core:runtime"
 
-import    "shared:workbench/types"
-import    "shared:workbench/basic"
-import    "shared:workbench/logging"
-import    "shared:workbench/math"
-
 import wb       "shared:workbench"
+import log "shared:workbench/logging"
+import "shared:workbench/math"
+import "shared:workbench/types"
 
 AStar_Node :: struct {
     position: Vec3,
@@ -51,7 +49,7 @@ a_star :: proc(start, goal: Vec3, step_size: f32) -> []Vec3 {
         append(&closed, closest_node);
         unordered_remove(&open, closest_idx);
 
-        successors := get_neighbors_2d(closest_node.position, step_size);
+        successors := get_neighbors_3d(closest_node.position, step_size);
         for s in successors {
             s_node := AStar_Node{
                 s,
@@ -92,6 +90,42 @@ a_star :: proc(start, goal: Vec3, step_size: f32) -> []Vec3 {
     }
 
     return path[:];
+}
+
+smooth_a_star :: proc(start, goal: Vec3, step_size: f32, granularity : f32 = 10) -> []Vec3 {
+    raw_path := a_star(start, goal, step_size);
+    size := len(raw_path);
+    if size <= 2 do return raw_path;
+    points := make([dynamic]Vec3, 0, );
+    append(&points, raw_path[size-1]);
+
+    i := size - 1;
+    check_point := raw_path[i]; i-=1;
+    current_point := raw_path[i]; i-=1;
+    for i >= 1 {
+        walkable := true;
+        dir := math.norm(current_point - check_point);
+        for dist in 0..granularity {
+            pos := current_point + (dir*step_size) * (dist / granularity);
+            wb.draw_debug_box(pos, Vec3{0.1,0.1,0.1}, {1,0,0,1});
+            if !is_valid(pos) {
+                walkable = false;
+                break;
+            }
+
+        }
+
+        if !walkable {
+            append(&points, raw_path[i]);
+        }
+
+        i-=1;
+        current_point = raw_path[i];
+    }
+
+    append(&points, raw_path[0]);
+
+    return points[:];
 }
 
 find_node_in_array :: proc(arr: []AStar_Node, pos: Vec3) -> (AStar_Node, bool, int) {

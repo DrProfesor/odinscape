@@ -1,15 +1,14 @@
-2 Entity
+2 Terrain
 Transform
 {
 	base {
 		enabled true
 	}
 	position [
-		1.000
+		-18.077
 		0.000
-		0.000
+		-6.102
 	]
-
 	rotation {
 		x 0.000
 		y 0.000
@@ -21,28 +20,18 @@ Transform
 		1.000
 		1.000
 	]
-
 	parent 0
 }
-Model_Renderer
+Terrain
 {
 	base {
 		enabled true
 	}
-	model_id "AshHen"
-	texture_id "AshHen_Color"
-	shader_id "lit"
-	color {
-		r 1.000
-		g 1.000
-		b 1.000
-		a 1.000
-	}
 	material {
 		ambient {
 			r 1.000
-			g 1.000
-			b 1.000
+			g 0.500
+			b 0.300
 			a 1.000
 		}
 		diffuse {
@@ -59,10 +48,5 @@ Model_Renderer
 		}
 		shine 32.000
 	}
-	scale [
-		15.000
-		15.000
-		15.000
-	]
-
+	shader_id "terrain"
 }

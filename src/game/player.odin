@@ -3,7 +3,7 @@ package game
 import "core:fmt"
 
 import "shared:workbench/basic"
-import "shared:workbench/logging"
+import log "shared:workbench/logging"
 import "shared:workbench/types"
 import "shared:workbench/ecs"
 import "shared:workbench/math"
@@ -26,7 +26,6 @@ player_init :: proc(using player: ^shared.Player_Entity) {
     } else {
         net_id, ok := get_component(e, Network_Id);
         is_local = net_id.controlling_client == net.client_id;
-        logln("PlayerInit:", net_id.controlling_client, net.client_id);
     }
 
     if is_local {
@@ -67,7 +66,7 @@ path_idx := 0;
 
 player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
 
-    if configs.editor_config.enabled do return;
+    if wb.debug_window_open do return;
 
     // TODO networked players
     if e != local_player do return;
@@ -75,41 +74,53 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     transform, _ := ecs.get_component(e, ecs.Transform);
     animator,  _ := ecs.get_component(e, Animator);
 
-    if wb_plat.get_input_down(configs.key_config.move_to) {
-        mouse_world := wb.get_mouse_world_position(&wb.wb_camera, wb_plat.mouse_unit_position);
-        mouse_direction := wb.get_mouse_direction_from_camera(&wb.wb_camera, wb_plat.mouse_unit_position);
-
-        hits := make([dynamic]physics.RaycastHit, 0, 10);
-        hit := physics.raycast(wb.wb_camera.position, mouse_direction * 100, &hits);
-
-        if hit > 0 {
-            first_hit := hits[0];
-            target_position = first_hit.intersection_start;
-
-            transform.position = math.Vec3{transform.position.x, target_position.y, transform.position.z};
-            player_path = physics.a_star(transform.position + math.Vec3{0,0.2,0}, target_position + math.Vec3{0, 0.2, 0}, 0.25);
-            path_idx = len(player_path) - 2; // start on the second last point
+    if wb_plat.get_input(configs.key_config.move_to) {
+        mouse_world := wb.get_mouse_world_position(wb.main_camera, wb_plat.mouse_unit_position);
+        mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, wb_plat.mouse_unit_position);
+        terrains := ecs.get_component_storage(Terrain);
+        for terrain in terrains {
+            terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
+            pos, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
+            if hit {
+                target_position = pos;
+                player_path = physics.smooth_a_star(transform.position, target_position, 0.25);
+                log.logln(player_path);
+                path_idx = 0;
+                break;
+            }
         }
     }
 
     dist := target_position - transform.position;
     mag := math.magnitude(dist);
 
-    if mag > 0.01 {
+    if mag > 0.1 {
         p := target_position;
-        if path_idx > 0 {
-            p = player_path[path_idx] - math.Vec3{0,0.2,0};
+        if path_idx < len(player_path)-1 {
+            p = player_path[path_idx];
+            if math.distance(math.Vec3{p.x, 0, p.z}, math.Vec3{transform.position.x, 0, transform.position.z}) < 0.01 {
+                path_idx += 1;
+            }
 
             for point in player_path {
                 wb.draw_debug_box(point, math.Vec3{0.2,0.2,0.2}, types.COLOR_BLUE);
             }
+            wb.draw_debug_box(target_position, math.Vec3{0.2,0.2,0.2}, types.COLOR_RED);
+        }
 
-            if math.distance(p, transform.position) < 0.00001 {
-                path_idx -= 1;
+        height := transform.position.y;
+        terrains := ecs.get_component_storage(Terrain);
+        for terrain in terrains {
+            terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
+            h, ok1 := wb.get_height_at_position(terrain.wb_terrain, terrain_transform.position, transform.position.x, transform.position.y);
+            if ok1 {
+                height = h;
+                break;
             }
         }
 
-        transform.position = move_towards(transform.position, p, 2 * dt);
+        p1 := move_towards(transform.position, p, 2 * dt);
+        transform.position = {p1.x, height, p1.z};
         transform.rotation = math.euler_angles(0, look_y_rot(transform.position, p) - math.PI / 2, 0);
 
         animator.current_animation = "enter";

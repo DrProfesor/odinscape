@@ -36,7 +36,7 @@ handle_packet_receive :: proc(t: typeid) -> (^Entity_Packet_Handler, bool) {
     handler, exists := entity_packet_handlers[t];
 
     if !exists {
-        logging.ln("Cannot find type ", t, " in entity packet handlers");
+        logging.logln("Cannot find type ", t, " in entity packet handlers");
         return {}, false;
     }
 
