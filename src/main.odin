@@ -18,6 +18,8 @@ import "net"
 import "game"
 import "physics"
 
+logln :: logging.logln;
+
 main_init :: proc() {
 	//
 	configs.init_key_config();

@@ -47,7 +47,7 @@ render_emitters :: proc() {
 
 render_emitter :: proc(using emitter: ^Particle_Emitter) {
 
-	projection_matrix := wb.construct_rendermode_matrix(wb.main_camera);
+	projection_matrix := wb.construct_rendermode_projection_matrix(wb.main_camera);
 	view_matrix := wb.construct_view_matrix(wb.main_camera);
 
     wb.render_particle_emitter(&emitter.base_emitter, projection_matrix, view_matrix);

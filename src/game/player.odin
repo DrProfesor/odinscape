@@ -84,7 +84,7 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
             if hit {
                 target_position = pos;
                 player_path = physics.smooth_a_star(transform.position, target_position, 0.25);
-                log.ln(player_path);
+                log.logln(player_path);
                 path_idx = 0;
                 break;
             }

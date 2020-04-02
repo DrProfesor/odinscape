@@ -43,22 +43,32 @@ init_collider :: proc(using col : ^Collider) {
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
 
     col.internal_collider = wb_col.Collider {
+        transmute(rawptr)e,
         entity_transform.position,
-        box
+        {1,1,1},
+        { 
+            {},
+            box,
+        }
     };
 
-    wb_col.add_collider_to_scene(&collision_scene, internal_collider, e);
+    wb_col.add_collider_to_scene(&collision_scene, internal_collider.position, internal_collider.scale, internal_collider.info);
 }
 
 update_collider :: proc(using col : ^Collider, dt : f32) {
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
 
     internal_collider = wb_col.Collider {
+        transmute(rawptr)e,
         entity_transform.position,
-        box
+        {1,1,1},
+        { 
+            {},
+            box,
+        }
     };
 
-    wb_col.update_collider(&collision_scene, e, internal_collider);
+    wb_col.update_collider(&internal_collider, internal_collider.position, internal_collider.scale, internal_collider.info);
 }
 
 render_collider :: proc(using col : ^Collider) {
@@ -75,7 +85,7 @@ overlap_point :: proc(point: Vec3, hits: ^[dynamic]RaycastHit = nil) -> int {
 
     if hits != nil {
         for internal_hit in internal_hits {
-            append(hits, RaycastHit{ wb_ecs.Entity(internal_hit.handle), internal_hit.point0, internal_hit.point1  });
+            append(hits, RaycastHit{ wb_ecs.Entity(transmute(int)internal_hit.userdata), internal_hit.point0, internal_hit.point1  });
         }
     }
 
@@ -89,7 +99,7 @@ raycast :: proc(start : Vec3, direction : Vec3, hits : ^[dynamic]RaycastHit = ni
 
     if hits != nil {
         for internal_hit in internal_hits {
-            append(hits, RaycastHit{ wb_ecs.Entity(internal_hit.handle), internal_hit.point0, internal_hit.point1  });
+            append(hits, RaycastHit{ wb_ecs.Entity(transmute(int)internal_hit.userdata), internal_hit.point0, internal_hit.point1  });
         }
     }
 
