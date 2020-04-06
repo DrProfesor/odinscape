@@ -395,7 +395,7 @@ when SERVER {
         destroy_packet := Packet {
             Destroy_Entity_Packet {
                 nid.network_id,
-                nid.controlling_client_id
+                nid.controlling_client
             }
         };
         broadcast(&destroy_packet);
