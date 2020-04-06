@@ -10,13 +10,21 @@ import "shared:workbench/math"
 
 Stats :: struct {
     using base: ecs.Component_Base,
-    stats : [dynamic]Stat,
+    stats : map[string]Stat,
 }
 
 Stat :: struct {
     id: string,
     experience : f32,
     level : int,
+}
+
+init_stat_component :: proc(using health: ^Stats) {
+    stats["melee_attack"] = Stat{ "melee_attack", 0, 1 };
+    stats["health"] = Stat{ "health", 0, 1 };
+    stats["magic"] = Stat{ "magic", 0, 1 };
+    stats["ranged_attack"] = Stat{ "ranged_attack", 0, 1 };
+    stats["speed"] = Stat{ "speed", 0, 1 };
 }
 
 get_experience_required :: proc(level: int) -> f32 {
@@ -34,35 +42,24 @@ get_stat :: proc(entity: ecs.Entity, stat_id: string) -> Stat {
     stat_comp, ok := ecs.get_component(entity, Stats);
     assert(ok);
 
-    for stat in stat_comp.stats {
-        if stat.id == stat_id do return stat;
-    }
+    assert(stat_id in stat_comp.stats, fmt.tprint("No stat with that name ", stat_id, " on entity: ", entity));
 
-    assert(false, fmt.tprint("No stat with that name ", stat_id, " on entity: ", entity));
-    return Stat{};
+    return stat_comp.stats[stat_id];
 }
 
 add_experience :: proc(entity: ecs.Entity, stat_id: string, amount: f32) {
     stat_comp, ok := ecs.get_component(entity, Stats);
     assert(ok);
+    assert(stat_id in stat_comp.stats, fmt.tprint("No stat with that name ", stat_id, " on entity: ", entity));
 
-    for i := 0; i < len(stat_comp.stats); i += 1 {
-        stat := stat_comp.stats[i];
+    stat := stat_comp.stats[stat_id];
+    defer stat_comp.stats[stat_id] = stat;
 
-        if stat.id != stat_id do continue;
+    stat.experience += amount;
 
-        stat.experience += amount;
-
-        required := get_experience_required(stat.level + 1);
-        if stat.experience >= required {
-            stat.experience -= required;
-            stat.level += 1;
-        }
-
-        stat_comp.stats[i] = stat;
-
-        return; // success
+    required := get_experience_required(stat.level + 1);
+    if stat.experience >= required {
+        stat.experience -= required;
+        stat.level += 1;
     }
-
-    assert(false, fmt.tprint("No stat with that name ", stat_id, " on entity: ", entity));
 }

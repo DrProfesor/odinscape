@@ -17,64 +17,49 @@ import "../physics"
 import "../net"
 import "../shared"
 
-target_position : math.Vec3;
-local_player : ecs.Entity;
+local_player: ecs.Entity;
 
 player_init :: proc(using player: ^shared.Player_Entity) {
-    when DEVELOPER {
-        is_local = true;
-    } else {
-        net_id, ok := get_component(e, Network_Id);
-        is_local = net_id.controlling_client == net.client_id;
-    }
-
-    if is_local {
-        local_player = e;
-
+    when SERVER {
         transform, texists := ecs.get_component(e, ecs.Transform);
         target_position = transform.position;
+
+        logln("Initting player");
+
+        model := net.network_add_component(e, Model_Renderer);
+        animator := net.network_add_component(e, Animator);
+        stats := net.network_add_component(e, Stats);
+        health := net.network_add_component(e, Health);
+    } else {
+        net_id, _ := ecs.get_component(e, net.Network_Id);
+        is_local = net_id.controlling_client == net.client_id;
+        if is_local {
+            local_player = e;
+        }
+
+        model, mok := ecs.get_component(e, Model_Renderer);
+        assert(mok);
+        model.model_id = configs.player_config.model_id;
+        model.texture_id = configs.player_config.texture_id;
+        model.scale = math.Vec3{1, 1, 1};
+        model.color = types.Colorf{1, 1, 1, 1};
+        model.shader_id = "skinning";
+        model.material = wb.Material {
+            {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
+        };
+
+        animator, aok := ecs.get_component(e, Animator);
+        assert(aok);
+        animator.current_animation = "idle";
     }
-
-    model := ecs.add_component(e, Model_Renderer);
-
-    model.model_id = configs.player_config.model_id;
-    model.texture_id = configs.player_config.texture_id;
-
-    model.scale = math.Vec3{1, 1, 1};
-	model.color = types.Colorf{1, 1, 1, 1};
-	model.shader_id = "skinning";
-	model.material = wb.Material {
-        {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
-    };
-
-    animator := ecs.add_component(e, Animator);
-    animator.current_animation = "idle";
-
-    // TODO saving
-    stats := ecs.add_component(e, Stats);
-    append(&stats.stats, Stat{ "melee_attack", 0, 1 });
-    append(&stats.stats, Stat{ "health", 0, 1 });
-    append(&stats.stats, Stat{ "magic", 0, 1 });
-    append(&stats.stats, Stat{ "ranged_attack", 0, 1 });
-    append(&stats.stats, Stat{ "speed", 0, 1 });
-
-    health := ecs.add_component(e, Health);
 }
 
-player_path : []math.Vec3;
-path_idx := 0;
-
 player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
-
-    if wb.debug_window_open do return;
-
-    // TODO networked players
-    if e != local_player do return;
-
     transform, _ := ecs.get_component(e, ecs.Transform);
     animator,  _ := ecs.get_component(e, Animator);
+    net_id,    _ := ecs.get_component(e, net.Network_Id);
 
-    if wb_plat.get_input(configs.key_config.move_to) {
+    if wb_plat.get_input_down(configs.key_config.move_to) && is_local {
         mouse_world := wb.get_mouse_world_position(wb.main_camera, wb_plat.mouse_unit_position);
         mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, wb_plat.mouse_unit_position);
         terrains := ecs.get_component_storage(Terrain);
@@ -83,9 +68,10 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
             pos, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
             if hit {
                 target_position = pos;
+                // TODO(jake): Speed this up like crazy
                 player_path = physics.smooth_a_star(transform.position, target_position, 0.25);
-                log.logln(player_path);
                 path_idx = 0;
+                net.send_new_player_position(target_position, net_id.network_id);
                 break;
             }
         }
@@ -102,10 +88,10 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
                 path_idx += 1;
             }
 
-            for point in player_path {
-                wb.draw_debug_box(point, math.Vec3{0.2,0.2,0.2}, types.COLOR_BLUE);
-            }
-            wb.draw_debug_box(target_position, math.Vec3{0.2,0.2,0.2}, types.COLOR_RED);
+            // for point in player_path {
+            //     wb.draw_debug_box(point, math.Vec3{0.2,0.2,0.2}, types.COLOR_BLUE);
+            // }
+            // wb.draw_debug_box(target_position, math.Vec3{0.2,0.2,0.2}, types.COLOR_RED);
         }
 
         height := transform.position.y;

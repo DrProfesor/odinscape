@@ -19,14 +19,28 @@ if "%1" == "run" (
 )
 if "%1" == "release" (
 	echo Making release folder...
-	if exist release rmdir /S/Q release
-	mkdir release
-	mkdir "release/resources"
+	
+	if "%2" == "server" (
+		if exist release-server rmdir /S/Q release
+		mkdir release-server
+		mkdir "release-server/resources"
+	) else (
+		if exist release rmdir /S/Q release
+		mkdir release
+		mkdir "release/resources"
+	)
 
 	echo Copying exe and resources...
-	xcopy "*.dll" "release" /c/y/q > NUL
-	copy "odinscape.exe" "release/odinscape.exe" > NUL
-	xcopy /s/q "resources" "release/resources" > NUL
+
+	if "%2" == "server" (
+		xcopy "*.dll" "release-server" /c/y/q > NUL
+		copy "odinscape.exe" "release-server/odinscape.exe" > NUL
+		xcopy /s/q "resources" "release-server/resources" > NUL
+	) else (
+		xcopy "*.dll" "release" /c/y/q > NUL
+		copy "odinscape.exe" "release/odinscape.exe" > NUL
+		xcopy /s/q "resources" "release/resources" > NUL
+	)
 )
 
 del *.dll

@@ -107,7 +107,6 @@ smooth_a_star :: proc(start, goal: Vec3, step_size: f32, granularity : f32 = 10)
         dir := math.norm(current_point - check_point);
         for dist in 0..granularity {
             pos := current_point + (dir*step_size) * (dist / granularity);
-            wb.draw_debug_box(pos, Vec3{0.1,0.1,0.1}, {1,0,0,1});
             if !is_valid(pos) {
                 walkable = false;
                 break;

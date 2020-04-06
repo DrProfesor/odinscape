@@ -15,21 +15,13 @@ import wb_gpu "shared:workbench/gpu"
 import "../shared"
 import "../configs"
 
-DEVELOPER :: true;
-
 asset_catalog: wb.Asset_Catalog;
 prefab_scene: ecs.Prefab_Scene;
 
 game_init :: proc() {
 
-	{
-		// NOTE TO JAKE
-		// the asset system no longer takes a list of file extensions to just read as text for you to query and do whatever with
-		// you'll have to make a custom handler by calling wb.add_asset_handler() which is in wb assets.odin
-		// wb.load_asset_folder("resources", &asset_catalog, "material", "txt", "e");
-		when !SERVER {
-			wb.load_asset_folder("resources", &asset_catalog);
-		}
+	when !SERVER {
+		wb.load_asset_folder("resources", &asset_catalog);
 	}
  
 	// camera
@@ -47,13 +39,8 @@ game_init :: proc() {
     // entities
 	{
 		scene_init("main");
-		prefab_scene = ecs.load_prefab_dir("../resources/prefabs");
+		prefab_scene = ecs.load_prefab_dir("resources/prefabs");
 	}
- 
-    when DEVELOPER && !SERVER {
-        p := ecs.make_entity("Player");
-        pe := ecs.add_component(p, shared.Player_Entity);
-    }
 }
 
 game_update :: proc(dt: f32) {

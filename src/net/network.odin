@@ -4,6 +4,7 @@ import "core:fmt"
 import reflect "core:reflect"
 import "core:mem"
 import "core:strings"
+import "core:time"
 
 import enet "shared:odin-enet"
 
@@ -11,6 +12,7 @@ import "shared:workbench/basic"
 import "shared:workbench/logging"
 import "shared:workbench/wbml"
 import "shared:workbench/ecs"
+import "shared:workbench/math"
 
 import "../shared"
 
@@ -21,6 +23,14 @@ address: enet.Address;
 peer: ^enet.Peer;
 event: enet.Event;
 host: ^enet.Host;
+
+when SERVER {
+is_client := false;
+is_server := true;
+} else {
+is_client := true;
+is_server := false;
+}
 
 packet_handlers : map[typeid]^Packet_Handler;
 
@@ -41,16 +51,25 @@ network_init :: proc() {
     enet.initialize();
 
     when SERVER {
+        // Core
         add_packet_handler(Entity_Packet, server_entity_receive);
         add_packet_handler(Login_Packet, handle_login);
+        add_packet_handler(Logout_Packet, handle_logout);
+        add_packet_handler(Keep_Alive_Packet, handle_keep_alive);
+
+        // Runtime
+        add_packet_handler(Player_Packet, recieve_player_packet);
 
         server_init();
     } else {
+        // Core
         add_packet_handler(Connection_Packet, handle_connect);
-        add_packet_handler(Net_Create_Entity, handle_create_entity);
+        add_packet_handler(Create_Entity_Packet, handle_create_entity);
         add_packet_handler(Net_Add_Component, handle_add_component);
 
+        // Runtime
         add_packet_handler(Entity_Packet, client_entity_receive);
+        add_packet_handler(Player_Packet, recieve_player_packet_client);
 
         client_init();
     }
@@ -98,6 +117,7 @@ client_init :: proc() {
         logln("Failed to connect to peer!");
         return;
     }
+    logln("Connected to peer: ", address);
 }
 
 client_update :: proc() {
@@ -105,6 +125,7 @@ client_update :: proc() {
         switch event.event_type {
             case .None: { }
             case .Connect: {
+                
             }
             case .Receive: {
                 packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
@@ -118,9 +139,22 @@ client_update :: proc() {
             }
         }
     }
+
+    @static last_sent_time : f64 = 0;
+    now := f64(time.now()._nsec) / f64(time.Second);
+    if now - last_sent_time > 3 {
+        keep_alive := Packet { Keep_Alive_Packet { client_id } };
+        send_packet(&keep_alive);
+        last_sent_time = now;
+    }
 }
 
 client_shutdown :: proc() {
+    logln("Client shutdown");
+    logout_packet := Packet { Logout_Packet {
+        client_id
+    }};
+    send_packet(&logout_packet);
     enet.host_destroy(host);
     enet.peer_reset(peer);
 }
@@ -149,7 +183,7 @@ handle_connect :: proc(packet: Packet, cid: int) {
 }
 
 handle_create_entity :: proc(packet: Packet, client_id: int) {
-    ce := packet.data.(Net_Create_Entity);
+    ce := packet.data.(Create_Entity_Packet);
 
     new_entity := ecs.make_entity();
     net_id := ecs.add_component(new_entity, Network_Id);
@@ -163,6 +197,7 @@ handle_add_component :: proc(packet: Packet, client_id: int) {
     for net_id in ecs.get_component_storage(Network_Id) {
         if net_id.network_id == ac.network_id {
             component_type := ecs.get_component_ti_from_name(ac.component_type);
+            logln("Added network component: ", component_type, net_id.network_id, net_id.e);
             ecs.add_component_by_typeid(net_id.base.e, component_type.id);
             return;
         }
@@ -175,6 +210,7 @@ handle_add_component :: proc(packet: Packet, client_id: int) {
 when SERVER {
 
     connected_clients := make([dynamic]^Client, 0, 10);
+    last_packet_recieve := make(map[int]f64, 10);
     last_client_id : int = 0;
 
     server_init :: proc() {
@@ -198,9 +234,12 @@ when SERVER {
                     last_client_id += 1;
                     client := Client{
                         last_client_id,
+                        false,
                         event.peer.address,
                         event.peer,
                     };
+
+                    logln("Peer Connected");
 
 
                     append(&connected_clients, new_clone(client));
@@ -224,12 +263,51 @@ when SERVER {
                         }
                     }
 
+                    now := f64(time.now()._nsec) / f64(time.Second);
+                    last_packet_recieve[client_id] = now;
+
                     packet_typeid := reflect.union_variant_typeid(packet.data);
                     handler := packet_handlers[packet_typeid];
                     handler.receive(packet, client_id);
                 }
 
                 case enet.Event_Type.Disconnect: {
+                    logln("Removing peer");
+                    client_idx := -1;
+                    for client, i in connected_clients {
+                        if client.peer == event.peer{
+                            client_idx = i;
+                        }
+                    }
+
+                    assert(client_idx >= 0);
+                    unordered_remove(&connected_clients, client_idx);
+                }
+            }
+        }
+
+        // timeout clients
+        {
+            now := f64(time.now()._nsec) / f64(time.Second);
+            for cid, t in last_packet_recieve {
+                if now - t >= 5 && t > 0 {
+                    client: ^Client = nil;
+                    idx := -1;
+                    for c, i in &connected_clients {
+                        if c.client_id == cid {
+                            client = c;
+                            idx = i;
+                        }
+                    }
+
+                    logln("Client timeout");
+                    for net_id in ecs.get_component_storage(Network_Id) {
+                        if net_id.controlling_client != cid do continue;
+                        ecs.destroy_entity_immediate(net_id.e);
+                    }
+                    
+                    unordered_remove(&connected_clients, idx);
+                    last_packet_recieve[cid] = -1;
                 }
             }
         }
@@ -248,8 +326,10 @@ when SERVER {
         enet.host_flush(host); // TODO move this to update?
     }
 
-    broadcast :: proc(packet: ^Packet) {
+    broadcast :: proc(packet: ^Packet, ignore: int = -1) {
         for client in connected_clients {
+            if client.client_id == ignore do continue;
+            if !client.ready_to_receive do continue;
             dispatch_packet_to_peer(client.peer, packet);
         }
     }
@@ -262,7 +342,7 @@ when SERVER {
         net_id.controlling_client = controlling_client_id;
 
         create_entity := Packet {
-            Net_Create_Entity {
+            Create_Entity_Packet {
                 last_net_id,
                 controlling_client_id
             }
@@ -278,7 +358,7 @@ when SERVER {
         return new_entity;
     }
 
-    network_add_component :: proc(entity: Entity, $Type: typeid) {
+    network_add_component :: proc(entity: Entity, $T: typeid) -> ^T {
 
         // TODO optimize this could get real slow
         nid := Network_Id{};
@@ -290,20 +370,69 @@ when SERVER {
 
         assert(nid.network_id != 0);
 
-        ecs.add_component_by_typeid(entity, typeid_of(Type));
+        comp := cast(^T) ecs.add_component(entity, T);
+        // TODO send componenet data over?
         add_comp := Packet {
             Net_Add_Component {
                 nid.network_id,
-                fmt.tprint(typeid_of(Type)),
+                fmt.tprint(typeid_of(T)),
             }
         };
 
+        logln("Adding component: ", entity, typeid_of(T));
+
         broadcast(&add_comp);
+
+        return comp;
+    }
+
+    network_destroy_entity :: proc(entity: Entity) {
+        nid, ok := ecs.get_component(entity, Network_Id);
+        assert(ok, "Entity is not networked");
+
+        ecs.destroy_entity_immediate(entity);
+
+        destroy_packet := Packet {
+            Destroy_Entity_Packet {
+                nid.network_id,
+                nid.controlling_client_id
+            }
+        };
+        broadcast(&destroy_packet);
     }
 
     // server handlers
     handle_login :: proc(packet: Packet, client_id: int) {
         lp := packet.data.(Login_Packet);
+
+        client := get_client(client_id);
+
+        // dispatch a bunch of entity create calls for networked entities. 
+        // TODO this should be done better maybe?
+        for net_id in ecs.get_component_storage(Network_Id) {
+            create_entity := Packet {
+                Create_Entity_Packet {
+                    net_id.network_id,
+                    net_id.controlling_client
+                }
+            };
+            dispatch_packet_to_peer(client.peer, &create_entity);
+
+            for k, v in ecs.component_types {
+                if k == typeid_of(ecs.Transform) || k == typeid_of(Network_Id) do continue;
+                if ecs.has_component(net_id.e, k) {
+                    add_comp := Packet {
+                        Net_Add_Component {
+                            net_id.network_id,
+                            fmt.tprint(k),
+                        }
+                    };
+                    dispatch_packet_to_peer(client.peer, &add_comp);
+                }
+            }
+        }
+
+        client.ready_to_receive = true;
 
         // TODO send player create packet
         new_player := ecs.make_entity("Player");
@@ -311,9 +440,38 @@ when SERVER {
         network_add_component(new_player, shared.Player_Entity);
     }
 
+    handle_keep_alive :: proc(packet: Packet, client_id: int) {  }
+
+    handle_logout :: proc(packet: Packet, client_id: int) {
+        lp := packet.data.(Logout_Packet);
+
+        client_idx := -1;
+        for c, i in connected_clients {
+            if c.client_id == client_id{
+                client_idx = i;
+            }
+        }
+
+        logln("Logging out");
+
+        assert(client_idx >= 0);
+        unordered_remove(&connected_clients, client_idx);
+    }
+
+    get_client :: proc(client_id: int) -> ^Client {
+        for c in &connected_clients {
+            if c.client_id == client_id do return c;
+        }
+
+        assert(false, fmt.tprint("No client found: ",client_id));
+        return {};
+    }
+
     // server side structs
     Client :: struct {
         client_id: int,
+
+        ready_to_receive: bool,
 
         address: enet.Address,
         peer: ^enet.Peer,
@@ -330,13 +488,17 @@ Packet :: struct {
         // login packets
         Connection_Packet,
         Login_Packet,
+        Logout_Packet,
+        Keep_Alive_Packet,
 
         //
-        Net_Create_Entity,
+        Create_Entity_Packet,
         Net_Add_Component,
+        Destroy_Entity_Packet,
 
         // runtime
         Entity_Packet,
+        Player_Packet,
     }
 }
 
@@ -348,7 +510,20 @@ Login_Packet :: struct {
     client_id: int,
 }
 
-Net_Create_Entity :: struct {
+Logout_Packet :: struct {
+    client_id: int,   
+}
+
+Keep_Alive_Packet :: struct {
+    client_id: int,
+}
+
+Create_Entity_Packet :: struct {
+    network_id : int,
+    controlling_client: int,
+}
+
+Destroy_Entity_Packet :: struct {
     network_id : int,
     controlling_client: int,
 }
@@ -357,3 +532,6 @@ Net_Add_Component :: struct {
     network_id : int,
     component_type: string,
 }
+
+
+Vec3 :: math.Vec3;

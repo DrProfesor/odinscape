@@ -2,6 +2,7 @@
 /*.obj
 /*.exe
 release/
+release-server/
 
 imgui.ini
 *.ll

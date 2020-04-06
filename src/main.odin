@@ -10,6 +10,7 @@ import "shared:workbench/basic"
 import "shared:workbench/logging"
 import "shared:workbench/platform"
 import "shared:workbench/ecs"
+import wb_shared "shared:workbench/shared"
 
 import "configs"
 import "shared"
@@ -35,24 +36,22 @@ main_init :: proc() {
     // physics components
     add_component_type(physics.Collider, physics.update_collider, physics.render_collider, physics.init_collider);
     
-    // shared
-    add_component_type(shared.Player_Entity, game.player_update, nil, game.player_init);
-    
     // network components
     add_component_type(net.Network_Id, nil, nil);
     
     // game components
+    add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
     add_component_type(game.Particle_Emitter, game.update_emitter, nil, game.init_emitter);
     add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
-    add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
-    add_component_type(game.Stats, nil, nil);
+    add_component_type(game.Stats, nil, nil, game.init_stat_component);
     add_component_type(game.Health, nil, nil, game.init_health);
     add_component_type(game.Terrain, nil, game.render_terrain, game.init_terrain, nil);
-    
-    game.game_init();
-    
+
+    // Last
+    add_component_type(shared.Player_Entity, game.player_update, nil, game.player_init);
     
     //
+    game.game_init();
     editor.init();
     
     wb.post_render_proc = on_post_render;
@@ -95,7 +94,9 @@ main_end :: proc() {
 
 main :: proc() {
     name := "Odinscape";
-    when SERVER do name = fmt.tprint(name, "-server");
+    when SERVER {
+        name = fmt.tprint(name, "-server");
+    } 
     wb.make_simple_window(1920, 1080, 120,
                           wb.Workspace{name, main_init, main_update, main_render, main_end});
 }
