@@ -10,7 +10,7 @@ import "shared:workbench/math"
 
 Stats :: struct {
     using base: ecs.Component_Base,
-    stats : map[string]Stat,
+    stats : map[string]Stat "wbml_noserialize",
 }
 
 Stat :: struct {

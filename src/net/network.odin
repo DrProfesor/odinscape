@@ -106,7 +106,7 @@ client_init :: proc() {
         return;
     }
 
-    host_name := "127.0.0.1\x00";
+    host_name := "127.0.0.1\x00"; //"ec2-34-232-169-211.compute-1.amazonaws.com\x00";
     enet.address_set_host(&address, cast(^u8)strings.ptr_from_string(host_name));
     address.port = 27010;
 
@@ -117,15 +117,16 @@ client_init :: proc() {
         logln("Failed to connect to peer!");
         return;
     }
-    logln("Connected to peer: ", address);
 }
+
+TIMEOUT : f64 : 5;
 
 client_update :: proc() {
     for enet.host_service(host, &event, 1) > 0 {
         switch event.event_type {
             case .None: { }
             case .Connect: {
-                
+                logln("Connected to peer");
             }
             case .Receive: {
                 packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
@@ -142,7 +143,7 @@ client_update :: proc() {
 
     @static last_sent_time : f64 = 0;
     now := f64(time.now()._nsec) / f64(time.Second);
-    if now - last_sent_time > 3 {
+    if now - last_sent_time > TIMEOUT {
         keep_alive := Packet { Keep_Alive_Packet { client_id } };
         send_packet(&keep_alive);
         last_sent_time = now;

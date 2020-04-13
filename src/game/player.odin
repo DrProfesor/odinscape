@@ -27,7 +27,7 @@ player_init :: proc(using player: ^shared.Player_Entity) {
         logln("Initting player");
 
         model := net.network_add_component(e, Model_Renderer);
-        animator := net.network_add_component(e, Animator);
+        // animator := net.network_add_component(e, Animator);
         stats := net.network_add_component(e, Stats);
         health := net.network_add_component(e, Health);
     } else {
@@ -43,20 +43,20 @@ player_init :: proc(using player: ^shared.Player_Entity) {
         model.texture_id = configs.player_config.texture_id;
         model.scale = math.Vec3{1, 1, 1};
         model.color = types.Colorf{1, 1, 1, 1};
-        model.shader_id = "skinning";
+        model.shader_id = "lit";
         model.material = wb.Material {
             {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
         };
 
-        animator, aok := ecs.get_component(e, Animator);
-        assert(aok);
-        animator.current_animation = "idle";
+        // animator, aok := ecs.get_component(e, Animator);
+        // assert(aok);
+        // animator.current_animation = "idle";
     }
 }
 
 player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     transform, _ := ecs.get_component(e, ecs.Transform);
-    animator,  _ := ecs.get_component(e, Animator);
+    // animator,  _ := ecs.get_component(e, Animator);
     net_id,    _ := ecs.get_component(e, net.Network_Id);
 
     if wb_plat.get_input_down(configs.key_config.move_to) && is_local {
@@ -69,7 +69,7 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
             if hit {
                 target_position = pos;
                 // TODO(jake): Speed this up like crazy
-                player_path = physics.smooth_a_star(transform.position, target_position, 0.25);
+                player_path = physics.smooth_a_star(transform.position, target_position, 0.1);
                 path_idx = 0;
                 net.send_new_player_position(target_position, net_id.network_id);
                 break;
@@ -109,9 +109,9 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
         transform.position = {p1.x, height, p1.z};
         transform.rotation = math.euler_angles(0, look_y_rot(transform.position, p) - math.PI / 2, 0);
 
-        animator.current_animation = "enter";
+        // animator.current_animation = "enter";
     } else {
-        animator.current_animation = "idle";
+        // animator.current_animation = "idle";
     }
 }
 

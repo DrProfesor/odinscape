@@ -39,7 +39,7 @@ game_init :: proc() {
     // entities
 	{
 		scene_init("main");
-		prefab_scene = ecs.load_prefab_dir("resources/prefabs");
+		prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
 	}
 }
 

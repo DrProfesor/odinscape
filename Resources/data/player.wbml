@@ -1,4 +1,4 @@
 {
-	model_id "mrknight"
-	texture_id "blue_knight"
+	model_id "HumanM"
+	texture_id "Human_M_Skin_Color.0"
 }

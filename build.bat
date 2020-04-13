@@ -21,7 +21,7 @@ if "%1" == "release" (
 	echo Making release folder...
 	
 	if "%2" == "server" (
-		if exist release-server rmdir /S/Q release
+		if exist release-server rmdir /S/Q release-server
 		mkdir release-server
 		mkdir "release-server/resources"
 	) else (

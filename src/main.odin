@@ -40,12 +40,18 @@ main_init :: proc() {
     add_component_type(net.Network_Id, nil, nil);
     
     // game components
+    // Rendering
     add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
     add_component_type(game.Particle_Emitter, game.update_emitter, nil, game.init_emitter);
     add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
+    add_component_type(game.Terrain, nil, game.render_terrain, game.init_terrain, nil);
+
+    // Support
     add_component_type(game.Stats, nil, nil, game.init_stat_component);
     add_component_type(game.Health, nil, nil, game.init_health);
-    add_component_type(game.Terrain, nil, game.render_terrain, game.init_terrain, nil);
+
+    // NPC
+    add_component_type(game.Enemy, game.update_enemy, nil, game.init_enemy);
 
     // Last
     add_component_type(shared.Player_Entity, game.player_update, nil, game.player_init);
