@@ -20,7 +20,6 @@ send_new_player_position :: proc(pos: Vec3, net_id: int) {
 
 recieve_player_packet_client :: proc(packet: Packet, sending_client_id: int) {
 	player_packet := packet.data.(Player_Packet);
-	logln("Recieved Player Packet:", player_packet);
 
 	network_id: Network_Id;
 	for net_id in ecs.get_component_storage(Network_Id) {
@@ -45,7 +44,6 @@ when SERVER {
 	recieve_player_packet :: proc(p: Packet, sending_client_id: int) {
 		packet := p;
 		player_packet := packet.data.(Player_Packet);
-		logln("Recieved Player Packet:", player_packet);
 
 		network_id: Network_Id;
 		for net_id in ecs.get_component_storage(Network_Id) {

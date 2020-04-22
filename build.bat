@@ -7,12 +7,22 @@ xcopy /s/q/y src\includes\windows . > NUL
 
 echo Building src...
 if "%2" == "server" (
-	odin build src -out=odinscape.exe -define:SERVER=true
+	if "%1" == "debug" (
+		odin build src -debug -out=odinscape.exe -define:SERVER=true
+	) else (
+		odin build src -out=odinscape.exe -define:SERVER=true
+	)
 ) else (
-	odin build src -out=odinscape.exe -define:SERVER=false
+	if "%1" == "debug" (
+		odin build src -debug -out=odinscape.exe -define:SERVER=false
+	) else (
+		odin build src -out=odinscape.exe -define:SERVER=false
+	)
 )
 
-
+if "%1" == "debug" (
+	devenv odinscape.exe
+)
 if "%1" == "run" (
 	echo Running odinscape.exe...
 	odinscape.exe
@@ -43,5 +53,5 @@ if "%1" == "release" (
 	)
 )
 
-del *.dll
-del *.exe
+rem del *.dll
+rem del *.exe

@@ -59,6 +59,7 @@ network_init :: proc() {
 
         // Runtime
         add_packet_handler(Player_Packet, recieve_player_packet);
+        add_packet_handler(Replication_Packet, handle_replication);
 
         server_init();
     } else {
@@ -70,6 +71,7 @@ network_init :: proc() {
         // Runtime
         add_packet_handler(Entity_Packet, client_entity_receive);
         add_packet_handler(Player_Packet, recieve_player_packet_client);
+        add_packet_handler(Replication_Packet, handle_replication);
 
         client_init();
     }
@@ -80,9 +82,9 @@ network_update :: proc() {
         server_update();
     } else {
         client_update();
-
-        update_networked_entities();
     }
+
+    update_networked_entities();
 }
 
 network_shutdown :: proc() {
@@ -264,6 +266,8 @@ when SERVER {
                         }
                     }
 
+                    if client_id == 0 do continue;
+
                     now := f64(time.now()._nsec) / f64(time.Second);
                     last_packet_recieve[client_id] = now;
 
@@ -291,7 +295,7 @@ when SERVER {
         {
             now := f64(time.now()._nsec) / f64(time.Second);
             for cid, t in last_packet_recieve {
-                if now - t >= 5 && t > 0 {
+                if now - t >= TIMEOUT * 2 && t > 0 {
                     client: ^Client = nil;
                     idx := -1;
                     for c, i in &connected_clients {
@@ -349,6 +353,21 @@ when SERVER {
             }
         };
         broadcast(&create_entity);
+
+        update_client_transform(entity);
+
+        for k, v in ecs.component_types {
+            if k == typeid_of(ecs.Transform) || k == typeid_of(Network_Id) do continue;
+            if ecs.has_component(net_id.e, k) {
+                add_comp := Packet {
+                    Net_Add_Component {
+                        net_id.network_id,
+                        fmt.tprint(k),
+                    }
+                };
+                broadcast(&add_comp);
+            }
+        }
     }
 
     network_create_entity :: proc(name := "Entity", client_id: int) -> Entity {
@@ -500,6 +519,7 @@ Packet :: struct {
         // runtime
         Entity_Packet,
         Player_Packet,
+        Replication_Packet,
     }
 }
 

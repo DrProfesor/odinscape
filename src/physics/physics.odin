@@ -20,7 +20,7 @@ internal_hits : [dynamic]wb_col.Hit_Info;
 
 Collider :: struct {
     using base : wb_ecs.Component_Base,
-    internal_collider : wb_col.Collider "wbml_noserialize, imgui_hidden",
+    internal_collider : ^wb_col.Collider "wbml_noserialize, imgui_hidden",
     type : Collider_Type,
     box: wb_col.Box,
 }
@@ -39,36 +39,14 @@ RaycastHit :: struct {
 }
 
 init_collider :: proc(using col : ^Collider) {
-
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-
-    col.internal_collider = wb_col.Collider {
-        transmute(rawptr)e,
-        entity_transform.position,
-        {1,1,1},
-        { 
-            {},
-            box,
-        }
-    };
-
-    wb_col.add_collider_to_scene(&collision_scene, internal_collider.position, internal_collider.scale, internal_collider.info);
+    col.internal_collider = wb_col.add_collider_to_scene(&collision_scene, entity_transform.position, {1,1,1}, { {}, box });
+    logging.logln(collision_scene);
 }
 
 update_collider :: proc(using col : ^Collider, dt : f32) {
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-
-    internal_collider = wb_col.Collider {
-        transmute(rawptr)e,
-        entity_transform.position,
-        {1,1,1},
-        { 
-            {},
-            box,
-        }
-    };
-
-    wb_col.update_collider(&internal_collider, internal_collider.position, internal_collider.scale, internal_collider.info);
+    wb_col.update_collider(internal_collider, entity_transform.position, {1,1,1}, { {}, box });
 }
 
 render_collider :: proc(using col : ^Collider) {

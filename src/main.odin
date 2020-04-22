@@ -51,6 +51,7 @@ main_init :: proc() {
     add_component_type(game.Health, nil, nil, game.init_health);
 
     // NPC
+    add_component_type(game.Enemy_Spawner, game.update_enemy_spawner, nil, game.init_enemy_spawner);
     add_component_type(game.Enemy, game.update_enemy, nil, game.init_enemy);
 
     // Last

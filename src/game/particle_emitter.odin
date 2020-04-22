@@ -20,7 +20,7 @@ Particle_Emitter :: struct {
 
 init_emitter :: proc(using emitter: ^Particle_Emitter) {
     wb.init_particle_emitter(&emitter.base_emitter, 1);
-    base_emitter.shader = wb.get_shader(&wb.wb_catalog, "particle");
+    base_emitter.shader = wb.get_shader("particle");
     base_emitter.emission = wb.Spheric_Emission{};
 
     //base_emitter.texture = wb.get_texture(&asset_catalog, "particle");
@@ -30,7 +30,7 @@ update_emitter :: proc(using emitter: ^Particle_Emitter, dt: f32) {
     t, ok := ecs.get_component(e, ecs.Transform);
     base_emitter.position = t.position;
 
-    texture, ok2 := wb.try_get_texture(&asset_catalog, base_emitter.texture_id);
+    texture, ok2 := wb.try_get_texture(base_emitter.texture_id);
     if ok2 {
         base_emitter.texture = texture;
     }

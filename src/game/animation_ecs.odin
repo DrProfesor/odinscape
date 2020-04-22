@@ -11,7 +11,6 @@ import "shared:workbench/types"
 import "shared:workbench/ecs"
 import "shared:workbench/math"
 
-import anim  "shared:workbench/animation"
 import "shared:workbench/external/imgui"
 
 init_animator :: proc(using animator: ^Animator) {
@@ -26,27 +25,24 @@ update_animator :: proc(using animator: ^Animator, dt: f32) {
             return;
         }
 
-        model, model_exists := wb.try_get_model(&asset_catalog, mr.model_id);
-        if !model_exists {
-            logging.logln("Couldn't find model in catalog: ", mr.model_id);
-            return;
-        } else {
-            if previous_mesh_id != mr.model_id {
-                animation_state.mesh_states =  make([dynamic]wb.Mesh_State, 0, len(model.meshes));
-                for i:=0; i < len(model.meshes); i += 1 {
-                    arr := make([dynamic]math.Mat4, 0, len(model.meshes[i].skin.bones));
+        model, model_exists := wb.try_get_model(mr.model_id);
+        assert(model_exists);
 
-                    for bone in model.meshes[i].skin.bones {
-                        append(&arr, bone.offset);
-                    }
+        if previous_mesh_id != mr.model_id {
+            animation_state.mesh_states =  make([]wb.Mesh_State, len(model.meshes));
+            for i:=0; i < len(model.meshes); i += 1 {
+                arr := make([]Mat4, len(model.meshes[i].skin.offsets));
 
-                    append(&animation_state.mesh_states, wb.Mesh_State { arr });
+                for bone, j in model.meshes[i].skin.offsets {
+                    arr[j] = bone;
                 }
+
+                animation_state.mesh_states[i] = wb.Mesh_State { arr };
             }
         }
 
-        if current_animation in anim.loaded_animations {
-            animation := anim.loaded_animations[current_animation];
+        if current_animation in wb.loaded_animations {
+            animation := wb.loaded_animations[current_animation];
 
             running_time += dt;
 
@@ -59,7 +55,7 @@ update_animator :: proc(using animator: ^Animator, dt: f32) {
         }
 
         for mesh, i in model.meshes {
-            anim.get_animation_data(mesh, current_animation, time, &animation_state.mesh_states[i].state);
+            wb.sample_animation(mesh, current_animation, time, &animation_state.mesh_states[i].state);
         }
     }
 }
@@ -76,7 +72,7 @@ editor_render_animator :: proc(using animator: ^Animator) {
                 return;
             }
 
-            available_anims := anim.get_animations_for_target(mr.model_id);
+            available_anims := wb.get_animations_for_target(mr.model_id);
             if imgui.list_box_header("Animations") {
                 for aa, i in available_anims {
                     if imgui.selectable(aa, aa == current_animation) {
@@ -87,7 +83,7 @@ editor_render_animator :: proc(using animator: ^Animator) {
                 imgui.list_box_footer();
             }
 
-            current_animation_data := anim.loaded_animations[current_animation];
+            current_animation_data := wb.loaded_animations[current_animation];
             imgui.label_text("Running Time", fmt.tprint(time, " / ", current_animation_data.duration));
 
             defer imgui.unindent();

@@ -29,7 +29,7 @@ init_model_renderer :: proc(using mr: ^Model_Renderer) {
         color = types.Colorf{1, 1, 1, 1};
         shader_id = "lit";
         material = wb.Material {
-            {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
+            0.5, 0.5, 0.5
         };
     }
 }
@@ -43,13 +43,13 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
     		return;
     	}
         
-    	model, ok := wb.try_get_model(&asset_catalog, model_id);
+    	model, ok := wb.try_get_model(model_id);
     	if !ok {
     		log.logln("Couldn't find model in catalog: ", model_id);
     		return;
     	}
         
-    	texture, tok := wb.try_get_texture(&asset_catalog, texture_id);
+    	texture, tok := wb.try_get_texture(texture_id);
     	if !tok {
     		log.logln("Couldn't find texture in catalog: ", texture_id);
             return;
@@ -61,65 +61,10 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
             anim_state = animator.animation_state;
         }
         
-        shader := wb.get_shader(&asset_catalog, shader_id);
+        shader := wb.get_shader(shader_id);
         
     	cmd := wb.create_draw_command(model, shader, tf.position, tf.scale * scale, tf.rotation,  color, texture); // anim_state
         cmd.anim_state = anim_state;
-        wb.submit_draw_command(cmd);
-    }
-}
-
-// terrain
-
-Terrain :: struct {
-    using base: ecs.Component_Base,
-    
-    wb_terrain: wb.Terrain "wbml_noserialize",
-    material: wb.Material,
-    shader_id: string,
-    
-}
-
-init_terrain :: proc(using tr: ^Terrain) {
-    when SERVER do return;
-    else {
-        height_map := make([dynamic][]f32, 0, 128);
-        for x in 0..128 {
-            hm:= make([dynamic]f32, 0, 128);
-            for z in 0..128 {
-                append(&hm, 0);
-                //append(&hm, math.get_noise(x, z, 11230978, 0.01, 1, 0.25));
-            }
-            
-            append(&height_map, hm[:]);
-        }
-        
-        wb_terrain = wb.create_terrain(128, height_map[:]);
-        shader_id = "terrain";
-    	material = wb.Material {
-            {1, 0.5, 0.3, 1}, {1, 0.5, 0.3, 1}, {0.5, 0.5, 0.5, 1}, 32
-        };
-    }
-}
-
-update_terrain :: proc(using tr: ^Terrain) {
-    if !wb.debug_window_open do return;
-    
-    
-}
-
-render_terrain :: proc(using tr: ^Terrain) {
-    when SERVER do return;
-    else {
-        tf, exists := ecs.get_component(e, ecs.Transform);
-    	if tf == nil {
-    		log.logln("Error: no transform for entity ", e);
-    		return;
-    	}
-        
-        shader := wb.get_shader(&wb.wb_catalog, shader_id);
-        
-        cmd := wb.create_draw_command(wb_terrain.model, shader, tf.position, tf.scale, tf.rotation, {1,1,1,1});
         wb.submit_draw_command(cmd);
     }
 }

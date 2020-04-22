@@ -15,13 +15,13 @@ import wb_gpu "shared:workbench/gpu"
 import "../shared"
 import "../configs"
 
-asset_catalog: wb.Asset_Catalog;
 prefab_scene: ecs.Prefab_Scene;
 
 game_init :: proc() {
 
 	when !SERVER {
-		wb.load_asset_folder("resources", &asset_catalog);
+		logln("Track folder");
+		wb.track_asset_folder("resources", true);
 	}
  
 	// camera
@@ -52,13 +52,19 @@ game_update :: proc(dt: f32) {
 }
 
 game_render :: proc() {
+	wb.set_sun_data(math.degrees_to_quaternion({-90, 0, 0}), {1, 1, 1, 1}, 1);
 	ecs.render();
 }
 
 game_end :: proc() {
 	scene_end("main");
-
-	wb.delete_asset_catalog(asset_catalog);
 }
 
 logln :: logging.logln;
+Vec3 :: math.Vec3;
+Vec2 :: math.Vec2;
+Mat4 :: math.Mat4;
+Quat :: math.Quat;
+Transform :: ecs.Transform;
+Entity :: ecs.Entity;
+Player_Entity :: shared.Player_Entity;
