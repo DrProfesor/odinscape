@@ -53,11 +53,11 @@ update_enemy_spawner :: proc(using spawner: ^Enemy_Spawner, dt: f32) {
 Enemy_Spawner :: struct {
 	using base: ecs.Component_Base,
 
-	current_spawned: int,
-	last_spawn_time: f64,
+	current_spawned: int "imgui_allow64bit",
+	last_spawn_time: f64 "imgui_allow64bit",
 
-	spawn_max: int,
-	spawn_rate: f64,
+	spawn_max: int "imgui_allow64bit",
+	spawn_rate: f64 "imgui_allow64bit",
 	radius: f32,
 	enemy_name: string,
 }
@@ -91,7 +91,11 @@ update_enemy :: proc(using enemy: ^Enemy, dt: f32) {
 
 	when SERVER {
 		if target_network_id == -1 {
-			for player in ecs.get_component_storage(Player_Entity) {
+			@static active_player_componenets: [dynamic]Player_Entity;
+			clear(&active_player_componenets);
+			ecs.get_active_component_storage(Player_Entity, &active_player_componenets);
+
+			for player in active_player_componenets {
 				player_transform, exists := ecs.get_component(player.e, Transform);
 				assert(exists);
 				
@@ -110,7 +114,18 @@ update_enemy :: proc(using enemy: ^Enemy, dt: f32) {
 	if target_network_id == -1 do return;
 	
 	target_entity := net.get_entity_from_network_id(target_network_id);
+
+	if target_entity < 0  {
+		target_network_id = -1;
+		return;
+	}
+
 	target_transform, exists3 := ecs.get_component(target_entity, Transform);
+
+	if !exists3 {
+		target_network_id = -1;
+		return;
+	}
 
 	direction_to_target := math.norm(target_transform.position - transform.position);
 	distance_to_target := math.magnitude(target_transform.position - transform.position);

@@ -14,6 +14,7 @@ import "shared:workbench/math"
 import "shared:workbench/external/imgui"
 
 init_animator :: proc(using animator: ^Animator) {
+    speed = 1;
 }
 
 update_animator :: proc(using animator: ^Animator, dt: f32) {
@@ -44,7 +45,7 @@ update_animator :: proc(using animator: ^Animator, dt: f32) {
         if current_animation in wb.loaded_animations {
             animation := wb.loaded_animations[current_animation];
 
-            running_time += dt;
+            running_time += dt * speed;
 
             tps : f32 = 25.0;
             if animation.ticks_per_second != 0 {
@@ -65,6 +66,7 @@ editor_render_animator :: proc(using animator: ^Animator) {
     else {
         if imgui.collapsing_header("Animator") {
             imgui.indent();
+            defer imgui.unindent();
 
             mr, mr_exists := ecs.get_component(e, Model_Renderer);
             if !mr_exists {
@@ -86,7 +88,7 @@ editor_render_animator :: proc(using animator: ^Animator) {
             current_animation_data := wb.loaded_animations[current_animation];
             imgui.label_text("Running Time", fmt.tprint(time, " / ", current_animation_data.duration));
 
-            defer imgui.unindent();
+            imgui.slider_float("Speed", &speed, 0, 10);
         }
     }
 }
@@ -96,6 +98,8 @@ Animator :: struct {
     using base: ecs.Component_Base,
 
     animation_state: wb.Model_Animation_State,
+
+    speed: f32,
 
     time: f32,
     current_animation: string,

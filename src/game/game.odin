@@ -52,7 +52,7 @@ game_update :: proc(dt: f32) {
 }
 
 game_render :: proc() {
-	wb.set_sun_data(math.degrees_to_quaternion({-90, 0, 0}), {1, 1, 1, 1}, 1);
+	wb.set_sun_data(math.degrees_to_quaternion({-60, -60, 0}), {1, 1, 1, 1}, 10);
 	ecs.render();
 }
 

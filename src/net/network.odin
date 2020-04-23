@@ -192,12 +192,22 @@ handle_create_entity :: proc(packet: Packet, client_id: int) {
     net_id := ecs.add_component(new_entity, Network_Id);
     net_id.network_id = ce.network_id;
     net_id.controlling_client = ce.controlling_client;
+
+    transform, ok := ecs.get_component(new_entity, ecs.Transform);
+    assert(ok);
+    transform.position = ce.position;
+    transform.rotation = ce.rotation;
+    transform.scale = ce.scale;
 }
 
 handle_add_component :: proc(packet: Packet, client_id: int) {
     ac := packet.data.(Net_Add_Component);
 
-    for net_id in ecs.get_component_storage(Network_Id) {
+    @static active_net_id_componenets: [dynamic]Network_Id;
+    clear(&active_net_id_componenets);
+    ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+    for net_id in active_net_id_componenets {
         if net_id.network_id == ac.network_id {
             component_type := ecs.get_component_ti_from_name(ac.component_type);
             logln("Added network component: ", component_type, net_id.network_id, net_id.e);
@@ -243,8 +253,6 @@ when SERVER {
                     };
 
                     logln("Peer Connected");
-
-
                     append(&connected_clients, new_clone(client));
 
                     con_packet := Packet{
@@ -313,6 +321,7 @@ when SERVER {
                     
                     unordered_remove(&connected_clients, idx);
                     last_packet_recieve[cid] = -1;
+                    logln("Client disconnected");
                 }
             }
         }
@@ -346,15 +355,20 @@ when SERVER {
         net_id.network_id = last_net_id;
         net_id.controlling_client = controlling_client_id;
 
+        transform, ok := ecs.get_component(entity, ecs.Transform);
+        assert(ok);
+
         create_entity := Packet {
             Create_Entity_Packet {
                 last_net_id,
-                controlling_client_id
+                controlling_client_id,
+
+                transform.position,
+                transform.rotation,
+                transform.scale,
             }
         };
         broadcast(&create_entity);
-
-        update_client_transform(entity);
 
         for k, v in ecs.component_types {
             if k == typeid_of(ecs.Transform) || k == typeid_of(Network_Id) do continue;
@@ -429,11 +443,24 @@ when SERVER {
 
         // dispatch a bunch of entity create calls for networked entities. 
         // TODO this should be done better maybe?
-        for net_id in ecs.get_component_storage(Network_Id) {
+        // TODO we need a better way to get active components
+        @static active_net_id_componenets: [dynamic]Network_Id;
+        clear(&active_net_id_componenets);
+        ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+        for net_id in active_net_id_componenets {
+
+            transform, ok := ecs.get_component(net_id.e, ecs.Transform);
+            assert(ok);
+
             create_entity := Packet {
                 Create_Entity_Packet {
                     net_id.network_id,
-                    net_id.controlling_client
+                    net_id.controlling_client,
+                    
+                    transform.position,
+                    transform.rotation,
+                    transform.scale,
                 }
             };
             dispatch_packet_to_peer(client.peer, &create_entity);
@@ -542,6 +569,10 @@ Keep_Alive_Packet :: struct {
 Create_Entity_Packet :: struct {
     network_id : int,
     controlling_client: int,
+
+    position: Vec3,
+    rotation: Quat,
+    scale: Vec3
 }
 
 Destroy_Entity_Packet :: struct {
@@ -556,3 +587,4 @@ Net_Add_Component :: struct {
 
 
 Vec3 :: math.Vec3;
+Quat :: math.Quat;

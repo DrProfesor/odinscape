@@ -28,25 +28,9 @@ Terrain
 		enabled true
 	}
 	material {
-		ambient {
-			r 1.000
-			g 0.500
-			b 0.300
-			a 1.000
-		}
-		diffuse {
-			r 1.000
-			g 0.500
-			b 0.300
-			a 1.000
-		}
-		specular {
-			r 0.500
-			g 0.500
-			b 0.500
-			a 1.000
-		}
-		shine 32.000
+		metallic 0.500
+		roughness 0.500
+		ao 0.500
 	}
 	shader_id "terrain"
 }

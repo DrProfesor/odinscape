@@ -74,7 +74,7 @@ render_terrain :: proc(using tr: ^Terrain) {
         
         shader := wb.get_shader(shader_id);
         
-        cmd := wb.create_draw_command(wb_terrain.model, shader, tf.position, tf.scale, tf.rotation, {1,1,1,1});
+        cmd := wb.create_draw_command(wb_terrain.model, shader, tf.position, tf.scale, tf.rotation, {1,1,1,1}, {}, material);
         wb.submit_draw_command(cmd);
     }
 }

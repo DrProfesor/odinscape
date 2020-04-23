@@ -60,7 +60,9 @@ player_init :: proc(using player: ^shared.Player_Entity) {
 
 player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
 
-    if wb.debug_window_open do return;
+    when !SERVER {
+        if wb.debug_window_open do return;
+    }
     
     transform, _ := ecs.get_component(e, ecs.Transform);
     animator,  _ := ecs.get_component(e, Animator);

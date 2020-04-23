@@ -62,9 +62,13 @@ handle_replication :: proc(packet: Packet, client_id: int) {
     for field in replication_data.modified_fields {
         parts := strings.split(field, ";");
         key_parts := strings.split(parts[0], ":");
-
         target_network_id := strconv.parse_int(key_parts[0]);
-        for net_id in ecs.get_component_storage(Network_Id) {
+
+        @static active_net_id_componenets: [dynamic]Network_Id;
+        clear(&active_net_id_componenets);
+        ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+        for net_id in active_net_id_componenets {
             if net_id.network_id != target_network_id do continue;
 
             when SERVER {
@@ -108,7 +112,11 @@ update_networked_entities :: proc() {
     @static fields_to_send: [dynamic]string;
 
     clear(&fields_to_send);
-    for net_id in ecs.get_component_storage(Network_Id) {
+    @static active_net_id_componenets: [dynamic]Network_Id;
+    clear(&active_net_id_componenets);
+    ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+    for net_id in active_net_id_componenets {
         for k, v in ecs.component_types {
             if k == typeid_of(ecs.Transform) || k == typeid_of(Network_Id) do continue;
             if !ecs.has_component(net_id.e, k) do continue;
@@ -178,9 +186,14 @@ client_entity_receive :: proc(packet: Packet, client_id: int) {
     handler, exists := get_entity_packet_handler(reflect.union_variant_typeid(ep.data));
     if !exists do return;
 
+
     // TODO optimize this
     // Get the entity from the network id
-    for net_id in ecs.get_component_storage(Network_Id) {
+    @static active_net_id_componenets: [dynamic]Network_Id;
+    clear(&active_net_id_componenets);
+    ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+    for net_id in active_net_id_componenets {
         if net_id.network_id == ep.network_id {
             handler.receive(net_id.e, ep);
             return;
@@ -200,7 +213,11 @@ when SERVER {
 
         // TODO optimize this
         // Get the entity from the network id
-        for net_id in ecs.get_component_storage(Network_Id) {
+        @static active_net_id_componenets: [dynamic]Network_Id;
+        clear(&active_net_id_componenets);
+        ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+        for net_id in active_net_id_componenets {
             if net_id.network_id == ep.network_id {
                 target_entity = net_id.e;
             }
@@ -220,15 +237,18 @@ when SERVER {
     }
 }
 
-get_entity_from_network_id :: proc(id: int) -> ecs.Entity {
-    for net_id in ecs.get_component_storage(Network_Id) {
+get_entity_from_network_id :: proc(id: int, loc := #caller_location) -> ecs.Entity {
+    @static active_net_id_componenets: [dynamic]Network_Id;
+    clear(&active_net_id_componenets);
+    ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
+
+    for net_id in active_net_id_componenets {
         if net_id.network_id == id {
             return net_id.e;
         }
     }
 
-    panic(fmt.tprint("Not entity with network id: ", id));
-    return 0;
+    return -1;
 }
 
 // components

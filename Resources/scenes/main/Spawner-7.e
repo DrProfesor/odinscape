@@ -1,4 +1,4 @@
-6 Spawner
+7 Spawner
 Transform
 {
 	base {
@@ -27,8 +27,8 @@ Enemy_Spawner
 	base {
 		enabled true
 	}
-	current_spawned 1
-	last_spawn_time 1587497503.883
+	current_spawned 0
+	last_spawn_time 0.000
 	spawn_max 1
 	spawn_rate 5.000
 	radius 20.000
