@@ -63,7 +63,7 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
         
         shader := wb.get_shader(shader_id);
         
-    	cmd := wb.create_draw_command(model, shader, tf.position, tf.scale * scale, tf.rotation,  color, texture); // anim_state
+    	cmd := wb.create_draw_command(model, shader, tf.position, tf.scale * scale, tf.rotation,  color, material, texture); // anim_state
         cmd.anim_state = anim_state;
         wb.submit_draw_command(cmd);
     }

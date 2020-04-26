@@ -3,6 +3,7 @@ package game
 import "core:fmt"
 
 import wb "shared:workbench"
+import gpu "shared:workbench/gpu"
 import "shared:workbench/ecs"
 import "shared:workbench/math"
 
@@ -30,27 +31,27 @@ Terrain :: struct {
     using base: ecs.Component_Base,
     
     wb_terrain: wb.Terrain "wbml_noserialize",
-    material: wb.Material,
-    shader_id: string,
-    
+    material: wb.Material,    
 }
 
 init_terrain :: proc(using tr: ^Terrain) {
     when SERVER do return;
     else {
-        height_map := make([dynamic][]f32, 0, 128);
-        for x in 0..128 {
-            hm:= make([dynamic]f32, 0, 128);
-            for z in 0..128 {
-                append(&hm, 0);
-                //append(&hm, math.get_noise(x, z, 11230978, 0.01, 1, 0.25));
+        density_map := make([][][]f32, 32);
+        for x in 0..<32 {
+            hm1 := make([][]f32, 32);
+            for y in 0..<32 {
+                hm2 := make([]f32, 32);
+                for z in 0..<32 {
+                    hm2[z] = -(f32(y)-2);
+                }
+                hm1[y] = hm2;
             }
-            
-            append(&height_map, hm[:]);
+        
+            density_map[x] = hm1;
         }
         
-        wb_terrain = wb.create_terrain(128, height_map[:]);
-        shader_id = "terrain";
+        wb_terrain = wb.create_terrain(density_map[:]);
     	material = wb.Material {
             0.5,0.5,0.5
         };
@@ -71,10 +72,6 @@ render_terrain :: proc(using tr: ^Terrain) {
     		logln("Error: no transform for entity ", e);
     		return;
     	}
-        
-        shader := wb.get_shader(shader_id);
-        
-        cmd := wb.create_draw_command(wb_terrain.model, shader, tf.position, tf.scale, tf.rotation, {1,1,1,1}, {}, material);
-        wb.submit_draw_command(cmd);
+        wb.render_terrain(&wb_terrain, tf.position, tf.scale, material);
     }
 }
