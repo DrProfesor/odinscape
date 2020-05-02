@@ -4,19 +4,21 @@ import "core:fmt"
 
 import wb "shared:workbench"
 import gpu "shared:workbench/gpu"
+import wb_plat  "shared:workbench/platform"
 import "shared:workbench/ecs"
 import "shared:workbench/math"
+import "shared:workbench/external/imgui"
 
 import "../configs"
 import "../physics"
 import "../net"
 import "../shared"
 
-get_terrain_height_at_position :: proc(pos: Vec2) -> f32 {
+get_terrain_height_at_position :: proc(pos: Vec3) -> f32 {
 	terrains := ecs.get_component_storage(Terrain);
     for terrain in terrains {
         terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
-        h, ok1 := wb.get_height_at_position(terrain.wb_terrain, terrain_transform.position, pos.x, pos.y);
+        h, ok1 := wb.get_height_at_position(terrain.wb_terrain, terrain_transform.position, pos.x, pos.z, pos.y);
         if ok1 {
             return h;
         }
@@ -29,49 +31,46 @@ get_terrain_height_at_position :: proc(pos: Vec2) -> f32 {
 
 Terrain :: struct {
     using base: ecs.Component_Base,
-    
-    wb_terrain: wb.Terrain "wbml_noserialize",
-    material: wb.Material,    
+    using wb_terrain: wb.Terrain "wbml_noserialize",
 }
 
 init_terrain :: proc(using tr: ^Terrain) {
-    when SERVER do return;
-    else {
-        density_map := make([][][]f32, 32);
-        for x in 0..<32 {
-            hm1 := make([][]f32, 32);
-            for y in 0..<32 {
-                hm2 := make([]f32, 32);
-                for z in 0..<32 {
-                    hm2[z] = -(f32(y)-2);
-                }
-                hm1[y] = hm2;
-            }
-        
-            density_map[x] = hm1;
-        }
-        
-        wb_terrain = wb.create_terrain(density_map[:]);
-    	material = wb.Material {
-            0.5,0.5,0.5
-        };
-    }
-}
+    if math.magnitude(size) == 0 do size = {128,128,128};
 
-update_terrain :: proc(using tr: ^Terrain) {
-    if !wb.debug_window_open do return;
+    // TODO load density map
+    _density_map := make([][][]f32, int(size.x));
+    for x in 0..<int(size.x) {
+        hm1 := make([][]f32, int(size.z));
+        for z in 0..<int(size.z) {
+            hm2 := make([]f32, int(size.y));
+            for y in 0..<int(size.y) {
+                hm2[y] = -(f32(y-2));
+            }
+            hm1[z] = hm2;
+        }
     
+        _density_map[x] = hm1;
+    }
     
+    wb_terrain = wb.create_terrain(_density_map, 1);
+	material = wb.Material {
+        0.5,0.5,0.5
+    };
 }
 
 render_terrain :: proc(using tr: ^Terrain) {
+    tf, exists := ecs.get_component(e, ecs.Transform);
+    if tf == nil {
+        logln("Error: no transform for entity ", e);
+        return;
+    }
+
     when SERVER do return;
     else {
-        tf, exists := ecs.get_component(e, ecs.Transform);
-    	if tf == nil {
-    		logln("Error: no transform for entity ", e);
-    		return;
-    	}
-        wb.render_terrain(&wb_terrain, tf.position, tf.scale, material);
+        wb.render_terrain(&wb_terrain, tf.position, tf.scale);
     }
+}
+
+editor_render_terrain :: proc(using tr: ^Terrain) {
+    wb.render_terrain_editor(&wb_terrain);
 }

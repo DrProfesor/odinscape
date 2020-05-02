@@ -44,7 +44,7 @@ main_init :: proc() {
     add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
     add_component_type(game.Particle_Emitter, game.update_emitter, nil, game.init_emitter);
     add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
-    add_component_type(game.Terrain, nil, game.render_terrain, game.init_terrain, nil);
+    add_component_type(game.Terrain, nil, game.render_terrain, game.init_terrain, nil, game.editor_render_terrain);
 
     // Support
     add_component_type(game.Stats, nil, nil, game.init_stat_component);

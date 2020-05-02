@@ -60,6 +60,15 @@ player_init :: proc(using player: ^shared.Player_Entity) {
 
 player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
 
+    // fps := target_position;
+    // if len(player_path) > 0 {
+    //     fps = player_path[len(player_path)-1];
+    // }
+    // h := get_terrain_height_at_position({fps.x, fps.z});
+
+    // wb.draw_debug_box(fps + {0,h,0}, {0.1,0.1,0.1}, {1,0,0,1});
+    // wb.draw_debug_box(target_position, {0.1,0.1,0.1}, {1,0,1,1});
+
     when !SERVER {
         if wb.debug_window_open do return;
     }
@@ -75,9 +84,9 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
         for terrain in terrains {
             terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
             pos, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
+            wb.draw_debug_box(pos, {1,1,1}, {1,0,0,1});
             if hit {
                 target_position = pos;
-                // TODO(jake): Speed this up like crazy
                 player_path = physics.smooth_a_star(transform.position, target_position, 0.5);
                 path_idx = 1;
                 net.send_new_player_position(target_position, net_id.network_id);
@@ -86,29 +95,22 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
         }
     }
 
-    dist := target_position - transform.position;
-    mag := math.magnitude(dist);
+    final_pos := target_position;
+    if len(player_path) > 0 {
+        final_pos = player_path[len(player_path)-1];
+    }
 
-    // collision grid debug
-    // for x in -15..15 {
-    //     for z in -15..15 {
-    //         pos := transform.position + math.Vec3{ f32(x), 0, f32(z) };
-    //         hit := physics.overlap_point(pos) > 0;
-    //         wb.draw_debug_box(pos, math.Vec3{0.9,0.9,0.9}, hit ? types.COLOR_RED : types.COLOR_BLUE);
-    //     }
-    // }
-
-    if mag > 0.1 {
-        p := target_position;
+    if math.magnitude(Vec3{final_pos.x, transform.position.y, final_pos.z} - transform.position) > 0.1 {
+        p := final_pos;
         if path_idx < len(player_path)-1 {
             p = player_path[path_idx];
-            if math.distance(math.Vec3{p.x, 0, p.z}, math.Vec3{transform.position.x, 0, transform.position.z}) < 0.01 {
+            if math.magnitude(Vec3{p.x, transform.position.y, p.z} - transform.position) < 0.01 {
                 path_idx += 1;
             }
         }
 
-        height := get_terrain_height_at_position({transform.position.x, transform.position.z});
-        p1 := move_towards(transform.position, p, base_move_speed * dt);
+        height := get_terrain_height_at_position(transform.position);
+        p1 := move_towards({transform.position.x, 0, transform.position.z}, {p.x,0,p.z}, base_move_speed * dt);
         transform.position = {p1.x, height, p1.z};
         transform.rotation = math.euler_angles(0, look_y_rot(transform.position, p) - math.PI / 2, 0);
 
