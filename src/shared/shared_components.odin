@@ -1,7 +1,7 @@
 package shared
 
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
 Player_Entity :: struct {
     using base: ecs.Component_Base,

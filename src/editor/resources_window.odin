@@ -3,13 +3,13 @@ package editor
 import "core:fmt"
 import "core:strings"
 
-import wb "shared:workbench"
-import    "shared:workbench/types"
-import    "shared:workbench/basic"
-import    "shared:workbench/logging"
-import    "shared:workbench/ecs"
+import wb "shared:wb"
+import    "shared:wb/types"
+import    "shared:wb/basic"
+import    "shared:wb/logging"
+import    "shared:wb/ecs"
 
-import "shared:workbench/external/imgui"
+import "shared:wb/external/imgui"
 
 import "../game"
 

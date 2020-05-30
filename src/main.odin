@@ -5,12 +5,11 @@ import "core:math"
 import "core:mem"
 import "core:os"
 
-import wb "shared:workbench"
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/platform"
-import "shared:workbench/ecs"
-import wb_shared "shared:workbench/shared"
+import "shared:wb"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/platform"
+import "shared:wb/ecs"
 
 import "configs"
 import "shared"
@@ -65,7 +64,9 @@ main_init :: proc() {
 }
 
 main_update :: proc(dt: f32) {
-    if platform.get_input_down(platform.Input.Escape) do wb.exit();
+    when !#config(HEADLESS, false) {
+        if platform.get_input_down(platform.Input.Escape) do wb.exit();
+    }
     
     //
     net.network_update();
@@ -101,7 +102,7 @@ main_end :: proc() {
 
 main :: proc() {
     name := "Odinscape";
-    when SERVER {
+    when #config(HEADLESS, false) {
         name = fmt.tprint(name, "-server");
     } 
     wb.make_simple_window(1920, 1080, 120,

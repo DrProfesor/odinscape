@@ -5,12 +5,12 @@ import "core:runtime"
 import "core:strings"
 import "core:mem"
 
-import    "shared:workbench/types"
-import    "shared:workbench/basic"
-import    "shared:workbench/logging"
-import "shared:workbench/ecs"
+import    "shared:wb/types"
+import    "shared:wb/basic"
+import    "shared:wb/logging"
+import "shared:wb/ecs"
 
-import "shared:workbench/external/imgui"
+import "shared:wb/external/imgui"
 
 import "../configs"
 import "../game"

@@ -4,13 +4,13 @@ import "core:fmt"
 import "core:mem"
 import "core:os"
 
-import "shared:workbench/gpu"
-import wb    "shared:workbench"
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/types"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import "shared:wb/gpu"
+import wb    "shared:wb"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/types"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
 Particle_Emitter :: struct {
     using base: ecs.Component_Base,

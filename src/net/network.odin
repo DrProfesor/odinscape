@@ -8,11 +8,11 @@ import "core:time"
 
 import enet "shared:odin-enet"
 
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/wbml"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/wbml"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
 import "../shared"
 
@@ -24,7 +24,7 @@ peer: ^enet.Peer;
 event: enet.Event;
 host: ^enet.Host;
 
-when SERVER {
+when #config(HEADLESS, false) {
 is_client := false;
 is_server := true;
 } else {
@@ -50,7 +50,7 @@ add_packet_handler :: proc($Type: typeid, receive: proc(Packet, int)) {
 network_init :: proc() {
     enet.initialize();
 
-    when SERVER {
+    when #config(HEADLESS, false) {
         // Core
         add_packet_handler(Entity_Packet, server_entity_receive);
         add_packet_handler(Login_Packet, handle_login);
@@ -78,7 +78,7 @@ network_init :: proc() {
 }
 
 network_update :: proc() {
-    when SERVER {
+    when #config(HEADLESS, false) {
         server_update();
     } else {
         client_update();
@@ -90,7 +90,7 @@ network_update :: proc() {
 network_shutdown :: proc() {
     enet.deinitialize();
 
-    when SERVER {
+    when #config(HEADLESS, false) {
         server_shutdown();
     } else {
         client_shutdown();
@@ -220,7 +220,7 @@ handle_add_component :: proc(packet: Packet, client_id: int) {
 }
 
 // Server side
-when SERVER {
+when #config(HEADLESS, false) {
 
     connected_clients := make([dynamic]^Client, 0, 10);
     last_packet_recieve := make(map[int]f64, 10);

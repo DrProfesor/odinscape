@@ -3,11 +3,11 @@ package configs
 import "core:os"
 import "core:mem"
 import "core:fmt"
-import "shared:workbench/math"
+import "shared:wb/math"
 
-import wb   "shared:workbench"
-import platform "shared:workbench/platform"
-import wbml "shared:workbench/wbml"
+import "shared:wb"
+import platform "shared:wb/platform"
+import wbml "shared:wb/wbml"
 
 CONFIG_PATH :: "resources/data/";
 

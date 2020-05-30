@@ -3,9 +3,9 @@ package game
 import "core:time"
 import "core:fmt"
 
-import wb "shared:workbench"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import wb "shared:wb"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
 import "../configs"
 import "../physics"
@@ -21,32 +21,32 @@ init_enemy_spawner :: proc(using spawner: ^Enemy_Spawner) {
 }
 
 update_enemy_spawner :: proc(using spawner: ^Enemy_Spawner, dt: f32) {
-	when !SERVER do return;
+	when !#config(HEADLESS, false) do return;
 	else {
-		// current_seconds := f64(time.now()._nsec) / f64(time.Second);
+		current_seconds := f64(time.now()._nsec) / f64(time.Second);
 		
-		// if current_seconds < last_spawn_time + spawn_rate do return;
-		// if current_spawned >= spawn_max do return;
+		if current_seconds < last_spawn_time + spawn_rate do return;
+		if current_spawned >= spawn_max do return;
 
-		// t := math.TAU * wb.random01();
-		// u := wb.random01() + wb.random01();
-		// r := u>1 ? 2-u : u;
-		// x := r * math.cos(t);
-		// z := r * math.sin(t);
-		// y := get_terrain_height_at_position({x,z});
+		t := math.TAU * wb.random01();
+		u := wb.random01() + wb.random01();
+		r := u>1 ? 2-u : u;
+		x := r * math.cos(t);
+		z := r * math.sin(t);
+		y := get_terrain_height_at_position({x,0,z});
 
-		// // TODO (jake): pull this logic into a "network_instantiate"
-		// prefab := prefab_scene.prefabs[fmt.tprint("resources/Prefabs/", enemy_name, ".e")];
-		// enemy := ecs.instantiate_prefab(prefab);
+		// TODO (jake): pull this logic into a "network_instantiate"
+		prefab := prefab_scene.prefabs[fmt.tprint("resources/Prefabs/", enemy_name, ".e")];
+		enemy := ecs.instantiate_prefab(prefab);
 
-		// enemy_transform, ete := ecs.get_component(enemy, Transform);
-		// assert(ete);
-		// enemy_transform.position = {x, y, z};
+		enemy_transform, ete := ecs.get_component(enemy, Transform);
+		assert(ete);
+		enemy_transform.position = {x, y, z};
 
-		// net.network_entity(enemy, 0);
+		net.network_entity(enemy, 0);
 
-		// current_spawned += 1;
-		// last_spawn_time = current_seconds;
+		current_spawned += 1;
+		last_spawn_time = current_seconds;
 	}
 }
 
@@ -72,7 +72,7 @@ init_enemy :: proc(using enemy: ^Enemy) {
 	detection_radius = 10;
 	cutoff_radius = 10;
 
-	when !SERVER {
+	when !#config(HEADLESS, false) {
 		model, mok := ecs.get_component(e, Model_Renderer);
         assert(mok);
         model.model_id = "gronk";
@@ -89,7 +89,7 @@ init_enemy :: proc(using enemy: ^Enemy) {
 update_enemy :: proc(using enemy: ^Enemy, dt: f32) {
 	transform, ok := ecs.get_component(e, Transform);
 
-	when SERVER {
+	when #config(HEADLESS, false) {
 		if target_network_id == -1 {
 			@static active_player_componenets: [dynamic]Player_Entity;
 			clear(&active_player_componenets);
@@ -131,7 +131,7 @@ update_enemy :: proc(using enemy: ^Enemy, dt: f32) {
 	distance_to_target := math.magnitude(target_transform.position - transform.position);
 	target_pos := transform.position + direction_to_target * (distance_to_target - target_distance_from_target);
 
-	when SERVER {
+	when #config(HEADLESS, false) {
 		if target_pos != target_position { // position has changed, refresh the pathfinding
 			target_position = target_pos;
 			path = physics.smooth_a_star(transform.position, target_position, 0.5);
@@ -149,16 +149,7 @@ update_enemy :: proc(using enemy: ^Enemy, dt: f32) {
             }
         }
 
-        height := transform.position.y;
-        terrains := ecs.get_component_storage(Terrain);
-        for terrain in terrains {
-            terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
-            h, ok1 := wb.get_height_at_position(terrain.wb_terrain, terrain_transform.position, transform.position.x, transform.position.z, transform.position.z);
-            if ok1 {
-                height = h;
-                break;
-            }
-        }
+        height := get_terrain_height_at_position(transform.position);
 
         p1 := move_towards(transform.position, p, base_move_speed * dt);
         transform.position = {p1.x, height, p1.z};

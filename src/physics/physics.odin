@@ -3,15 +3,15 @@ package physics
 import "core:fmt"
 import "core:runtime"
 
-import    "shared:workbench/types"
-import    "shared:workbench/basic"
-import    "shared:workbench/logging"
-import    "shared:workbench/math"
+import    "shared:wb/types"
+import    "shared:wb/basic"
+import    "shared:wb/logging"
+import    "shared:wb/math"
 
-import wb_ecs "shared:workbench/ecs"
-import wb_col  "shared:workbench/collision"
-import wb_plat "shared:workbench/platform"
-import wb      "shared:workbench"
+import wb_ecs "shared:wb/ecs"
+import wb_col  "shared:wb/collision"
+import wb_plat "shared:wb/platform"
+import wb      "shared:wb"
 
 DEBUG :: true;
 

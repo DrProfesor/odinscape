@@ -4,11 +4,11 @@ import "core:fmt"
 import "core:mem"
 import "core:os"
 
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/ecs"
-import wb    "shared:workbench"
-import wbml  "shared:workbench/wbml"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/ecs"
+import wb    "shared:wb"
+import wbml  "shared:wb/wbml"
 
 RESOURCES := "resources/";
 SCENE_DIRECTORY := "resources/scenes/";

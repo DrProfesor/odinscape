@@ -4,21 +4,21 @@ import "core:fmt"
 import "core:mem"
 import "core:os"
 
-import wb "shared:workbench"
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/types"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import wb "shared:wb"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/types"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
-import "shared:workbench/external/imgui"
+import "shared:wb/external/imgui"
 
 init_animator :: proc(using animator: ^Animator) {
     speed = 1;
 }
 
 update_animator :: proc(using animator: ^Animator, dt: f32) {
-    when SERVER do return;
+    when #config(HEADLESS, false) do return;
     else {
         mr, mr_exists := ecs.get_component(e, Model_Renderer);
         if !mr_exists {
@@ -62,7 +62,7 @@ update_animator :: proc(using animator: ^Animator, dt: f32) {
 }
 
 editor_render_animator :: proc(using animator: ^Animator) {
-    when SERVER do return;
+    when #config(HEADLESS, false) do return;
     else {
         if imgui.collapsing_header("Animator") {
             imgui.indent();

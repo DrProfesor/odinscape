@@ -1,8 +1,8 @@
 package net;
 
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/ecs"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/ecs"
 
 import "../shared"
 import "../physics"
@@ -40,7 +40,7 @@ recieve_player_packet_client :: proc(packet: Packet, sending_client_id: int) {
 	}
 }
 
-when SERVER {
+when #config(HEADLESS, false) {
 	recieve_player_packet :: proc(p: Packet, sending_client_id: int) {
 		packet := p;
 		player_packet := packet.data.(Player_Packet);

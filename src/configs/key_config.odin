@@ -4,9 +4,9 @@ import "core:os"
 import "core:mem"
 import "core:fmt"
 
-import wb   "shared:workbench"
-import platform "shared:workbench/platform"
-import wbml "shared:workbench/wbml"
+import wb   "shared:wb"
+import platform "shared:wb/platform"
+import wbml "shared:wb/wbml"
 
 Game_Input :: platform.Input;
 
@@ -69,7 +69,7 @@ default_key_config :: proc() -> Key_Config {
 		camera_back    = S,
 		camera_left    = A,
 		camera_right   = D,
-        camera_speed_boost = Left_Shift,
+        camera_speed_boost = Shift,
 
 		camera_scroll = Mouse_Middle,
 		camera_free_move = Mouse_Right,
@@ -83,30 +83,17 @@ default_key_config :: proc() -> Key_Config {
 input_to_nice_name :: proc(input: platform.Input) -> string {
 	using platform.Input;
 
-	switch input {
-		case Unknown:                 return "UNKNOWN";
-		case Mouse_Button_1:          return "LMB";
-		case Mouse_Button_2:          return "RMB";
-		case Mouse_Button_3:          return "MMB";
-		case Mouse_Button_4:          return "Mouse Button 4";
-		case Mouse_Button_5:          return "Mouse Button 5";
-		case Mouse_Button_6:          return "Mouse Button 6";
-		case Mouse_Button_7:          return "Mouse Button 7";
-		case Mouse_Button_8:          return "Mouse Button 8";
+	#partial switch input {
+		case Mouse_Left:          return "LMB";
+		case Mouse_Right:          return "RMB";
+		case Mouse_Middle:          return "MMB";
 		case Space:                   return "Space";
 		case Apostrophe:              return "Apostrophe";
 		case Comma:                   return "Comma";
 		case Minus:                   return "Minus";
 		case Period:                  return "Period";
-		case Slash:                   return "Slash";
+		case Forward_Slash:           return "Slash";
 		case Semicolon:               return "Semicolon";
-		case Equal:                   return "Equal";
-		case Left_Bracket:            return "Left Bracket";
-		case Backslash:               return "Backslash";
-		case Right_Bracket:           return "Right Bracket";
-		case Grave_Accent:            return "Grave Accent";
-		case World_1:                 return "World 1";
-		case World_2:                 return "World 2";
 		case NR_0:                    return "0";
 		case NR_1:                    return "1";
 		case NR_2:                    return "2";
@@ -174,45 +161,6 @@ input_to_nice_name :: proc(input: platform.Input) -> string {
 		case F10:                     return "F10";
 		case F11:                     return "F11";
 		case F12:                     return "F12";
-		case F13:                     return "F13";
-		case F14:                     return "F14";
-		case F15:                     return "F15";
-		case F16:                     return "F16";
-		case F17:                     return "F17";
-		case F18:                     return "F18";
-		case F19:                     return "F19";
-		case F20:                     return "F20";
-		case F21:                     return "F21";
-		case F22:                     return "F22";
-		case F23:                     return "F23";
-		case F24:                     return "F24";
-		case F25:                     return "F25";
-		case KP_0:                    return "Keypad 0";
-		case KP_1:                    return "Keypad 1";
-		case KP_2:                    return "Keypad 2";
-		case KP_3:                    return "Keypad 3";
-		case KP_4:                    return "Keypad 4";
-		case KP_5:                    return "Keypad 5";
-		case KP_6:                    return "Keypad 6";
-		case KP_7:                    return "Keypad 7";
-		case KP_8:                    return "Keypad 8";
-		case KP_9:                    return "Keypad 9";
-		case KP_Decimal:              return "Keypad Decimal";
-		case KP_Divide:               return "Keypad Divide";
-		case KP_Multiply:             return "Keypad Multiply";
-		case KP_Subtract:             return "Keypad Subtract";
-		case KP_Add:                  return "Keypad Add";
-		case KP_Enter:                return "Keypad Enter";
-		case KP_Equal:                return "Keypad Equal";
-		case Left_Shift:              return "Left Shift";
-		case Left_Control:            return "Left Control";
-		case Left_Alt:                return "Left Alt";
-		case Left_Super:              return "Left Super";
-		case Right_Shift:             return "Right Shift";
-		case Right_Control:           return "Right Control";
-		case Right_Alt:               return "Right Alt";
-		case Right_Super:             return "Right Super";
-		case Key_Menu:                return "Key Menu";
 	}
 
 	assert(false, fmt.tprint(input));

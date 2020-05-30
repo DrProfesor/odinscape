@@ -7,11 +7,11 @@ import "core:reflect"
 import "core:mem"
 import rt "core:runtime"
 
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
-import "shared:workbench/wbml"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/ecs"
+import "shared:wb/math"
+import "shared:wb/wbml"
 
 entity_packet_handlers : map[typeid]^Entity_Packet_Handler;
 
@@ -29,7 +29,7 @@ add_entity_packet_handler :: proc($Type: typeid, receive: proc(ecs.Entity, Entit
 }
 
 initialize_entity_handlers :: proc() {
-    when SERVER {
+    when #config(HEADLESS, false) {
 
     } else {
         add_entity_packet_handler(Transform_Packet, handle_transform_packet);
@@ -62,7 +62,7 @@ handle_replication :: proc(packet: Packet, client_id: int) {
     for field in replication_data.modified_fields {
         parts := strings.split(field, ";");
         key_parts := strings.split(parts[0], ":");
-        target_network_id := strconv.parse_int(key_parts[0]);
+        target_network_id, _ := strconv.parse_int(key_parts[0]);
 
         @static active_net_id_componenets: [dynamic]Network_Id;
         clear(&active_net_id_componenets);
@@ -71,7 +71,7 @@ handle_replication :: proc(packet: Packet, client_id: int) {
         for net_id in active_net_id_componenets {
             if net_id.network_id != target_network_id do continue;
 
-            when SERVER {
+            when #config(HEADLESS, false) {
                 if net_id.controlling_client != client_id do continue;
             }
             
@@ -132,7 +132,7 @@ update_networked_entities :: proc() {
             for name, idx in struct_type_info.names {
                 tag := struct_type_info.tags[idx];
 
-                when SERVER {
+                when #config(HEADLESS, false) {
                     if !strings.contains(tag, "replicate:server") do continue;
                 } else {
                     if !strings.contains(tag, "replicate:client") do continue;
@@ -172,7 +172,7 @@ update_networked_entities :: proc() {
 
     replication_packet := Packet{ Replication_Packet{ fields_to_send } };
 
-    when SERVER {
+    when #config(HEADLESS, false) {
         broadcast(&replication_packet);
     } else {
         send_packet(&replication_packet);
@@ -203,7 +203,7 @@ client_entity_receive :: proc(packet: Packet, client_id: int) {
     panic(fmt.tprint("Unabled to find entity: ", ep.network_id));
 }
 
-when SERVER {
+when #config(HEADLESS, false) {
     server_entity_receive :: proc(packet: Packet, client_id: int) {
         ep := packet.data.(Entity_Packet);
         target_entity : Entity;

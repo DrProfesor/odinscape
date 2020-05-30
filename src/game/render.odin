@@ -2,15 +2,15 @@ package game
 
 import "core:fmt"
 
-import wb "shared:workbench"
-import "shared:workbench/gpu"
-import "shared:workbench/basic"
-import log "shared:workbench/logging"
-import "shared:workbench/types"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import wb "shared:wb"
+import "shared:wb/gpu"
+import "shared:wb/basic"
+import log "shared:wb/logging"
+import "shared:wb/types"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
-import "shared:workbench/external/stb"
+import "shared:wb/external/stb"
 
 Model_Renderer :: struct {
     using base: ecs.Component_Base,
@@ -23,7 +23,7 @@ Model_Renderer :: struct {
 }
 
 init_model_renderer :: proc(using mr: ^Model_Renderer) {
-    when SERVER do return;
+    when #config(HEADLESS, false) do return;
     else {
         scale = math.Vec3{1, 1, 1};
         color = types.Colorf{1, 1, 1, 1};
@@ -35,7 +35,7 @@ init_model_renderer :: proc(using mr: ^Model_Renderer) {
 }
 
 render_model_renderer :: proc(using mr: ^Model_Renderer) {
-    when SERVER do return;
+    when #config(HEADLESS, false) do return;
     else {
     	tf, exists := ecs.get_component(e, ecs.Transform);
     	if tf == nil {

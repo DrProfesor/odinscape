@@ -2,11 +2,11 @@ package game
 
 import "core:fmt"
 
-import "shared:workbench/basic"
-import "shared:workbench/logging"
-import "shared:workbench/types"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import "shared:wb/basic"
+import "shared:wb/logging"
+import "shared:wb/types"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
 Health :: struct {
     using base: ecs.Component_Base,

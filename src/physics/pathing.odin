@@ -3,11 +3,11 @@ package physics
 import "core:fmt"
 import "core:runtime"
 
-import wb       "shared:workbench"
-import log "shared:workbench/logging"
-import "shared:workbench/math"
-import "shared:workbench/types"
-import "shared:workbench/profiler"
+import wb       "shared:wb"
+import log "shared:wb/logging"
+import "shared:wb/math"
+import "shared:wb/types"
+import "shared:wb/profiler"
 
 AStar_Node :: struct {
     position: Vec3,

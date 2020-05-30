@@ -1,0 +1,37 @@
+Priority features (unsorted):
+	- Quests
+	- Enemies
+	- Enemy Spawning
+	- Combat
+		- Health
+		- Use stats for damage and other calculations
+	- Abilities
+		- need some sort of system to handle abilities, would be great if they werent defined in code
+	- Level progression
+	- Equipment
+		- equippable items
+		- weapons, armor, misc
+	- Inventory management
+	- Game Saving
+		- account
+		- multiple characters
+	- Loot
+		- drop from enemies or containers of some kind
+
+Game Design:
+	- POV, (1st, 3rd, or 3rd click to move)
+
+Priority content (unsorted):
+	- Starting area
+		- Basic enemies
+		- Quests
+	- Generate world
+
+Priority Engine features:
+	- Better terrain texturing
+
+More features:
+	- Dungeons, aka instanced play
+	- Guilds
+	- Character creation
+	- LOD stuff

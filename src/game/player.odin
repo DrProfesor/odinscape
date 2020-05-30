@@ -2,15 +2,15 @@ package game
 
 import "core:fmt"
 
-import "shared:workbench/basic"
-import log "shared:workbench/logging"
-import "shared:workbench/types"
-import "shared:workbench/ecs"
-import "shared:workbench/math"
+import "shared:wb/basic"
+import log "shared:wb/logging"
+import "shared:wb/types"
+import "shared:wb/ecs"
+import "shared:wb/math"
 
-import wb_plat  "shared:workbench/platform"
-import wb_math  "shared:workbench/math"
-import wb       "shared:workbench"
+import wb_plat  "shared:wb/platform"
+import wb_math  "shared:wb/math"
+import wb       "shared:wb"
 
 import "../configs"
 import "../physics"
@@ -20,7 +20,7 @@ import "../shared"
 local_player: ecs.Entity;
 
 player_init :: proc(using player: ^shared.Player_Entity) {
-    when SERVER {
+    when #config(HEADLESS, false) {
         transform, texists := ecs.get_component(e, ecs.Transform);
         target_position = transform.position;
 
@@ -69,7 +69,7 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     // wb.draw_debug_box(fps + {0,h,0}, {0.1,0.1,0.1}, {1,0,0,1});
     // wb.draw_debug_box(target_position, {0.1,0.1,0.1}, {1,0,1,1});
 
-    when !SERVER {
+    when !#config(HEADLESS, false) {
         if wb.debug_window_open do return;
     }
     
@@ -77,14 +77,14 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     animator,  _ := ecs.get_component(e, Animator);
     net_id,    _ := ecs.get_component(e, net.Network_Id);
 
-    if wb_plat.get_input(configs.key_config.move_to) && is_local {
-        mouse_world := wb.get_mouse_world_position(wb.main_camera, wb_plat.mouse_unit_position);
-        mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, wb_plat.mouse_unit_position);
+    if is_local && wb_plat.get_input(configs.key_config.move_to) {
+        mouse_world := wb.get_mouse_world_position(wb.main_camera, wb_plat.main_window.mouse_position_unit);
+        mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, wb_plat.main_window.mouse_position_unit);
         terrains := ecs.get_component_storage(Terrain);
         for terrain in terrains {
             terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
-            pos, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
-            wb.draw_debug_box(pos, {1,1,1}, {1,0,0,1});
+            pos, chunk_idx, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
+            // wb.draw_debug_box(pos, {1,1,1}, {1,0,0,1});
             if hit {
                 target_position = pos;
                 player_path = physics.smooth_a_star(transform.position, target_position, 0.5);
@@ -109,7 +109,7 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
             }
         }
 
-        height := get_terrain_height_at_position(transform.position);
+        height := get_terrain_height_at_position(transform.position + Vec3{0,2,0});
         p1 := move_towards({transform.position.x, 0, transform.position.z}, {p.x,0,p.z}, base_move_speed * dt);
         transform.position = {p1.x, height, p1.z};
         transform.rotation = math.euler_angles(0, look_y_rot(transform.position, p) - math.PI / 2, 0);
