@@ -8,9 +8,9 @@ import "shared:wb/types"
 import "shared:wb/ecs"
 import "shared:wb/math"
 
-import wb_plat  "shared:wb/platform"
+import "shared:wb"
+import plat  "shared:wb/platform"
 import wb_math  "shared:wb/math"
-import wb       "shared:wb"
 
 import "../configs"
 import "../physics"
@@ -58,17 +58,9 @@ player_init :: proc(using player: ^shared.Player_Entity) {
     }
 }
 
+hits: [dynamic]physics.RaycastHit;
+
 player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
-
-    // fps := target_position;
-    // if len(player_path) > 0 {
-    //     fps = player_path[len(player_path)-1];
-    // }
-    // h := get_terrain_height_at_position({fps.x, fps.z});
-
-    // wb.draw_debug_box(fps + {0,h,0}, {0.1,0.1,0.1}, {1,0,0,1});
-    // wb.draw_debug_box(target_position, {0.1,0.1,0.1}, {1,0,1,1});
-
     when !#config(HEADLESS, false) {
         if wb.debug_window_open do return;
     }
@@ -77,15 +69,33 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     animator,  _ := ecs.get_component(e, Animator);
     net_id,    _ := ecs.get_component(e, net.Network_Id);
 
-    if is_local && wb_plat.get_input(configs.key_config.move_to) {
-        mouse_world := wb.get_mouse_world_position(wb.main_camera, wb_plat.main_window.mouse_position_unit);
-        mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, wb_plat.main_window.mouse_position_unit);
-        terrains := ecs.get_component_storage(Terrain);
-        for terrain in terrains {
-            terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
-            pos, chunk_idx, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
-            // wb.draw_debug_box(pos, {1,1,1}, {1,0,0,1});
-            if hit {
+    // user input
+    if is_local && plat.get_input(configs.key_config.interact) {
+        mouse_world := wb.get_mouse_world_position(wb.main_camera, plat.main_window.mouse_position_unit);
+        mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, plat.main_window.mouse_position_unit);
+
+        // first get non terrain hits
+        // here will be interaction stuff. (attacking and speaking)
+        hit_count := physics.raycast(mouse_world, mouse_direction, &hits);
+        if hit_count > 0 {
+            first_hit := hits[0];
+            enemy, is_enemy := ecs.get_component(first_hit.e, Enemy);
+            target_transform, _ := ecs.get_component(first_hit.e, ecs.Transform);
+            if is_enemy {
+                target_entity = e;
+
+                direction_to_target := math.norm(target_transform.position - transform.position);
+                distance_to_target := math.magnitude(target_transform.position - transform.position);
+                target_position = transform.position + direction_to_target * (distance_to_target - 1); // TODO global to configure melee attack distance
+            }
+        } else {     
+            terrains := ecs.get_component_storage(Terrain);
+            for terrain in terrains {
+                terrain_transform, ok := ecs.get_component(terrain.e, ecs.Transform);
+                pos, chunk_idx, hit := wb.raycast_into_terrain(terrain.wb_terrain, terrain_transform.position, mouse_world, mouse_direction);
+                
+                if !hit do continue;
+                
                 target_position = pos;
                 player_path = physics.smooth_a_star(transform.position, target_position, 0.5);
                 path_idx = 1;
@@ -95,6 +105,7 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
         }
     }
 
+    // deal with player movement
     final_pos := target_position;
     if len(player_path) > 0 {
         final_pos = player_path[len(player_path)-1];
@@ -120,7 +131,8 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     }
 }
 
-player_end :: proc() {
+attack :: proc(using player: ^shared.Player_Entity, target: Enemy) {
+
 }
 
 move_towards :: proc(current, target: math.Vec3, maxDelta: f32) -> math.Vec3 {

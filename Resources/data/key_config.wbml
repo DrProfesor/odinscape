@@ -10,5 +10,5 @@
 	camera_free_move Mouse_Right
 	camera_scroll Mouse_Middle
 	editor_select Mouse_Left
-	move_to Mouse_Right
+	interact Mouse_Right
 }

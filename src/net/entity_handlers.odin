@@ -132,6 +132,9 @@ update_networked_entities :: proc() {
             for name, idx in struct_type_info.names {
                 tag := struct_type_info.tags[idx];
 
+                // check for the replicate tag
+                // the replicate tage must be marked as server or client
+                // the one that it is marked as determines who has control of that field
                 when #config(HEADLESS, false) {
                     if !strings.contains(tag, "replicate:server") do continue;
                 } else {
@@ -145,7 +148,8 @@ update_networked_entities :: proc() {
                 assert(ok);
 
                 offset := struct_type_info.offsets[idx];
-                ptr = rawptr(uintptr(int(uintptr(ptr)) + int(offset)));
+                // note(jake): cast to int, offset, cast back to pointer
+                ptr = rawptr(uintptr( int(uintptr(ptr)) + int(offset)) ); 
                 field_type_info := struct_type_info.types[idx];
 
                 if key in replication_cache {

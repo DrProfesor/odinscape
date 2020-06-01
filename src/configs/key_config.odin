@@ -13,7 +13,6 @@ Game_Input :: platform.Input;
 Key_Config :: struct {
 
     // Editor
-
 	toggle_editor: Game_Input,
 
 	camera_up:      Game_Input,
@@ -29,7 +28,14 @@ Key_Config :: struct {
     editor_select: Game_Input,
 
     // Game
-    move_to : Game_Input,
+    interact : Game_Input,
+    select : Game_Input,
+
+    spell_1 : Game_Input,
+    spell_2 : Game_Input,
+    spell_3 : Game_Input,
+    spell_4 : Game_Input,
+    spell_5 : Game_Input,
 }
 
 key_config: Key_Config;
@@ -76,7 +82,13 @@ default_key_config :: proc() -> Key_Config {
         editor_select = Mouse_Left,
 
 		// Game
-		move_to = Mouse_Right,
+		interact = Mouse_Right,
+		select = Mouse_Left,
+	    spell_1 = Q,
+	    spell_2 = W,
+		spell_3 = E,
+	    spell_4 = R,
+	    spell_5 = T,
 	};
 }
 

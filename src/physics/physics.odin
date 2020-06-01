@@ -40,13 +40,13 @@ RaycastHit :: struct {
 
 init_collider :: proc(using col : ^Collider) {
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-    col.internal_collider = wb_col.add_collider_to_scene(&collision_scene, entity_transform.position, {1,1,1}, { {}, box });
+    col.internal_collider = wb_col.add_collider_to_scene(&collision_scene, entity_transform.position, {1,1,1}, { {}, box }, transmute(rawptr) e);
     logging.logln(collision_scene);
 }
 
 update_collider :: proc(using col : ^Collider, dt : f32) {
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-    wb_col.update_collider(internal_collider, entity_transform.position, {1,1,1}, { {}, box });
+    wb_col.update_collider(internal_collider, entity_transform.position, {1,1,1}, { {}, box }, transmute(rawptr) e);
 }
 
 render_collider :: proc(using col : ^Collider) {

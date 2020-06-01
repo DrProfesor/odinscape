@@ -53,6 +53,8 @@ main_init :: proc() {
     add_component_type(game.Enemy_Spawner, game.update_enemy_spawner, nil, game.init_enemy_spawner);
     add_component_type(game.Enemy, game.update_enemy, nil, game.init_enemy);
 
+    add_component_type(game.Ability_Caster, game.update_ability_caster, nil, game.init_ability_caster);
+
     // Last
     add_component_type(shared.Player_Entity, game.player_update, nil, game.player_init);
     
