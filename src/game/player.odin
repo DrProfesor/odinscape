@@ -19,7 +19,7 @@ import "../shared"
 
 local_player: ecs.Entity;
 
-player_init :: proc(using player: ^shared.Player_Entity) {
+player_init :: proc(using player: ^Player_Entity) {
     when #config(HEADLESS, false) {
         transform, texists := ecs.get_component(e, ecs.Transform);
         target_position = transform.position;
@@ -60,7 +60,7 @@ player_init :: proc(using player: ^shared.Player_Entity) {
 
 hits: [dynamic]physics.RaycastHit;
 
-player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
+player_update :: proc(using player: ^Player_Entity, dt: f32) {
     when !#config(HEADLESS, false) {
         if wb.debug_window_open do return;
     }
@@ -75,14 +75,15 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
         mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, plat.main_window.mouse_position_unit);
 
         // first get non terrain hits
-        // here will be interaction stuff. (attacking and speaking)
+        // here will be interaction stuff
         hit_count := physics.raycast(mouse_world, mouse_direction, &hits);
         if hit_count > 0 {
             first_hit := hits[0];
             enemy, is_enemy := ecs.get_component(first_hit.e, Enemy);
             target_transform, _ := ecs.get_component(first_hit.e, ecs.Transform);
             if is_enemy {
-                target_entity = e;
+                caster, _ := ecs.get_component(e, Ability_Caster);
+                caster.target_entity = e;
 
                 direction_to_target := math.norm(target_transform.position - transform.position);
                 distance_to_target := math.magnitude(target_transform.position - transform.position);
@@ -131,7 +132,7 @@ player_update :: proc(using player: ^shared.Player_Entity, dt: f32) {
     }
 }
 
-attack :: proc(using player: ^shared.Player_Entity, target: Enemy) {
+attack :: proc(using player: ^Player_Entity, target: Enemy) {
 
 }
 

@@ -10,9 +10,6 @@ Player_Entity :: struct {
     // configuration
     base_move_speed: f32 "replicate:server",
 
-    // combat data
-    target_entity: ecs.Entity,
-
     // runtime movement data
     target_position: math.Vec3,
     player_path: []math.Vec3,
