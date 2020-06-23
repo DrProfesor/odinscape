@@ -1,16 +1,27 @@
 package game
 
-import "shared:wb/ecs"
+import "core:time"
 
+import "shared:wb/ecs"
 import plat "shared:wb/platform"
+import math "shared:wb/math"
 
 import "../configs"
+import "../shared"
+
+all_spell_configs: []Spell_Config_Data;
+
+abilities_on_config_load :: proc() {
+	delete(all_spell_configs);
+	all_spell_configs = configs.get_all_config_values("Spells", Spell_Config_Data);
+	logln(all_spell_configs);
+}
 
 Ability_Caster :: struct {
     using base: ecs.Component_Base,
 
-    global_cooldown: f32 "replicate:server",
-    last_cast_time: f32 "replicate:server",
+    global_cooldown: f64 "replicate:server",
+    last_cast_time: f64 "replicate:server",
 
     spellbook: Spellbook "replicate:server",
 
@@ -19,55 +30,80 @@ Ability_Caster :: struct {
 
 init_ability_caster :: proc(using caster: ^Ability_Caster) {
 
+	for cfg in &all_spell_configs {
+		append(&spellbook.spells, Spell{
+			cfg, true, 0,
+		});
+	}
+
+	global_cooldown = 1.5;
+
+	spellbook.assigned_spells = make([]int, 6);
+	spellbook.assigned_spells[0] = 0;
 }
 
 update_ability_caster :: proc(using caster: ^Ability_Caster, dt: f32) {
 	if local_player != e do return;
+	if target_entity <= 0 do return;
 
-	if target_entity == -1 do return;
-
-	num_spells := len(caster.spellbook.assigned_spells);
-	if      plat.get_input(configs.key_config.spell_1) && num_spells > 1 do cast_spell(caster, &caster.spellbook.assigned_spells[1]);
-	else if plat.get_input(configs.key_config.spell_2) && num_spells > 2 do cast_spell(caster, &caster.spellbook.assigned_spells[2]);
-	else if plat.get_input(configs.key_config.spell_3) && num_spells > 3 do cast_spell(caster, &caster.spellbook.assigned_spells[3]);
-	else if plat.get_input(configs.key_config.spell_4) && num_spells > 4 do cast_spell(caster, &caster.spellbook.assigned_spells[4]);
-	else if plat.get_input(configs.key_config.spell_5) && num_spells > 5 do cast_spell(caster, &caster.spellbook.assigned_spells[5]);
-	else do /*no length check here. they will always have basic attack*/	cast_spell(caster, &caster.spellbook.assigned_spells[0]);
+	cast_spell_idx(caster, 0);
 }
 
-cast_spell :: proc(using caster: ^Ability_Caster, spell: ^Spell) {
-	target_transform, _ := ecs.get_component(target_entity, Transform);
-	target_health, has_health := ecs.get_component(target_entity, Health);
-
+// target is nullable for non-targeted spells
+can_use_spell_on_target :: proc(using caster: ^Ability_Caster, spell: ^Spell, target: ^Transform) -> bool {
 	transform, _ := ecs.get_component(e, Transform);
+	
+	if !spell.is_owned do return false;
+	
+	if spell.respects_global_cooldown && f64(time.now()._nsec)/f64(time.Second) < last_cast_time + global_cooldown do return false;
+	if f64(time.now()._nsec)/f64(time.Second) < spell.last_cast + spell.cooldown do return false;
 
+	if target != nil {
+		direction := target.position - transform.position;
+		distance := math.magnitude(direction);
 
+		if distance > spell.range do return false;
+
+		target_direction := math.direction_to_quaternion(math.norm(direction));
+		if spell.must_face && math.dot(target_direction, transform.rotation) <= 0 do return false;
+	}
+
+	return true;
 }
 
+cast_spell_spell :: proc(using caster: ^Ability_Caster, spell: ^Spell) {
+	switch spell.type {
+		case .Basic_Attack: {
+			target_transform, _ := ecs.get_component(target_entity, Transform);
+			if !can_use_spell_on_target(caster, spell, target_transform) do return;
+			logln("actually attack");
+
+			target_health, has_health := ecs.get_component(target_entity, Health);
+			if !has_health do return;
+
+			damage := spell.base_damage;
+			// TODO process through stats, and buffs
+			target_health.amount -= damage;
+
+			spell.last_cast = f64(time.now()._nsec)/f64(time.Second);
+			last_cast_time = f64(time.now()._nsec)/f64(time.Second);
+		}
+	}
+}
+
+cast_spell_idx :: proc(using caster: ^Ability_Caster, idx: int) {
+	if len(caster.spellbook.assigned_spells) <= idx do return;
+
+	spell_idx := caster.spellbook.assigned_spells[idx];
+	cast_spell(caster, &caster.spellbook.spells[spell_idx]);
+}
+
+cast_spell :: proc{cast_spell_spell, cast_spell_idx};
+
+Spell :: shared.Spell;
+Spell_Type :: shared.Spell_Type;
+Spell_Config_Data :: shared.Spell_Config_Data;
 Spellbook :: struct {
 	spells: [dynamic]Spell,
-	assigned_spells: []Spell, // will be the size of spells + 1 for basic attack
-}
-
-// TODO(jake): spell types may need to be a union if a spell kind has weird data
-// It would be nice to be able to define all spells through config, so maybe no?
-Spell :: struct {
-	type: Spell_Type,
-
-	cooldown: f32,
-	base_damage: f32,
-	range: f32,
-	must_face: bool,
-
-	unlock_level: int,
-	is_owned: bool,
-
-	respects_global_cooldown: bool,
-
-	// runtime
-	last_cast: f32,
-}
-
-Spell_Type :: enum {
-	Basic_Attack,
+	assigned_spells: []int, // will be the size of spells + 1 for basic attack. Indexes into spells
 }

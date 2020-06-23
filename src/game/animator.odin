@@ -14,50 +14,29 @@ import "shared:wb/math"
 import "shared:wb/external/imgui"
 
 init_animator :: proc(using animator: ^Animator) {
-    speed = 1;
+    mr, mr_exists := ecs.get_component(e, Model_Renderer);
+    model, ok := wb.try_get_model(mr.model_id);
+    wb.init_animation_player(&controller.player, model);
 }
+
+open_animator_window := false;
 
 update_animator :: proc(using animator: ^Animator, dt: f32) {
     when #config(HEADLESS, false) do return;
     else {
+        // TODO if dev build
+        if open_animator_window {
+            wb.draw_animation_controller_window(&controller, &open_animator_window);
+        }
+
         mr, mr_exists := ecs.get_component(e, Model_Renderer);
-        if !mr_exists {
-            logging.logln("No model renderer found on entity ", e);
-            return;
-        }
-
-        model, model_exists := wb.try_get_model(mr.model_id);
-        assert(model_exists);
-
+        model, ok := wb.try_get_model(mr.model_id);
         if previous_mesh_id != mr.model_id {
-            animation_state.mesh_states =  make([]wb.Mesh_State, len(model.meshes));
-            for i:=0; i < len(model.meshes); i += 1 {
-                arr := make([]Mat4, len(model.meshes[i].skin.offsets));
-
-                for bone, j in model.meshes[i].skin.offsets {
-                    arr[j] = bone;
-                }
-
-                animation_state.mesh_states[i] = wb.Mesh_State { arr };
-            }
+            wb.init_animation_player(&controller.player, model);
+            previous_mesh_id = mr.model_id;
         }
 
-        if current_animation in wb.loaded_animations {
-            animation := wb.loaded_animations[current_animation];
-
-            running_time += dt * speed;
-
-            tps : f32 = 25.0;
-            if animation.ticks_per_second != 0 {
-                tps = animation.ticks_per_second;
-            }
-            time_in_ticks := running_time * tps;
-            time = math.mod(time_in_ticks, animation.duration);
-        }
-
-        for mesh, i in model.meshes {
-            wb.sample_animation(mesh, current_animation, time, &animation_state.mesh_states[i].state);
-        }
+        wb.tick_animation(&controller.player, model, dt);
     }
 }
 
@@ -65,30 +44,7 @@ editor_render_animator :: proc(using animator: ^Animator) {
     when #config(HEADLESS, false) do return;
     else {
         if imgui.collapsing_header("Animator") {
-            imgui.indent();
-            defer imgui.unindent();
-
-            mr, mr_exists := ecs.get_component(e, Model_Renderer);
-            if !mr_exists {
-                imgui.label_text("INVALID", "INVALID");
-                return;
-            }
-
-            available_anims := wb.get_animations_for_target(mr.model_id);
-            if imgui.list_box_header("Animations") {
-                for aa, i in available_anims {
-                    if imgui.selectable(aa, aa == current_animation) {
-                        current_animation = aa;
-
-                    }
-                }
-                imgui.list_box_footer();
-            }
-
-            current_animation_data := wb.loaded_animations[current_animation];
-            imgui.label_text("Running Time", fmt.tprint(time, " / ", current_animation_data.duration));
-
-            imgui.slider_float("Speed", &speed, 0, 10);
+            if imgui.button("Open") do open_animator_window = true;
         }
     }
 }
@@ -97,13 +53,6 @@ editor_render_animator :: proc(using animator: ^Animator) {
 Animator :: struct {
     using base: ecs.Component_Base,
 
-    animation_state: wb.Model_Animation_State,
-
-    speed: f32,
-
-    time: f32,
-    current_animation: string,
-    running_time: f32,
-
+    controller: wb.Animation_Controller,
     previous_mesh_id: string,
 }

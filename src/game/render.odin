@@ -58,7 +58,7 @@ render_model_renderer :: proc(using mr: ^Model_Renderer) {
         anim_state : wb.Model_Animation_State = {};
         animator, aok := ecs.get_component(e, Animator);
         if aok {
-            anim_state = animator.animation_state;
+            anim_state = animator.controller.player.animation_state;
         }
         
         shader := wb.get_shader(shader_id);

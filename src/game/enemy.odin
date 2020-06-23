@@ -83,6 +83,10 @@ init_enemy :: proc(using enemy: ^Enemy) {
         model.material = wb.Material {
             0.5,0.5,0.5
         };
+
+        collider, cok := ecs.get_component(e, physics.Collider);
+        assert(cok);
+        collider.box.size = {2,4,2};
 	}
 }
 

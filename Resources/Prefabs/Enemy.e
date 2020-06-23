@@ -1,4 +1,4 @@
-6 Enemy
+8 
 Transform
 {
 	base {
@@ -6,7 +6,7 @@ Transform
 	}
 	position [
 		0.000
-		0.000
+		0.903
 		0.000
 	]
 	rotation {
@@ -16,9 +16,9 @@ Transform
 		w 1.000
 	}
 	scale [
-		0.010
-		0.010
-		0.010
+		0.020
+		0.020
+		0.020
 	]
 	parent 0
 }
@@ -47,6 +47,19 @@ Model_Renderer
 		1.000
 	]
 }
+Stats
+{
+	base {
+		enabled true
+	}
+}
+Health
+{
+	base {
+		enabled true
+	}
+	amount 10.000
+}
 Enemy
 {
 	base {
@@ -65,4 +78,18 @@ Enemy
 	target_distance_from_target 1.000
 	detection_radius 10.000
 	cutoff_radius 10.000
+}
+Collider
+{
+	base {
+		enabled true
+	}
+	type Box
+	box {
+		size [
+			2.000
+			4.000
+			2.000
+		]
+	}
 }

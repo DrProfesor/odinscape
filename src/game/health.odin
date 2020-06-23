@@ -18,15 +18,17 @@ init_health :: proc(using health: ^Health) {
     amount = f32(health_stat.level * 10);
 }
 
+update_health :: proc(using health: ^Health, dt: f32) {
+    if amount <= 0 {
+        // Kill entity
+    }
+}
+
 take_damage :: proc(entity: ecs.Entity, amount: f32) {
     health_comp, ok := ecs.get_component(entity, Health);
     assert(ok);
 
     health_comp.amount -= amount;
-
-    if health_comp.amount <= 0 {
-        // Kill entity
-    }
 }
 
 restore_health :: proc(entity: ecs.Entity, amount: f32) {

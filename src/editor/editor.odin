@@ -22,8 +22,8 @@ init :: proc() {
     init_resources_window();
 
     wb.register_debug_program("Resources", update_resources_window, nil);
-    wb.register_debug_program("Player", update_player_window, nil);
     wb.register_debug_program("Scene", ecs.draw_scene_window, nil);
+    wb.register_debug_program("Config", configs.draw_config_window, nil);
 }
 
 enabled_last_frame := false;

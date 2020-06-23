@@ -41,7 +41,6 @@ RaycastHit :: struct {
 init_collider :: proc(using col : ^Collider) {
     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
     col.internal_collider = wb_col.add_collider_to_scene(&collision_scene, entity_transform.position, {1,1,1}, { {}, box }, transmute(rawptr) e);
-    logging.logln(collision_scene);
 }
 
 update_collider :: proc(using col : ^Collider, dt : f32) {

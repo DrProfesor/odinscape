@@ -27,10 +27,4 @@ Terrain
 	base {
 		enabled true
 	}
-	material {
-		metallic 0.500
-		roughness 0.500
-		ao 0.500
-	}
-	shader_id "terrain"
 }
