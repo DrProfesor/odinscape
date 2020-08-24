@@ -1,37 +1,43 @@
-Priority features (unsorted):
-	- Quests
-	- Enemies
-	- Enemy Spawning
-	- Combat
-		- Health
-		- Use stats for damage and other calculations
-	- Abilities
-		- need some sort of system to handle abilities, would be great if they werent defined in code
-	- Level progression
-	- Equipment
-		- equippable items
-		- weapons, armor, misc
-	- Inventory management
-	- Game Saving
-		- account
-		- multiple characters
-	- Loot
-		- drop from enemies or containers of some kind
+v0.0.1 : Have a server running, that multiple players can join, and will retain save game
+v0.0.2 : Simple enemies, attacking, player health
+v0.0.3 : spawn area
+v0.0.4 : abilities
+v0.0.5 : questing basics
+v0.0.6 : equipment / loot
+v0.0.7 : player leveling, statistics
 
-Game Design:
-	- POV, (1st, 3rd, or 3rd click to move)
+Tasks
+  v0.0.1
+	- save game
+	- simple login flow (just use username)
+	- find cheap server to run on
+	- server stability
 
-Priority content (unsorted):
-	- Starting area
-		- Basic enemies
-		- Quests
-	- Generate world
+  v0.0.2
+    - enemy spawning
+    - enemy behaviours
+    - enemy health
+    - enemy attack (animate, damage)
+    - player attack (animate, damage)
+    - player health
 
-Priority Engine features:
-	- Better terrain texturing
+  v0.0.3
+    - build a small spawn area. Needs enemy area and "home base"
 
-More features:
-	- Dungeons, aka instanced play
-	- Guilds
-	- Character creation
-	- LOD stuff
+  v0.0.4
+    - abilites:
+      - simple "fireball type"
+      - magic missile
+      - stun
+      - slow
+
+  v0.0.5
+    - questing (save progress)
+    - quest editor (maybe node graph)
+    - quest dialog
+    - quest giver
+
+  v0.0.6
+    - animation importing / remapping
+    - rooting objects to bones
+    - adding armour to player characters
