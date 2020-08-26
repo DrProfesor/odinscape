@@ -39,5 +39,7 @@ Tasks
 
   v0.0.6
     - animation importing / remapping
+    - basic character creation
     - rooting objects to bones
     - adding armour to player characters
+    
