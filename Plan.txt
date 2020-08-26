@@ -42,3 +42,4 @@ Tasks
     - basic character creation
     - rooting objects to bones
     - adding armour to player characters
+    
