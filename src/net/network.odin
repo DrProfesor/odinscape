@@ -108,7 +108,8 @@ client_init :: proc() {
         return;
     }
 
-    host_name := "127.0.0.1\x00"; //"ec2-34-232-169-211.compute-1.amazonaws.com\x00";
+    // host_name := "127.0.0.1\x00";
+    host_name := "ec2-34-232-169-211.compute-1.amazonaws.com\x00";
     enet.address_set_host(&address, cast(^u8)strings.ptr_from_string(host_name));
     address.port = 27010;
 
