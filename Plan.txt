@@ -23,6 +23,8 @@ Tasks
 
   v0.0.3
     - build a small spawn area. Needs enemy area and "home base"
+    - terrain improvements
+    - terrain serialization and loading
 
   v0.0.4
     - abilites:
@@ -42,4 +44,3 @@ Tasks
     - basic character creation
     - rooting objects to bones
     - adding armour to player characters
-    

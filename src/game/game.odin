@@ -14,6 +14,7 @@ import wb_gpu "shared:wb/gpu"
 
 import "../shared"
 import "../configs"
+import "../net"
 
 prefab_scene: ecs.Prefab_Scene;
 
@@ -38,15 +39,24 @@ game_init :: proc() {
 	}
 
 	configs.add_config_load_listener(abilities_on_config_load);
-     
-    // entities
-	{
-		scene_init("main");
-		prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
-	}
 }
 
+is_setup_frame := true;
+
 game_update :: proc(dt: f32) {
+	if !net.is_logged_in {
+		logln("waiting for connect");
+		// wait until we are connected
+		return;
+	}
+
+	if is_setup_frame {
+		scene_init("main");
+		prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
+		is_setup_frame = false;
+		return;
+	}
+
 	ecs.update(dt);
 
     if wb.debug_window_open do return;
@@ -55,6 +65,8 @@ game_update :: proc(dt: f32) {
 }
 
 game_render :: proc() {
+	if !net.is_logged_in do return;
+	
 	wb.set_sun_data(math.degrees_to_quaternion({-60, -60, 0}), {1, 1, 1, 1}, 10);
 	ecs.render();
 }

@@ -25,11 +25,12 @@ event: enet.Event;
 host: ^enet.Host;
 
 when #config(HEADLESS, false) {
-is_client := false;
-is_server := true;
+    is_client := false;
+    is_server := true;
 } else {
-is_client := true;
-is_server := false;
+    is_connected := false;
+    is_client := true;
+    is_server := false;
 }
 
 packet_handlers : map[typeid]^Packet_Handler;
@@ -67,6 +68,7 @@ network_init :: proc() {
         add_packet_handler(Connection_Packet, handle_connect);
         add_packet_handler(Create_Entity_Packet, handle_create_entity);
         add_packet_handler(Net_Add_Component, handle_add_component);
+        add_packet_handler(Login_Response_Packet, handle_login_response);
 
         // Runtime
         add_packet_handler(Entity_Packet, client_entity_receive);
@@ -125,11 +127,13 @@ client_init :: proc() {
 TIMEOUT : f64 : 5;
 
 client_update :: proc() {
+    update_login();
+    
     for enet.host_service(host, &event, 1) > 0 {
         switch event.event_type {
             case .None: { }
             case .Connect: {
-                logln("Connected to peer");
+                
             }
             case .Receive: {
                 packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
@@ -140,6 +144,7 @@ client_update :: proc() {
                 handler.receive(packet, client_id);
             }
             case .Disconnect: {
+                is_connected = false;
             }
         }
     }
@@ -174,16 +179,8 @@ send_packet :: proc(built_packet: ^Packet) {
 // client handlers
 handle_connect :: proc(packet: Packet, cid: int) {
     con_packet := packet.data.(Connection_Packet);
-
     client_id = con_packet.client_id;
-
-    login_packet := Packet{
-        Login_Packet {
-            con_packet.client_id,
-        }
-    };
-
-    send_packet(&login_packet);
+    is_connected = true;
 }
 
 handle_create_entity :: proc(packet: Packet, client_id: int) {
@@ -557,6 +554,12 @@ Connection_Packet :: struct {
 
 Login_Packet :: struct {
     client_id: int,
+
+    username: [1024]u8,
+}
+
+Login_Response_Packet :: struct {
+    success: bool,
 }
 
 Logout_Packet :: struct {

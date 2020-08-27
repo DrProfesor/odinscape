@@ -19,8 +19,6 @@ init_animator :: proc(using animator: ^Animator) {
     wb.init_animation_player(&controller.player, model);
 }
 
-open_animator_window := false;
-
 update_animator :: proc(using animator: ^Animator, dt: f32) {
     when #config(HEADLESS, false) do return;
     else {
@@ -55,4 +53,5 @@ Animator :: struct {
 
     controller: wb.Animation_Controller,
     previous_mesh_id: string,
+    open_animator_window: bool,
 }
