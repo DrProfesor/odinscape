@@ -533,6 +533,7 @@ Packet :: struct {
         // login packets
         Connection_Packet,
         Login_Packet,
+        Login_Response_Packet,
         Logout_Packet,
         Keep_Alive_Packet,
 

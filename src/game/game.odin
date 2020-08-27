@@ -45,7 +45,6 @@ is_setup_frame := true;
 
 game_update :: proc(dt: f32) {
 	if !net.is_logged_in {
-		logln("waiting for connect");
 		// wait until we are connected
 		return;
 	}

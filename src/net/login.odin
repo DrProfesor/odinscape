@@ -20,7 +20,7 @@ update_login :: proc() {
 	if is_logged_in do return;
 
 	if imgui.begin("Login") {
-		imgui.input_text(label, username_buf);
+		imgui.input_text("", username_buf[:]);
 	    username_buf[len(username_buf)-1] = 0;
 	    user_name := cast(string)cast(cstring)&username_buf[0];
 
