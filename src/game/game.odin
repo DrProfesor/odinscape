@@ -44,7 +44,7 @@ game_init :: proc() {
 is_setup_frame := true;
 
 game_update :: proc(dt: f32) {
-	if !net.is_logged_in {
+	if !net.is_logged_in && !net.is_server {
 		// wait until we are connected
 		return;
 	}
