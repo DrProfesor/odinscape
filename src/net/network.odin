@@ -437,8 +437,14 @@ when #config(HEADLESS, false) {
     // server handlers
     handle_login :: proc(packet: Packet, client_id: int) {
         lp := packet.data.(Login_Packet);
-
         client := get_client(client_id);
+
+        response_packet := Packet {
+            Login_Response_Packet {
+                true
+            }
+        };
+        dispatch_packet_to_peer(client.peer, &response_packet);
 
         // dispatch a bunch of entity create calls for networked entities. 
         // TODO this should be done better maybe?

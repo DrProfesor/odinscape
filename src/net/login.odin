@@ -11,6 +11,8 @@ handle_login_response :: proc(packet: Packet, client_id: int) {
 
 	if response.success {
 		is_logged_in = true;
+		// scene_init("main");
+		// prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
 	} else {
 		panic("Failed to login");
 	}

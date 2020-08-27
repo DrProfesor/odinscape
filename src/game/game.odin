@@ -41,18 +41,9 @@ game_init :: proc() {
 	configs.add_config_load_listener(abilities_on_config_load);
 }
 
-is_setup_frame := true;
-
 game_update :: proc(dt: f32) {
 	if !net.is_logged_in && !net.is_server {
 		// wait until we are connected
-		return;
-	}
-
-	if is_setup_frame {
-		scene_init("main");
-		prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
-		is_setup_frame = false;
 		return;
 	}
 
