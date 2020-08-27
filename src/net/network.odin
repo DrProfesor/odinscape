@@ -24,11 +24,12 @@ peer: ^enet.Peer;
 event: enet.Event;
 host: ^enet.Host;
 
+is_connected := false;
+
 when #config(HEADLESS, false) {
     is_client := false;
     is_server := true;
 } else {
-    is_connected := false;
     is_client := true;
     is_server := false;
 }
