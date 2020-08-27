@@ -2,6 +2,8 @@ package net
 
 import "shared:wb/external/imgui"
 
+on_login_handlers: [dynamic]proc();
+
 is_logged_in := false;
 
 @static username_buf: [1024]u8;
@@ -11,8 +13,6 @@ handle_login_response :: proc(packet: Packet, client_id: int) {
 
 	if response.success {
 		is_logged_in = true;
-		// scene_init("main");
-		// prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
 	} else {
 		panic("Failed to login");
 	}

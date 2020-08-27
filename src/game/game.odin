@@ -36,9 +36,17 @@ game_init :: proc() {
 	when !#config(HEADLESS, false) {
 		wb.init_particles();
 		wb.init_terrain();
+		append(&net.on_login_handlers, game_login);
+	} else {
+		game_login();
 	}
 
 	configs.add_config_load_listener(abilities_on_config_load);
+}
+
+game_login :: proc() {
+	scene_init("main");
+	prefab_scene = ecs.load_prefab_dir("resources/Prefabs");
 }
 
 game_update :: proc(dt: f32) {
