@@ -376,7 +376,7 @@ draw_config_section :: proc(section: ^Config_Section, is_modal := false) {
                         sub_table_name := section.column_names[column-1];
 
                         @static modal_states: map[string]bool;
-                        if sub_table_id notin modal_states {
+                        if sub_table_id not_in modal_states {
                             modal_states[sub_table_name] = false;
                         }
 

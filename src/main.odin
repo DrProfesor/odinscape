@@ -9,7 +9,6 @@ import "shared:wb"
 import "shared:wb/basic"
 import "shared:wb/logging"
 import "shared:wb/platform"
-import "shared:wb/ecs"
 
 import "configs"
 import "shared"
@@ -26,36 +25,6 @@ main_init :: proc() {
     
     //
     net.network_init();
-    net.initialize_entity_handlers();
-    
-    using ecs;
-    add_component_type(Transform, nil, nil);
-    
-    // physics components
-    add_component_type(physics.Collider, physics.update_collider, physics.render_collider, physics.init_collider);
-    
-    // network components
-    add_component_type(net.Network_Id, nil, nil);
-    
-    // game components
-    // Rendering
-    add_component_type(game.Model_Renderer, nil, game.render_model_renderer, game.init_model_renderer);
-    add_component_type(game.Animator, game.update_animator, nil, game.init_animator, nil, game.editor_render_animator);
-    add_component_type(game.Particle_Emitter, game.update_emitter, nil, game.init_emitter);
-    add_component_type(game.Terrain, nil, game.render_terrain, game.init_terrain, nil, game.editor_render_terrain);
-
-    // Support
-    add_component_type(game.Stats, nil, nil, game.init_stat_component);
-    add_component_type(game.Health, nil, nil, game.init_health);
-
-    // NPC
-    add_component_type(game.Enemy_Spawner, game.update_enemy_spawner, nil, game.init_enemy_spawner);
-    add_component_type(game.Enemy, game.update_enemy, nil, game.init_enemy);
-
-    add_component_type(game.Ability_Caster, game.update_ability_caster, nil, game.init_ability_caster);
-
-    // Last
-    add_component_type(shared.Player_Entity, game.player_update, nil, game.player_init);
     
     //
     game.game_init();
@@ -81,12 +50,12 @@ main_update :: proc(dt: f32) {
 
 main_render :: proc(dt: f32) {
     //
+    editor.render();
     game.game_render();
 }
 
 on_post_render :: proc() {
-    game.render_emitters();
-    editor.render();
+    
 }
 
 main_end :: proc() {
@@ -105,6 +74,6 @@ main :: proc() {
     when #config(HEADLESS, false) {
         name = fmt.tprint(name, "-server");
     } 
-    wb.make_simple_window(1920, 1080, 120,
+    wb.make_simple_window(shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, 120,
                           wb.Workspace{name, main_init, main_update, main_render, main_end});
 }

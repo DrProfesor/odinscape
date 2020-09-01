@@ -1,0 +1,13 @@
+{
+	camera_position  [
+		0.000
+		0.000
+		0.000
+	]
+	camera_rotation  {
+		x  0.000
+		y  0.000
+		z  0.000
+		w  0.000
+	}
+}

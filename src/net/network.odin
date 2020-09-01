@@ -11,13 +11,14 @@ import enet "shared:odin-enet"
 import "shared:wb/basic"
 import "shared:wb/logging"
 import "shared:wb/wbml"
-import "shared:wb/ecs"
 import "shared:wb/math"
 
+import "../save"
 import "../shared"
+import "../entity"
 
 logln :: logging.logln;
-Entity :: ecs.Entity;
+Entity :: entity.Entity;
 
 address: enet.Address;
 peer: ^enet.Peer;
@@ -68,11 +69,10 @@ network_init :: proc() {
         // Core
         add_packet_handler(Connection_Packet, handle_connect);
         add_packet_handler(Create_Entity_Packet, handle_create_entity);
-        add_packet_handler(Net_Add_Component, handle_add_component);
         add_packet_handler(Login_Response_Packet, handle_login_response);
 
         // Runtime
-        add_packet_handler(Entity_Packet, client_entity_receive);
+        // add_packet_handler(Entity_Packet, client_entity_receive);
         add_packet_handler(Player_Packet, recieve_player_packet_client);
         add_packet_handler(Replication_Packet, handle_replication);
 
@@ -125,16 +125,30 @@ client_init :: proc() {
     }
 }
 
+on_login_handlers: [dynamic]proc(save.Player_Save);
+local_player_save: save.Player_Save;
+is_logged_in := false;
+
+handle_login_response :: proc(packet: Packet, client_id: int) {
+    response := packet.data.(Login_Response_Packet);
+
+    if response.success {
+        shared.Current_Game_State = .Character_Select;
+        for handler in on_login_handlers {
+            handler(player_save);
+        }
+    } else {
+        panic("Failed to login");
+    }
+}
+
 TIMEOUT : f64 : 5;
 
-client_update :: proc() {
-    update_login();
-    
+client_update :: proc() {    
     for enet.host_service(host, &event, 1) > 0 {
         switch event.event_type {
             case .None: { }
             case .Connect: {
-                
             }
             case .Receive: {
                 packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
@@ -182,40 +196,12 @@ handle_connect :: proc(packet: Packet, cid: int) {
     con_packet := packet.data.(Connection_Packet);
     client_id = con_packet.client_id;
     is_connected = true;
+
+    shared.Current_Game_State = .Login_Screen;
 }
 
 handle_create_entity :: proc(packet: Packet, client_id: int) {
-    ce := packet.data.(Create_Entity_Packet);
-
-    new_entity := ecs.make_entity();
-    net_id := ecs.add_component(new_entity, Network_Id);
-    net_id.network_id = ce.network_id;
-    net_id.controlling_client = ce.controlling_client;
-
-    transform, ok := ecs.get_component(new_entity, ecs.Transform);
-    assert(ok);
-    transform.position = ce.position;
-    transform.rotation = ce.rotation;
-    transform.scale = ce.scale;
-}
-
-handle_add_component :: proc(packet: Packet, client_id: int) {
-    ac := packet.data.(Net_Add_Component);
-
-    @static active_net_id_componenets: [dynamic]Network_Id;
-    clear(&active_net_id_componenets);
-    ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
-
-    for net_id in active_net_id_componenets {
-        if net_id.network_id == ac.network_id {
-            component_type := ecs.get_component_ti_from_name(ac.component_type);
-            logln("Added network component: ", component_type, net_id.network_id, net_id.e);
-            ecs.add_component_by_typeid(net_id.base.e, component_type.id);
-            return;
-        }
-    }
-
-    logln("Failed to find networked entity locally", ac.network_id);
+    
 }
 
 // Server side
@@ -313,10 +299,7 @@ when #config(HEADLESS, false) {
                     }
 
                     logln("Client timeout");
-                    for net_id in ecs.get_component_storage(Network_Id) {
-                        if net_id.controlling_client != cid do continue;
-                        ecs.destroy_entity_immediate(net_id.e);
-                    }
+                    // destroy player
                     
                     unordered_remove(&connected_clients, idx);
                     last_packet_recieve[cid] = -1;
@@ -350,88 +333,14 @@ when #config(HEADLESS, false) {
     last_net_id : int = 0;
     network_entity :: proc(entity: Entity, controlling_client_id: int) {
         last_net_id += 1;
-        net_id := ecs.add_component(entity, Network_Id);
-        net_id.network_id = last_net_id;
-        net_id.controlling_client = controlling_client_id;
-
-        transform, ok := ecs.get_component(entity, ecs.Transform);
-        assert(ok);
-
-        create_entity := Packet {
-            Create_Entity_Packet {
-                last_net_id,
-                controlling_client_id,
-
-                transform.position,
-                transform.rotation,
-                transform.scale,
-            }
-        };
-        broadcast(&create_entity);
-
-        for k, v in ecs.component_types {
-            if k == typeid_of(ecs.Transform) || k == typeid_of(Network_Id) do continue;
-            if ecs.has_component(net_id.e, k) {
-                add_comp := Packet {
-                    Net_Add_Component {
-                        net_id.network_id,
-                        fmt.tprint(k),
-                    }
-                };
-                broadcast(&add_comp);
-            }
-        }
     }
 
-    network_create_entity :: proc(name := "Entity", client_id: int) -> Entity {
-        new_entity := ecs.make_entity(name);
-
-        network_entity(new_entity, client_id);
-
-        return new_entity;
-    }
-
-    network_add_component :: proc(entity: Entity, $T: typeid) -> ^T {
-
-        // TODO optimize this could get real slow
-        nid := Network_Id{};
-        for net_id in ecs.get_component_storage(Network_Id) {
-            if net_id.e == entity {
-                nid = net_id;
-            }
-        }
-
-        assert(nid.network_id != 0);
-
-        comp := cast(^T) ecs.add_component(entity, T);
-        // TODO send componenet data over?
-        add_comp := Packet {
-            Net_Add_Component {
-                nid.network_id,
-                fmt.tprint(typeid_of(T)),
-            }
-        };
-
-        logln("Adding component: ", entity, typeid_of(T));
-
-        broadcast(&add_comp);
-
-        return comp;
+    network_create_entity :: proc(name := "Entity", client_id: int) -> int {
+        return 0;
     }
 
     network_destroy_entity :: proc(entity: Entity) {
-        nid, ok := ecs.get_component(entity, Network_Id);
-        assert(ok, "Entity is not networked");
-
-        ecs.destroy_entity_immediate(entity);
-
-        destroy_packet := Packet {
-            Destroy_Entity_Packet {
-                nid.network_id,
-                nid.controlling_client
-            }
-        };
-        broadcast(&destroy_packet);
+        
     }
 
     // server handlers
@@ -439,57 +348,20 @@ when #config(HEADLESS, false) {
         lp := packet.data.(Login_Packet);
         client := get_client(client_id);
 
+        client.username = cast(string)cast(cstring)&username_buf[0];
+
+        player_save := save.load_player_save(client.username);
+
+        // TODO authenticate
         response_packet := Packet {
             Login_Response_Packet {
-                true
+                true,
+                player_save
             }
         };
         dispatch_packet_to_peer(client.peer, &response_packet);
 
-        // dispatch a bunch of entity create calls for networked entities. 
-        // TODO this should be done better maybe?
-        // TODO we need a better way to get active components
-        @static active_net_id_componenets: [dynamic]Network_Id;
-        clear(&active_net_id_componenets);
-        ecs.get_active_component_storage(Network_Id, &active_net_id_componenets);
-
-        for net_id in active_net_id_componenets {
-
-            transform, ok := ecs.get_component(net_id.e, ecs.Transform);
-            assert(ok);
-
-            create_entity := Packet {
-                Create_Entity_Packet {
-                    net_id.network_id,
-                    net_id.controlling_client,
-                    
-                    transform.position,
-                    transform.rotation,
-                    transform.scale,
-                }
-            };
-            dispatch_packet_to_peer(client.peer, &create_entity);
-
-            for k, v in ecs.component_types {
-                if k == typeid_of(ecs.Transform) || k == typeid_of(Network_Id) do continue;
-                if ecs.has_component(net_id.e, k) {
-                    add_comp := Packet {
-                        Net_Add_Component {
-                            net_id.network_id,
-                            fmt.tprint(k),
-                        }
-                    };
-                    dispatch_packet_to_peer(client.peer, &add_comp);
-                }
-            }
-        }
-
         client.ready_to_receive = true;
-
-        // TODO send player create packet
-        new_player := ecs.make_entity("Player");
-        network_entity(new_player, client_id);
-        network_add_component(new_player, shared.Player_Entity);
     }
 
     handle_keep_alive :: proc(packet: Packet, client_id: int) {  }
@@ -522,6 +394,8 @@ when #config(HEADLESS, false) {
     // server side structs
     Client :: struct {
         client_id: int,
+
+        username: string,
 
         ready_to_receive: bool,
 
@@ -568,6 +442,8 @@ Login_Packet :: struct {
 
 Login_Response_Packet :: struct {
     success: bool,
+
+    player_save: save.Player_Save,
 }
 
 Logout_Packet :: struct {

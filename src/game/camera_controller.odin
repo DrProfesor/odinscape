@@ -11,16 +11,17 @@ import "shared:wb/math"
 import wb    "shared:wb"
 
 import "../configs"
+import "../entity"
 
 init_camera :: proc() {
 
 }
 
 update_camera :: proc(dt: f32) {
-    target_transform, exists := ecs.get_component(local_player, ecs.Transform);
+    if local_player != nil do return;
 
-    if !exists do return;
+    player_entity := cast(^entity.Entity)local_player;
 
-    wb.main_camera.position = target_transform.position + math.Vec3{0, 10, 5};
+    wb.main_camera.position = player_entity.position + math.Vec3{0, 10, 5};
     wb.main_camera.rotation = math.degrees_to_quaternion({-60, 0, 0});//math.direction_to_quaternion(math.norm(target_transform.position - wb.main_camera.position));
 }

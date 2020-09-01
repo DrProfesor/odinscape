@@ -1,0 +1,20 @@
+{
+	toggle_editor  F2
+	camera_up  E
+	camera_down  Q
+	camera_forward  W
+	camera_back  S
+	camera_left  A
+	camera_right  D
+	camera_speed_boost  Shift
+	camera_free_move  Mouse_Right
+	camera_scroll  Mouse_Middle
+	editor_select  Mouse_Left
+	interact  Mouse_Right
+	select  Mouse_Left
+	spell_1  Q
+	spell_2  W
+	spell_3  E
+	spell_4  R
+	spell_5  T
+}

@@ -3,17 +3,14 @@ package shared
 import "shared:wb/ecs"
 import "shared:wb/math"
 
-Player_Entity :: struct {
-    using base: ecs.Component_Base,
-    is_local : bool,
-    
-    // configuration
-    base_move_speed: f32 "replicate:server",
+import "../save"
 
-    // runtime movement data
-    target_position: math.Vec3,
-    player_path: []math.Vec3,
-	path_idx: int,
+Game_State :: enum {
+    Initializing,
+    
+    Login_Screen,
+    Character_Select,
+    In_Game,
 }
 
 // TODO(jake): spell types may need to be a union if a spell kind has weird data
