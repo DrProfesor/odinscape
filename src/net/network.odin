@@ -55,7 +55,6 @@ network_init :: proc() {
 
     when #config(HEADLESS, false) {
         // Core
-        add_packet_handler(Entity_Packet, server_entity_receive);
         add_packet_handler(Login_Packet, handle_login);
         add_packet_handler(Logout_Packet, handle_logout);
         add_packet_handler(Keep_Alive_Packet, handle_keep_alive);
@@ -135,7 +134,7 @@ handle_login_response :: proc(packet: Packet, client_id: int) {
     if response.success {
         shared.Current_Game_State = .Character_Select;
         for handler in on_login_handlers {
-            handler(player_save);
+            handler(response.player_save);
         }
     } else {
         panic("Failed to login");
@@ -230,8 +229,9 @@ when #config(HEADLESS, false) {
                 case enet.Event_Type.Connect: {
 
                     last_client_id += 1;
-                    client := Client{
+                    client := Client {
                         last_client_id,
+                        "",
                         false,
                         event.peer.address,
                         event.peer,
@@ -348,7 +348,7 @@ when #config(HEADLESS, false) {
         lp := packet.data.(Login_Packet);
         client := get_client(client_id);
 
-        client.username = cast(string)cast(cstring)&username_buf[0];
+        client.username = cast(string)cast(cstring)&lp.username[0];
 
         player_save := save.load_player_save(client.username);
 

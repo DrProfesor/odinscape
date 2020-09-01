@@ -35,7 +35,7 @@ game_init :: proc() {
 		wb.init_particles();
 		wb.init_terrain();
 	} else {
-		game_login();
+		// start loading the scene
 	}
 
 	// configs.add_config_load_listener(abilities_on_config_load);
