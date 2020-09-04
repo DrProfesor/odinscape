@@ -1,0 +1,935 @@
+{
+	username  " Doc "
+	characters  [
+		{
+			valid  true
+			character_name  "Doc"
+			model_id  "mrknight"
+			texture_id  "blue_knight"
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+		{
+			valid  false
+			character_name  "  "
+			model_id  "  "
+			texture_id  "  "
+			stats  [
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+				{
+					id  "  "
+					experience  0.000
+					level  0
+				}
+			]
+			current_health  0.000
+			current_mana  0.000
+			unlocked_spells  [
+			]
+			assigneable_slots  0
+		}
+	]
+}

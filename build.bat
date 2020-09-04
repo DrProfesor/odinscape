@@ -32,15 +32,17 @@ if "%1" == "run" (
 )
 if "%1" == "release" (
 	echo Making release folder...
-	
+
 	if "%2" == "server" (
 		if exist release-server rmdir /S/Q release-server
 		mkdir release-server
 		mkdir "release-server/resources"
+		mkdir "release-server/saves"
 	) else (
 		if exist release rmdir /S/Q release
 		mkdir release
 		mkdir "release/resources"
+		mkdir "release/saves"
 	)
 
 	echo Copying exe and resources...

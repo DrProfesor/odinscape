@@ -62,6 +62,7 @@ network_init :: proc() {
         // Runtime
         add_packet_handler(Player_Packet, recieve_player_packet);
         add_packet_handler(Replication_Packet, handle_replication);
+        add_packet_handler(Character_Select_Packet, handle_character_select);
 
         server_init();
     } else {
@@ -110,8 +111,8 @@ client_init :: proc() {
         return;
     }
 
-    // host_name := "127.0.0.1\x00";
-    host_name := "ec2-34-232-169-211.compute-1.amazonaws.com\x00";
+    host_name := "127.0.0.1\x00";
+    // host_name := "ec2-34-232-169-211.compute-1.amazonaws.com\x00";
     enet.address_set_host(&address, cast(^u8)strings.ptr_from_string(host_name));
     address.port = 27010;
 
@@ -154,6 +155,7 @@ client_update :: proc() {
                 packet := wbml.deserialize(Packet, transmute([]u8)packet_string);
 
                 packet_typeid := reflect.union_variant_typeid(packet.data);
+                logln(packet_typeid);
                 handler := packet_handlers[packet_typeid];
                 handler.receive(packet, client_id);
             }
@@ -200,7 +202,20 @@ handle_connect :: proc(packet: Packet, cid: int) {
 }
 
 handle_create_entity :: proc(packet: Packet, client_id: int) {
-    
+    cep := packet.data.(Create_Entity_Packet);
+
+    using entity;
+    switch data in cep.kind {
+        case Create_Player_Entity_Data: {
+            character_save := new_clone(data.character_save);
+
+            is_local := cep.controlling_client == client_id;
+
+            logln("Create player");
+            entity.create_player(character_save, is_local);
+            is_logged_in = true;
+        }
+    }
 }
 
 // Server side
@@ -209,6 +224,8 @@ when #config(HEADLESS, false) {
     connected_clients := make([dynamic]^Client, 0, 10);
     last_packet_recieve := make(map[int]f64, 10);
     last_client_id : int = 0;
+
+    player_saves: map[int]^save.Player_Save;
 
     server_init :: proc() {
         address.host = enet.HOST_ANY;
@@ -219,6 +236,8 @@ when #config(HEADLESS, false) {
             logln("Couldn't create server host!");
             return;
         }
+
+         player_saves = make(map[int]^save.Player_Save, 100);
 
         logln("Created server host");
     }
@@ -256,6 +275,7 @@ when #config(HEADLESS, false) {
                     for client in connected_clients {
                         if client.peer == event.peer {
                             client_id = client.client_id;
+                            break;
                         }
                     }
 
@@ -265,6 +285,7 @@ when #config(HEADLESS, false) {
                     last_packet_recieve[client_id] = now;
 
                     packet_typeid := reflect.union_variant_typeid(packet.data);
+                    logln(packet_typeid);
                     handler := packet_handlers[packet_typeid];
                     handler.receive(packet, client_id);
                 }
@@ -331,12 +352,27 @@ when #config(HEADLESS, false) {
     }
 
     last_net_id : int = 0;
-    network_entity :: proc(entity: Entity, controlling_client_id: int) {
+    @(deferred_out=fire_entity_create_packet)
+    NETWORK_ENTITY :: proc(entity: ^Entity, controlling_client_id: int) -> ^Create_Entity_Packet {
+        entity.network_id = last_net_id;
+        entity.controlling_client = controlling_client_id;
+
+        cep : Create_Entity_Packet;
+        cep.network_id = last_net_id;
+        cep.controlling_client = controlling_client_id;
+
         last_net_id += 1;
+
+        // @alloc (Jake) can we not do this maybe?
+        return new_clone(cep);
     }
 
-    network_create_entity :: proc(name := "Entity", client_id: int) -> int {
-        return 0;
+    fire_entity_create_packet :: proc(cep: ^Create_Entity_Packet) {
+        packet := Packet{ cep^ };
+
+        broadcast(&packet);
+
+        free(cep);
     }
 
     network_destroy_entity :: proc(entity: Entity) {
@@ -351,6 +387,7 @@ when #config(HEADLESS, false) {
         client.username = cast(string)cast(cstring)&lp.username[0];
 
         player_save := save.load_player_save(client.username);
+        player_saves[client_id] = new_clone(player_save);
 
         // TODO authenticate
         response_packet := Packet {
@@ -362,6 +399,18 @@ when #config(HEADLESS, false) {
         dispatch_packet_to_peer(client.peer, &response_packet);
 
         client.ready_to_receive = true;
+    }
+
+    handle_character_select :: proc(packet: Packet, client_id: int) {
+        csp := packet.data.(Character_Select_Packet);
+        player_save, ok := player_saves[client_id];
+        assert(ok, "No player save");
+
+        player := entity.create_player(&player_save.characters[csp.character_index], false);
+        cep := NETWORK_ENTITY(cast(^Entity)player, client_id);
+        cped := Create_Player_Entity_Data {};
+        cped.character_save = player_save.characters[csp.character_index];
+        cep.kind = cped;
     }
 
     handle_keep_alive :: proc(packet: Packet, client_id: int) {  }
@@ -415,12 +464,12 @@ Packet :: struct {
         Connection_Packet,
         Login_Packet,
         Login_Response_Packet,
+        Character_Select_Packet,
         Logout_Packet,
         Keep_Alive_Packet,
 
         //
         Create_Entity_Packet,
-        Net_Add_Component,
         Destroy_Entity_Packet,
 
         // runtime
@@ -450,6 +499,10 @@ Logout_Packet :: struct {
     client_id: int,   
 }
 
+Character_Select_Packet :: struct {
+    character_index: int,
+}
+
 Keep_Alive_Packet :: struct {
     client_id: int,
 }
@@ -458,21 +511,19 @@ Create_Entity_Packet :: struct {
     network_id : int,
     controlling_client: int,
 
-    position: Vec3,
-    rotation: Quat,
-    scale: Vec3
+    kind: union {
+        Create_Player_Entity_Data,
+    }
+}
+
+Create_Player_Entity_Data :: struct {
+    character_save: save.Character_Save,
 }
 
 Destroy_Entity_Packet :: struct {
     network_id : int,
     controlling_client: int,
 }
-
-Net_Add_Component :: struct {
-    network_id : int,
-    component_type: string,
-}
-
 
 Vec3 :: math.Vec3;
 Quat :: math.Quat;

@@ -36,7 +36,7 @@ init_config :: proc() {
 
     for sn in meta_config.sections {
         section_name := cast(string)sn;
-        bytes, ok := os.read_entire_file(fmt.tprint(CONFIG_PATH, section_name, ".wbml"));
+        bytes, ok := os.read_entire_file(fmt.tprint(args={CONFIG_PATH, section_name, ".wbml"}, sep=""));
         if ok {
             section: Config_Section;
             wbml.deserialize(bytes, &section);
@@ -61,11 +61,13 @@ config_save :: proc() {
 }
 
 // api
-get_all_config_values :: proc(section_id: string, $T: typeid) -> []T {
+get_all_config_values :: proc(section_id: string, $T: typeid) -> map[string]T {
     section := config_sections[section_id];
-    all_vals := make([]T, len(section.rows));
+    all_vals := make(map[string]T, len(section.rows));
     for r, i in section.rows {
-        _get_config_value(&config_sections[section_id], r.key, T, &all_vals[i]);
+        t: T;
+        _get_config_value(&config_sections[section_id], r.key, T, &t);
+        all_vals[r.key] = t;
     }
 
     return all_vals;
@@ -76,7 +78,7 @@ get_config_value :: proc(section_id, key: string, to_fill: ^$T) {
 }
 
 init_config_file :: proc(target: ^$T, file_name: string, default_initializer: proc() -> T) {
-    bytes, ok := os.read_entire_file(fmt.tprint(CONFIG_PATH, file_name, ".wbml"));
+    bytes, ok := os.read_entire_file(fmt.tprint(args={CONFIG_PATH, file_name, ".wbml"}, sep=""));
     target^ = default_initializer();
     if ok {
         wbml.deserialize(bytes, target);
@@ -86,7 +88,7 @@ init_config_file :: proc(target: ^$T, file_name: string, default_initializer: pr
 save_config_file :: proc(target: ^$T, file_name: string) {
     bytes := wbml.serialize(target);
     defer delete(bytes);
-    os.write_entire_file(fmt.tprint(CONFIG_PATH, file_name, ".wbml"), transmute([]u8)bytes);
+    os.write_entire_file(fmt.tprint(args={CONFIG_PATH, file_name, ".wbml"}, sep=""), transmute([]u8)bytes);
 }
 
 add_config_load_listener :: proc(func: proc()) {
@@ -196,7 +198,7 @@ _get_config_value :: proc(_section: ^Config_Section, _key: string, tid: typeid, 
         }
         case runtime.Type_Info_Union: {
             for v, i in &kind.variants {
-                v_name := fmt.tprint(v);
+                v_name := fmt.tprint(args={v}, sep="");
                 if len(column_val.sub_table.rows) <= 0 do continue;
                 if v_name == column_val.sub_table.rows[0].key {
                     wb_reflect.set_union_type_info(any{to_fill, tid}, v);
@@ -309,13 +311,13 @@ draw_config_section :: proc(section: ^Config_Section, is_modal := false) {
     column_remove_idx := -1;
 
     // add 1 for keys, 1 for ghost columns
-    imgui.columns(i32(column_count + 2), fmt.tprint("section_columns_", column_count), true);
+    imgui.columns(i32(column_count + 2), fmt.tprint(args={"section_columns_", column_count}, sep=""), true);
     // headers
     for column in 0..<column_count+2 {
-        imgui.push_id(fmt.tprint("header-", column));
+        imgui.push_id(fmt.tprint(args={"header-", column}, sep=""));
         if column == 0 do imgui.text("Key");
         else if column != column_count+1 {
-            imgui.push_id(fmt.tprint(section.name, "-", column));
+            imgui.push_id(fmt.tprint(args={section.name, "-", column}, sep=""));
             section.column_names[column-1] = input_text("", section.column_names[column-1]);
             if imgui.begin_popup_context_item("column_title_context") {
                 if imgui.button("Remove Column") {
@@ -344,10 +346,10 @@ draw_config_section :: proc(section: ^Config_Section, is_modal := false) {
 
     for row_idx in 0..<row_count {
         row := &section.rows[row_idx];
-        imgui.push_id(fmt.tprint("row-", row_idx, "-", section.name));
+        imgui.push_id(fmt.tprint(args={"row-", row_idx, "-", section.name}, sep=""));
         defer imgui.pop_id();
         for column in 0..<column_count+2 {
-            imgui.push_id(fmt.tprint(row_idx,"-",column));
+            imgui.push_id(fmt.tprint(args={row_idx,"-",column}, sep=""));
             if column == column_count+1 {
                 if imgui.button("add column") {
                     should_add_column = true;
@@ -372,7 +374,7 @@ draw_config_section :: proc(section: ^Config_Section, is_modal := false) {
                         imgui.push_item_width(-1);
                         defer imgui.pop_item_width();
 
-                        sub_table_id := fmt.tprint(section.column_names[column-1], "_subtable_", row_idx);
+                        sub_table_id := fmt.tprint(args={section.column_names[column-1], "_subtable_", row_idx}, sep="");
                         sub_table_name := section.column_names[column-1];
 
                         @static modal_states: map[string]bool;
@@ -430,7 +432,7 @@ draw_config_section :: proc(section: ^Config_Section, is_modal := false) {
 // TODO(jake): custom allocator?
 input_text :: proc(label, input: string) -> string {
     text_edit_buffer: [256]u8;
-    fmt.bprint(text_edit_buffer[:], input);
+    fmt.bprint(buf=text_edit_buffer[:], args={input}, sep="");
     
     imgui.push_item_width(-1);
     defer imgui.pop_item_width();

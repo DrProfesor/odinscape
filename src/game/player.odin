@@ -16,11 +16,16 @@ import "../physics"
 import "../net"
 import "../shared"
 import "../entity"
+import "../save"
 
-local_player: ^Player_Character;
+local_player_save: save.Player_Save;
 
 init_players :: proc() {
+	append(&net.on_login_handlers, on_login_players);
+}
 
+on_login_players :: proc(player_save: save.Player_Save) {
+	local_player_save = player_save;
 }
 
 update_players :: proc(dt: f32) {
@@ -32,7 +37,14 @@ update_players :: proc(dt: f32) {
 
 render_players :: proc() {
     for player in entity.player_characters {
-        // render them all
+        e := cast(^Entity)player;
+        
+        model := wb.get_model(player.model_id);
+        texture := wb.get_texture(player.texture_id);
+        shader := wb.get_shader(player.shader_id);
+
+        cmd := wb.create_draw_command(model, shader, e.position, e.scale, e.rotation, player.color, player.material, texture);
+        wb.submit_draw_command(cmd);
     }
 }
 

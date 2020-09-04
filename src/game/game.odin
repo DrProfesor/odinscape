@@ -18,32 +18,25 @@ import "../entity"
 
 game_init :: proc() {
 
-	when !#config(HEADLESS, false) {
-		logln("Track folder");
+	if net.is_client {
 		wb.track_asset_folder("resources", true);
-	}
- 
-	// camera
-	when !#config(HEADLESS, false) {
+
 		wb.main_camera.is_perspective = true;
 		wb.main_camera.size = 70;
 		wb.main_camera.position = math.Vec3{0, 6.09, 4.82};
 		wb.main_camera.rotation = math.Quat{0,0,0,1};
-	}
 
-	when !#config(HEADLESS, false) {
 		wb.init_particles();
-		wb.init_terrain();
-	} else {
-		// start loading the scene
+		wb.init_terrain(); // we still need terrain collision on the server
 	}
 
-	// configs.add_config_load_listener(abilities_on_config_load);
+	configs.add_config_load_listener(entity.on_config_load);
 
 	init_players();
 }
 
 game_update :: proc(dt: f32) {
+	
 	if net.is_client {
 		update_login_screen();
 		update_character_select_screen();
@@ -58,7 +51,9 @@ game_update :: proc(dt: f32) {
 
     if wb.debug_window_open do return;
 
-    update_camera(dt);
+    if net.is_client {
+    	update_camera(dt);
+    }
 }
 
 game_render :: proc() {
@@ -79,8 +74,9 @@ Vec2 :: math.Vec2;
 Mat4 :: math.Mat4;
 Quat :: math.Quat;
 
+Entity :: entity.Entity;
 Player_Character :: entity.Player_Character;
-Ability_Caster :: entity.Ability_Caster;
-Spell :: shared.Spell;
-Spell_Type :: shared.Spell_Type;
-Spell_Config_Data :: shared.Spell_Config_Data;
+Spell_Caster :: entity.Spell_Caster;
+Spell :: entity.Spell;
+Spell_Type :: entity.Spell_Type;
+Spell_Config_Data :: entity.Spell_Config_Data;

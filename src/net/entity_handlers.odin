@@ -79,7 +79,7 @@ update_networked_entities :: proc() {
             }
 
             // Create key from Network Id, Component Name, and Field Name
-            key := fmt.tprint(entity.network_id, ":", name);
+            key := fmt.tprint(args={entity.network_id, ":", name}, sep="");
 
             offset := struct_type_info.offsets[idx];
             // note(jake): cast to int, offset, cast back to pointer

@@ -1,0 +1,4 @@
+package game
+
+import "../configs"
+

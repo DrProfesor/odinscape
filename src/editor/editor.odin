@@ -6,7 +6,6 @@ import "core:fmt"
 import "shared:wb/types"
 import "shared:wb/basic"
 import "shared:wb/logging"
-import "shared:wb/ecs"
 import "shared:wb/math"
 
 import "../configs"
@@ -19,11 +18,6 @@ import "shared:wb/external/imgui"
 Base_Speed : f32 = 5;
 
 init :: proc() {
-    init_resources_window();
-
-    wb.register_debug_program("Resources", update_resources_window, nil);
-    wb.register_debug_program("Scene", ecs.draw_scene_window, nil);
-    wb.register_debug_program("Config", configs.draw_config_window, nil);
 }
 
 enabled_last_frame := false;
@@ -62,19 +56,9 @@ update :: proc(dt: f32) {
         }
     }*/
 
-    if ecs.selected_entity != 0 {
-        transform, ok := ecs.get_component(ecs.selected_entity, ecs.Transform);
-        wb.gizmo_manipulate(&transform.position, &transform.scale, &transform.rotation, &gizmo_state);
-    }
-
     enabled_last_frame = true;
 }
 
 render :: proc() {
-    if !wb.debug_window_open do return;
-
-    transform, ok := ecs.get_component(ecs.selected_entity, ecs.Transform);
-    if ok {
-        wb.gizmo_render();
-    }
+    
 }

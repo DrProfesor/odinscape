@@ -31,6 +31,8 @@ main_init :: proc() {
     editor.init();
     
     wb.post_render_proc = on_post_render;
+    wb.render_settings.do_shadows = false;
+    wb.render_settings.do_bloom = false;
 }
 
 main_update :: proc(dt: f32) {
