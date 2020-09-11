@@ -18,7 +18,7 @@ init_save :: proc() {
 
 load_player_save :: proc(username: string) -> Player_Save {
 	//file_name := "D:/Projects/OdinProjects/odinscape/release-server/saves/Doc.wbml";
-	file_name := util.tprint("D:/Projects/OdinProjects/odinscape/release-server/saves/", username, ".wbml");
+	file_name := util.tprint(PLAYER_SAVES_DIRECTORY, username, ".wbml");
 	bytes, ok := os.read_entire_file(file_name);
 	save : Player_Save;
 
