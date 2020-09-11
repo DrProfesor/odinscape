@@ -3,26 +3,25 @@ package physics
 import "core:fmt"
 import "core:runtime"
 
-import wb       "shared:wb"
+import "shared:wb"
 import log "shared:wb/logging"
-import "shared:wb/math"
-import "shared:wb/types"
-import "shared:wb/profiler"
+
+Vector3 :: wb.Vector3;
 
 AStar_Node :: struct {
-    position: Vec3,
+    position: Vector3,
     parent: ^AStar_Node,
     g_cost, h_cost, f_cost: f32,
 }
 
-is_valid :: proc(pos: Vec3) -> bool {
+is_valid :: proc(pos: Vector3) -> bool {
     return overlap_point(pos) <= 0;
 }
 
-a_star :: proc(_start, _goal: Vec3, step_size: f32) -> []Vec3 {
+a_star :: proc(_start, _goal: Vector3, step_size: f32) -> []Vector3 {
 
-    start := Vec3{_start.x, 0, _start.z};
-    goal := Vec3{_goal.x, 0, _goal.z};
+    start := Vector3{_start.x, 0, _start.z};
+    goal := Vector3{_goal.x, 0, _goal.z};
 
     open: [dynamic]^AStar_Node;
     closed: [dynamic]^AStar_Node;
@@ -65,7 +64,7 @@ a_star :: proc(_start, _goal: Vec3, step_size: f32) -> []Vec3 {
             if !is_valid(s) do continue;
             _, open_contains, _ := find_node_in_array(open[:], s);
             if open_contains do continue;
-            grounded_s := Vec3{ s.x, 0, s.z };
+            grounded_s := Vector3{ s.x, 0, s.z };
             s_node := AStar_Node { grounded_s, closest_node, closest_node.g_cost + distance(grounded_s, closest_node.position), distance(grounded_s, start), 0 };
             s_node.f_cost = s_node.g_cost + s_node.h_cost;
 
@@ -85,7 +84,7 @@ a_star :: proc(_start, _goal: Vec3, step_size: f32) -> []Vec3 {
         }
     }
 
-    path: [dynamic]Vec3;
+    path: [dynamic]Vector3;
     for true {
         if end_node == nil do break;
         append(&path, end_node.position);
@@ -95,14 +94,14 @@ a_star :: proc(_start, _goal: Vec3, step_size: f32) -> []Vec3 {
     return path[:];
 }
 
-// a_star :: proc(start, goal: Vec3, step_size: f32) -> []Vec3 {
+// a_star :: proc(start, goal: Vector3, step_size: f32) -> []Vector3 {
 //     profiler.TIMED_SECTION(&wb.wb_profiler, "Raw A*");
 //     open : [dynamic]AStar_Node;
 //     closed : [dynamic]AStar_Node;
 //     defer delete(open);
 //     defer delete(closed);
 
-//     start_node := AStar_Node{ start, Vec3{max(f32),max(f32),max(f32)}, 0, 0, 0 };
+//     start_node := AStar_Node{ start, Vector3{max(f32),max(f32),max(f32)}, 0, 0, 0 };
 //     end_node : AStar_Node;
 
 //     append(&open, start_node);
@@ -159,7 +158,7 @@ a_star :: proc(_start, _goal: Vec3, step_size: f32) -> []Vec3 {
 //         }
 //     }
 
-//     path: [dynamic]Vec3;
+//     path: [dynamic]Vector3;
 //     for true {
 //         append(&path, end_node.position);
 //         n, exists, idx := find_node_in_array(closed[:], end_node.parent);
@@ -179,11 +178,11 @@ a_star :: proc(_start, _goal: Vec3, step_size: f32) -> []Vec3 {
 //     break outer;
 // } else {
 
-smooth_a_star :: proc(start, goal: Vec3, step_size: f32) -> []Vec3 {
+smooth_a_star :: proc(start, goal: Vector3, step_size: f32) -> []Vector3 {
     raw_path := a_star(start, goal, step_size);
     size := len(raw_path);
     if size <= 2 do return raw_path;
-    points := make([dynamic]Vec3, 0, 10);
+    points := make([dynamic]Vector3, 0, 10);
 
     i := 0;
     check_point := start;
@@ -204,7 +203,7 @@ smooth_a_star :: proc(start, goal: Vec3, step_size: f32) -> []Vec3 {
     return points[:];
 }
 
-find_node_in_array :: proc(arr: []^AStar_Node, pos: Vec3) -> (^AStar_Node, bool, int) {
+find_node_in_array :: proc(arr: []^AStar_Node, pos: Vector3) -> (^AStar_Node, bool, int) {
 
     if len(arr) == 0 do return nil, false, -1;
 
@@ -221,15 +220,15 @@ find_node_in_array :: proc(arr: []^AStar_Node, pos: Vec3) -> (^AStar_Node, bool,
     return arr[contained_idx], contains, contained_idx;
 }
 
-get_neighbors_2d :: proc(pt: Vec3, step_size: f32) -> [8]Vec3 {
-    neighbors : [8]Vec3 = {};
+get_neighbors_2d :: proc(pt: Vector3, step_size: f32) -> [8]Vector3 {
+    neighbors : [8]Vector3 = {};
 
     i := 0;
     for x := -1; x < 2; x += 1 {
         for z := -1; z < 2; z += 1 {
             if x == 0 && z == 0 do continue;
 
-            neighbors[i] = pt + Vec3{step_size * f32(x), 0, step_size * f32(z)};
+            neighbors[i] = pt + Vector3{step_size * f32(x), 0, step_size * f32(z)};
             i += 1;
         }
     }
@@ -237,19 +236,33 @@ get_neighbors_2d :: proc(pt: Vec3, step_size: f32) -> [8]Vec3 {
     return neighbors;
 }
 
-get_neighbors_3d :: proc(pt: Vec3, step_size: f32) -> [26]Vec3 {
-    neighbors : [26]Vec3 = {};
+get_neighbors_3d :: proc(pt: Vector3, step_size: f32) -> [26]Vector3 {
+    neighbors : [26]Vector3 = {};
 
     i := 0;
     for x := -1; x < 2; x += 1 {
         for y := -1; y < 2; y += 1 {
             for z := -1; z < 2; z += 1 {
                 if x == 0 && y == 0 && z == 0 do continue;
-                neighbors[i] = pt + Vec3{step_size * f32(x), step_size * f32(y), step_size * f32(z)};
+                neighbors[i] = pt + Vector3{step_size * f32(x), step_size * f32(y), step_size * f32(z)};
                 i += 1;
             }
         }
     }
 
     return neighbors;
+}
+
+distance :: inline proc(x, y: $T/[$N]$E) -> E {
+    sqr_dist := sqr_distance(x, y);
+    return wb.sqrt(sqr_dist);
+}
+
+sqr_distance :: inline proc(x, y: $T/[$N]$E) -> E {
+    diff := x - y;
+    sum: E;
+    for i in 0..<N {
+        sum += diff[i] * diff[i];
+    }
+    return sum;
 }

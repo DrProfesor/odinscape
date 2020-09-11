@@ -23,7 +23,7 @@ load_player_save :: proc(username: string) -> Player_Save {
 	save : Player_Save;
 
 	if ok {
-		wbml.deserialize(bytes, &save);
+		wbml.deserialize(bytes, &save, context.allocator, context.allocator);
 	} else {
 		save = Player_Save { username, {} };
 

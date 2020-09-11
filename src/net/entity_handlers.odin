@@ -9,9 +9,7 @@ import rt "core:runtime"
 
 import "shared:wb/basic"
 import "shared:wb/logging"
-import "shared:wb/math"
 import "shared:wb/wbml"
-
 import "../entity"
 
 handle_replication :: proc(packet: Packet, client_id: int) {
@@ -42,7 +40,7 @@ handle_replication :: proc(packet: Packet, client_id: int) {
                 ptr := rawptr(uintptr(int(uintptr(&entity)) + int(offset)));
                 
                 // @LEAK
-                wbml.deserialize_into_pointer_with_type_info(transmute([]byte)parts[1], ptr, field_type_info);
+                wbml.deserialize_into_pointer_with_type_info(transmute([]byte)parts[1], ptr, field_type_info, context.allocator, context.allocator);
             }
         }
     }
@@ -127,7 +125,7 @@ Entity_Packet :: struct {
 
 Transform_Packet :: struct {
     position: Vec3,
-    rotation: math.Quat,
+    rotation: Quat,
     scale   : Vec3,
 }
 

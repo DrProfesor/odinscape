@@ -7,13 +7,12 @@ import "core:strings"
 import "core:strconv"
 import "core:runtime"
 import "core:reflect"
+import "core:math/linalg"
 
 import "shared:wb"
 import "shared:wb/logging"
-import "shared:wb/math"
-import "shared:wb/external/imgui"
+import "shared:wb/imgui"
 import wb_reflect "shared:wb/reflection"
-import platform "shared:wb/platform"
 import wbml "shared:wb/wbml"
 
 import "../shared"
@@ -29,7 +28,7 @@ config_load_listeners: [dynamic]proc();
 
 has_loaded := false;
 
-init_config :: proc() {
+init :: proc() {
     init_config_file(&meta_config, "meta", default_meta_config);
     init_config_file(&editor_config, "editor", default_editor_config);
     init_config_file(&key_config, "key_config", default_key_config);
@@ -39,7 +38,7 @@ init_config :: proc() {
         bytes, ok := os.read_entire_file(fmt.tprint(args={CONFIG_PATH, section_name, ".wbml"}, sep=""));
         if ok {
             section: Config_Section;
-            wbml.deserialize(bytes, &section);
+            wbml.deserialize(bytes, &section, context.allocator, context.allocator);
             config_sections[section_name] = section;
         } else {
             config_sections[section_name] = { section_name, {}, {} };
@@ -47,10 +46,10 @@ init_config :: proc() {
     }
 
     has_loaded = true;
-    config_save(); // apply any default configs that are not loaded
+    save(); // apply any default configs that are not loaded
 }
 
-config_save :: proc() {
+save :: proc() {
     save_config_file(&editor_config, "editor");
     save_config_file(&key_config, "key_config");
 
@@ -81,7 +80,7 @@ init_config_file :: proc(target: ^$T, file_name: string, default_initializer: pr
     bytes, ok := os.read_entire_file(fmt.tprint(args={CONFIG_PATH, file_name, ".wbml"}, sep=""));
     target^ = default_initializer();
     if ok {
-        wbml.deserialize(bytes, target);
+        wbml.deserialize(bytes, target, context.allocator, context.allocator);
     }
 }
 
@@ -480,17 +479,17 @@ default_meta_config :: proc() -> Meta_Config {
 }
 
 Editor_Save :: struct {
-    camera_position: math.Vec3,
-    camera_rotation: math.Quat,
+    camera_position: wb.Vector3,
+    camera_rotation: wb.Quaternion,
 }
 default_editor_config :: proc() -> Editor_Save {
     return Editor_Save {
-        math.Vec3{}, 
-        math.Quat{},
+        wb.Vector3{}, 
+        wb.Quaternion{},
     };
 }
 
-Game_Input :: platform.Input;
+Game_Input :: wb.Input;
 Key_Config :: struct {
 
     // Editor
@@ -519,7 +518,7 @@ Key_Config :: struct {
     spell_5 : Game_Input,
 }
 default_key_config :: proc() -> Key_Config {
-    using platform.Input;
+    using wb.Input;
 
     return Key_Config{
         toggle_editor = F2,
@@ -547,8 +546,8 @@ default_key_config :: proc() -> Key_Config {
         spell_5 = T,
     };
 }
-input_to_nice_name :: proc(input: platform.Input) -> string {
-    using platform.Input;
+input_to_nice_name :: proc(input: wb.Input) -> string {
+    using wb.Input;
 
     #partial switch input {
         case Mouse_Left:          return "LMB";

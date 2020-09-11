@@ -11,8 +11,7 @@ import enet "shared:odin-enet"
 import "shared:wb/basic"
 import "shared:wb/logging"
 import "shared:wb/wbml"
-import "shared:wb/math"
-
+import "shared:wb"
 import "../save"
 import "../shared"
 import "../entity"
@@ -50,7 +49,7 @@ add_packet_handler :: proc($Type: typeid, receive: proc(Packet, int)) {
     packet_handlers[id] = new_clone(Packet_Handler{ receive });
 }
 
-network_init :: proc() {
+init :: proc() {
     enet.initialize();
 
     when #config(HEADLESS, false) {
@@ -80,7 +79,7 @@ network_init :: proc() {
     }
 }
 
-network_update :: proc() {
+update :: proc(dt: f32) {
     when #config(HEADLESS, false) {
         server_update();
     } else {
@@ -90,7 +89,7 @@ network_update :: proc() {
     update_networked_entities();
 }
 
-network_shutdown :: proc() {
+shutdown :: proc() {
     enet.deinitialize();
 
     when #config(HEADLESS, false) {
@@ -152,7 +151,7 @@ client_update :: proc() {
             }
             case .Receive: {
                 packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
-                packet := wbml.deserialize(Packet, transmute([]u8)packet_string);
+                packet := wbml.deserialize(Packet, transmute([]u8)packet_string, context.allocator, context.allocator);
 
                 packet_typeid := reflect.union_variant_typeid(packet.data);
                 logln(packet_typeid);
@@ -269,7 +268,7 @@ when #config(HEADLESS, false) {
                 }
                 case enet.Event_Type.Receive: {
                     packet_string := strings.string_from_ptr(cast(^byte)event.packet.data, int(event.packet.data_len));
-                    packet := wbml.deserialize(Packet, transmute([]u8)packet_string);
+                    packet := wbml.deserialize(Packet, transmute([]u8)packet_string, context.allocator, context.allocator);
 
                     client_id := 0;
                     for client in connected_clients {
@@ -525,5 +524,5 @@ Destroy_Entity_Packet :: struct {
     controlling_client: int,
 }
 
-Vec3 :: math.Vec3;
-Quat :: math.Quat;
+Vec3 :: wb.Vector3;
+Quat :: wb.Quaternion;

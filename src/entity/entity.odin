@@ -1,9 +1,6 @@
 package entity
 
 import "shared:wb"
-import "shared:wb/math"
-import "shared:wb/types"
-import "shared:wb/gpu"
 import "shared:wb/basic"
 import log "shared:wb/logging"
 
@@ -18,7 +15,7 @@ enemies: [dynamic]^Enemy;
 last_entity_slot := 0;
 available_entity_slots: [dynamic]int;
 
-create_entity :: proc(pos: math.Vec3, rotation: math.Quat, scale: math.Vec3) -> ^Entity {
+create_entity :: proc(pos: wb.Vector3, rotation: wb.Quaternion, scale: wb.Vector3) -> ^Entity {
 	id := last_entity_slot;
 	if len(available_entity_slots) > 0 {
 		id = available_entity_slots[len(available_entity_slots)];
@@ -42,7 +39,7 @@ create_entity :: proc(pos: math.Vec3, rotation: math.Quat, scale: math.Vec3) -> 
 }
 
 destroy_entity :: proc(id: int) {
-	e := all_entities[id];
+	e := &all_entities[id];
 
 	if !e.active do return;
 
@@ -54,6 +51,9 @@ destroy_entity :: proc(id: int) {
 					break;
 				}
 			}
+		}
+		case Enemy: {
+
 		}
 	}
 
@@ -71,32 +71,33 @@ Entity :: struct {
 	network_id: int, // -1 for non networked
 	controlling_client: int,
 
-	position: math.Vec3,
-	rotation: math.Quat,
-	scale   : math.Vec3,
+	position: wb.Vector3,
+	rotation: wb.Quaternion,
+	scale   : wb.Vector3,
 
 	active: bool,
 }
 
 create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Player_Character{
-	player := create_entity({0,0,0}, {0,0,0,1}, {1,1,1});
+	player := create_entity({0,0,0}, wb.Quaternion(1), {1,1,1});
 
 	pc := Player_Character {};
 	pc.is_local = is_local;
 	pc.selected_character = character;
 
+	pc.base_move_speed = 2;
+
 	// Model
 	// TODO more advanced character loading
 	pc.model.model_id = character.model_id;
 	pc.model.texture_id = character.texture_id;
-	pc.model.shader_id = "lit";
-	pc.model.scale = math.Vec3{1, 1, 1};
-    pc.model.color = types.Colorf{1, 1, 1, 1};
-    pc.model.material = wb.Material { 0.5, 0.5, 0.5 };
+	pc.model.shader_id = "simple_rgba";
+    // pc.model.color = core.Colorf{1, 1, 1, 1};
+    // pc.model.material = wb.Material { 0.5, 0.5, 0.5 };
 
 	// Animator
-	model, ok := wb.try_get_model(pc.model.model_id);
-    wb.init_animation_player(&pc.animator.controller.player, model);
+	// model, ok := wb.try_get_model(pc.model.model_id);
+ 	// wb.init_animation_player(&pc.animator.controller.player, model);
 
 	// Stats
 	for stat in character.stats {
@@ -143,8 +144,8 @@ Player_Character :: struct {
 	selected_character: ^save.Character_Save,
 
 	// runtime movement data
-	target_position: math.Vec3,
-	player_path: []math.Vec3,
+	target_position: wb.Vector3,
+	path: []wb.Vector3,
 	path_idx: int,
 
 	using model: Model_Renderer,
@@ -156,9 +157,9 @@ Player_Character :: struct {
 }
 
 Enemy :: struct {
-	target_position: math.Vec3 "replicate:server",
+	target_position: wb.Vector3 "replicate:server",
     
-    path: []math.Vec3,
+    path: []wb.Vector3,
 	path_idx: int,
 
 	target_network_id: int "replicate:server",
@@ -263,13 +264,12 @@ Model_Renderer :: struct {
 	model_id: string,
     texture_id: string,
     shader_id: string,
-    color: types.Colorf,
-    material: wb.Material,
-    scale: math.Vec3,
+    // color: types.Colorf,
+    // material: wb.Material,
 }
 
 Animator :: struct {
-	controller: wb.Animation_Controller,
+	// controller: wb.Animation_Controller,
     previous_mesh_id: string,
     open_animator_window: bool,
 }

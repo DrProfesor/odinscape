@@ -4,30 +4,40 @@ import "core:fmt"
 import "core:mem"
 import "core:os"
 
+import "shared:wb"
 import "shared:wb/basic"
 import "shared:wb/logging"
-import "shared:wb/math"
-
-import wb "shared:wb"
-import wb_gpu "shared:wb/gpu"
 
 import "../shared"
 import "../configs"
 import "../net"
 import "../entity"
 
-game_init :: proc() {
+g_game_camera: wb.Camera;
+g_game_view: wb.Framebuffer;
+g_cbuffer_lighting: wb.CBuffer;
+
+init :: proc() {
 
 	if net.is_client {
-		wb.track_asset_folder("resources", true);
+		wb.track_asset_folder("resources");
 
-		wb.main_camera.is_perspective = true;
-		wb.main_camera.size = 70;
-		wb.main_camera.position = math.Vec3{0, 6.09, 4.82};
-		wb.main_camera.rotation = math.Quat{0,0,0,1};
+		// wb.main_camera.is_perspective = true;
+		// wb.main_camera.size = 70;
+		// wb.main_camera.position = math.Vec3{0, 6.09, 4.82};
+		// wb.main_camera.rotation = math.Quat{0,0,0,1};
 
-		wb.init_particles();
-		wb.init_terrain(); // we still need terrain collision on the server
+		// wb.init_particles();
+		// wb.init_terrain(); // we still need terrain collision on the server
+		init_terrain();
+
+		g_game_camera = wb.create_camera();
+		g_game_camera.is_perspective = true;
+
+		wb.create_framebuffer(&g_game_view, wb.default_framebuffer_description(shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y));
+		g_game_camera.render_target = &g_game_view;
+
+		g_cbuffer_lighting = wb.create_cbuffer_from_struct(CBuffer_Lighting);
 	}
 
 	configs.add_config_load_listener(entity.on_config_load);
@@ -35,7 +45,7 @@ game_init :: proc() {
 	init_players();
 }
 
-game_update :: proc(dt: f32) {
+update :: proc(dt: f32) {
 	
 	if net.is_client {
 		update_login_screen();
@@ -48,31 +58,134 @@ game_update :: proc(dt: f32) {
 	}
 
 	update_players(dt);
+	update_terrain();
 
-    if wb.debug_window_open do return;
+    // if wb.debug_window_open do return;
+}
 
-    if net.is_client {
-    	update_camera(dt);
+render :: proc(render_graph: ^wb.Render_Graph) {
+	// build draw commands
+	wb.add_render_graph_node(render_graph, "build draw", nil, 
+		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			wb.create_resource(render_graph, "scene draw list", []Draw_Command);
+			wb.create_resource(render_graph, "scene lighting", CBuffer_Lighting);
+		}, 
+		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			cmds: [dynamic]Draw_Command;
+			lighting: CBuffer_Lighting;
+
+			for player in entity.player_characters {
+				player_entity := cast(^entity.Entity)player;
+				cmd := Draw_Command {
+					wb.g_models[player.model_id],
+					player_entity.position,
+					player_entity.scale,
+					player_entity.rotation,
+					wb.g_materials["simple_rgba_mtl"],
+					{ 1, 1, 1, 1 },
+					nil,
+				};
+				append(&cmds, cmd);
+			}
+
+			submit_sun(&lighting, wb.construct_perspective_matrix(wb.to_radians(60), 1920/1080, 0.1, 1000), wb.construct_view_matrix({0,100,0}, wb.Quaternion(1)), {-60, -60, 0}, Vector3{1,1,1}, 10);
+
+			wb.set_resource(render_graph, "scene draw list", cmds[:], nil);
+            wb.set_resource(render_graph, "scene lighting", lighting, nil);			
+		}); 
+	// end build draw commands
+
+	// draw scene
+	wb.add_render_graph_node(render_graph, "draw", nil, 
+		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			wb.read_resource(render_graph, "scene draw list");
+            wb.read_resource(render_graph, "scene lighting");
+			
+			wb.create_resource(render_graph, "game view", ^wb.Framebuffer);
+		}, 
+		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
+            wb.flush_cbuffer_from_struct(&g_cbuffer_lighting, lighting^);
+            wb.bind_cbuffer(&g_cbuffer_lighting, cast(int)CBuffer_Slot.Lighting);
+
+            wb.PUSH_CAMERA(&g_game_camera, true);
+
+            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
+            for cmd in draw_commands {
+                if len(cmd.model.meshes) > 0 {
+                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color);
+                }
+            }
+
+            wb.set_resource(render_graph, "game view", &g_game_view, nil);
+		});
+	// end draw scene
+	
+	// wb.set_sun_data(math.degrees_to_quaternion({-60, -60, 0}), {1, 1, 1, 1}, 10);
+}
+
+shutdown :: proc() {
+	
+}
+
+
+
+CBuffer_Slot :: enum {
+    Lighting = len(wb.Builtin_CBuffer),
+}
+
+MAX_LIGHTS :: 16;
+CBuffer_Lighting :: struct {
+    point_light_positions:   [MAX_LIGHTS]Vector4,
+    point_light_colors:      [MAX_LIGHTS]Vector4,
+    point_light_intensities: [MAX_LIGHTS]Vector4,
+    num_point_lights: i32,
+    sun_direction: Vector3,
+    sun_color: Vector3,
+    sun_intensity: f32,
+    sun_matrix: Matrix4,
+    shadow_map_dimensions: Vector2,
+}
+
+submit_point_light :: proc(cbuffer: ^CBuffer_Lighting, position: Vector3, color: Vector3, intensity: f32) {
+    if cbuffer.num_point_lights >= MAX_LIGHTS {
+        return;
     }
+    cbuffer.point_light_positions  [cbuffer.num_point_lights] = Vector4{position.x, position.y, position.z, 0};
+    cbuffer.point_light_colors     [cbuffer.num_point_lights] = Vector4{color.x, color.y, color.z, 0};
+    cbuffer.point_light_intensities[cbuffer.num_point_lights] = intensity;
+    cbuffer.num_point_lights += 1;
 }
 
-game_render :: proc() {
-	if !net.is_logged_in do return;
-	
-	wb.set_sun_data(math.degrees_to_quaternion({-60, -60, 0}), {1, 1, 1, 1}, 10);
-
-	render_players();
+SHADOW_MAP_DIM :: 2048;
+submit_sun :: proc(cbuffer: ^CBuffer_Lighting, proj, view: Matrix4, direction: Vector3, color: Vector3, intensity: f32) { // todo(josh): we won't need position and orientation here when we do cascades
+    cbuffer.sun_direction = direction;
+    cbuffer.sun_color = color;
+    cbuffer.sun_intensity = intensity;
+    cbuffer.sun_matrix = wb.mul(proj, view);
+    cbuffer.shadow_map_dimensions = {SHADOW_MAP_DIM, SHADOW_MAP_DIM};
 }
 
-game_end :: proc() {
-	
+Draw_Command :: struct {
+    model:             ^wb.Model,
+    position:          Vector3,
+    scale:             Vector3,
+    orientation:       Quaternion,
+    material_override: ^wb.Material,
+    color:             Vector4,
+    userdata:          rawptr,
 }
+
+
+
 
 logln :: logging.logln;
-Vec3 :: math.Vec3;
-Vec2 :: math.Vec2;
-Mat4 :: math.Mat4;
-Quat :: math.Quat;
+
+Vector2 :: wb.Vector2;
+Vector3 :: wb.Vector3;
+Vector4 :: wb.Vector4;
+Quaternion :: wb.Quaternion;
+Matrix4 :: wb.Matrix4;
 
 Entity :: entity.Entity;
 Player_Character :: entity.Player_Character;

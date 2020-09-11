@@ -1,13 +1,10 @@
 {
 	camera_position [
-		-0.117
-		1.621
-		0.241
+		0.000
+		0.000
+		0.000
 	]
-	camera_rotation {
-		x -0.387
-		y 0.531
-		z 0.297
-		w 0.693
-	}
+
+	camera_rotation quat 0.000 0.000 0.000 0.000
+
 }

@@ -1,6 +1,6 @@
 package game
 
-import "shared:wb/external/imgui"
+import "shared:wb/imgui"
 import "../shared"
 import "../net"
 
