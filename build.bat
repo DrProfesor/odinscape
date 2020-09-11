@@ -51,6 +51,7 @@ if "%1" == "release" (
 		xcopy "*.dll" "release-server" /c/y/q > NUL
 		copy "odinscape.exe" "release-server/odinscape.exe" > NUL
 		xcopy /s/q "resources" "release-server/resources" > NUL
+		xcopy /s/q "saves" "release-server/saves" > NUL
 	) else (
 		xcopy "*.dll" "release" /c/y/q > NUL
 		copy "odinscape.exe" "release/odinscape.exe" > NUL
