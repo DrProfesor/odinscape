@@ -43,7 +43,7 @@ update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
         // hit_count := physics.raycast(mouse_world, mouse_direction, &hits);
         hit_count := 0;
         if hit_count > 0 {
-            first_hit := hits[0];
+            // first_hit := hits[0];
             // TODO right clicked an entity
         } else {
             // pos, hit := terrain_get_raycasted_position(mouse_world, mouse_direction);
@@ -63,10 +63,9 @@ update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
     // else if plat.get_input(configs.key_config.spell_5) do cast_spell(player, 5);
 
     // if !wb.debug_window_open {
-        logln("set camera position");
-        g_game_camera.position = player_entity.position + Vector3{0, 10, 5};
+        g_game_camera.position = player_entity.position + Vector3{0, 0, -15};
         // TODO camera rotation?
-        g_game_camera.orientation = wb.degrees_to_quaternion({-60, 0, 0});//math.direction_to_quaternion(math.norm(target_transform.position - wb.main_camera.position));
+        g_game_camera.orientation = wb.direction_to_quaternion(wb.norm(player_entity.position - g_game_camera.position));
     // }
 }
 

@@ -304,8 +304,7 @@ draw_config_section :: proc(section: ^Config_Section, is_modal := false) {
         imgui.begin_child("section_content");
     }
 
-    child_size: imgui.Vec2;
-    imgui.im_get_window_size(&child_size);
+    child_size := imgui.get_window_size();
 
     column_remove_idx := -1;
 

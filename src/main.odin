@@ -18,15 +18,10 @@ import "physics"
 logln :: logging.logln;
 
 main_init :: proc() {
-    
     configs.init();
     net.init();
     game.init();
     editor.init();
-    
-    // wb.post_render_proc = on_post_render;
-    // wb.render_settings.do_shadows = false;
-    // wb.render_settings.do_bloom = false;
 }
 
 main_update :: proc(dt: f32) -> bool {
@@ -51,7 +46,7 @@ main_render :: proc() {
     if graphics_memory == nil {
         graphics_memory = make([]byte, mem.megabytes(10));
 
-        g_main_camera = wb.create_camera();
+        wb.init_camera(&g_main_camera);
         g_main_camera.is_perspective = true;
 
         g_main_camera.position = {0, 10, -10};
@@ -70,17 +65,19 @@ main_render :: proc() {
 
     wb.add_render_graph_node(&render_graph, "screen", nil, 
         proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            wb.read_resource(render_graph, "game view");
+            wb.read_resource(render_graph, "game view color");
             wb.has_side_effects(render_graph);
         }, 
         proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            game_view := wb.get_resource(render_graph, "game view", ^wb.Framebuffer);
-            wb.im_quad(&g_screen_render_context, .Pixel, {0,0,0}, {shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, 0}, {1,1,1,1}, &(game_view^).texture);
-            // wb.im_text(&g_screen_render_context, .Pixel, {15, 15, 0}, {1, 1, 1, 1}, "This is a Video Game", wb.g_fonts["roboto"]);
+            pass: wb.Render_Pass;
+            pass.camera = &g_main_camera;
+            wb.BEGIN_RENDER_PASS(&pass);
+
+            game_view := wb.get_resource(render_graph, "game view color", wb.Texture);
+            wb.im_quad(&g_screen_render_context, .Pixel, {0,0,0}, {shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, 0}, {1,1,1,1}, game_view);
             wb.draw_im_context(&g_screen_render_context);
         });
 
-    wb.PUSH_CAMERA(&g_main_camera, true);
     wb.execute_render_graph(&render_graph);
 }
 

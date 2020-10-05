@@ -8,10 +8,14 @@ v0.0.7 : player leveling, statistics
 
 Tasks
   v0.0.1
-	- save game
-	- simple login flow (just use username)
-	- find cheap server to run on
-	- server stability
+  	x save game
+  	x simple login flow (just use username)
+  	x find cheap server to run on
+  	x server stability
+    - idea of a scene
+    - prefabs
+    - simple editor. Allow placing objects in the scence
+
 
   v0.0.2
     - enemy spawning
@@ -44,3 +48,15 @@ Tasks
     - basic character creation
     - rooting objects to bones
     - adding armour to player characters
+
+
+
+
+
+
+
+Game Ideas:
+  - Participating in enemy kill will add to quest requirements (no WoW claiming enemies)
+  - Multiple kinds of quests
+    - long running ones like runescape.
+    - "Task" style of do a simple thing get a simple reward.

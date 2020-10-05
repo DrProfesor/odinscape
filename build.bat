@@ -8,15 +8,15 @@ xcopy /s/q/y src\includes\windows . > NUL
 echo Building src...
 if "%2" == "server" (
 	if "%1" == "debug" (
-		odin build src -debug -out=odinscape.exe -define:HEADLESS=true
+		odin build src -debug -out=odinscape.exe -define:HEADLESS=true -ignore-unknown-attributes
 	) else (
-		odin build src -out=odinscape.exe -define:HEADLESS=true
+		odin build src -out=odinscape.exe -define:HEADLESS=true -ignore-unknown-attributes
 	)
 ) else (
 	if "%1" == "debug" (
-		odin build src -debug -out=odinscape.exe -define:HEADLESS=false
+		odin build src -debug -out=odinscape.exe -define:HEADLESS=false -ignore-unknown-attributes
 	) else (
-		odin build src -out=odinscape.exe -define:HEADLESS=false
+		odin build src -out=odinscape.exe -define:HEADLESS=false -ignore-unknown-attributes
 	)
 )
 

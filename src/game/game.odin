@@ -14,7 +14,6 @@ import "../net"
 import "../entity"
 
 g_game_camera: wb.Camera;
-g_game_view: wb.Framebuffer;
 g_cbuffer_lighting: wb.CBuffer;
 
 init :: proc() {
@@ -31,12 +30,9 @@ init :: proc() {
 		// wb.init_terrain(); // we still need terrain collision on the server
 		init_terrain();
 
-		g_game_camera = wb.create_camera();
+		wb.init_camera(&g_game_camera);
 		g_game_camera.is_perspective = true;
-
-		wb.create_framebuffer(&g_game_view, wb.default_framebuffer_description(shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y));
-		g_game_camera.render_target = &g_game_view;
-
+		
 		g_cbuffer_lighting = wb.create_cbuffer_from_struct(CBuffer_Lighting);
 	}
 
@@ -100,24 +96,34 @@ render :: proc(render_graph: ^wb.Render_Graph) {
 		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
 			wb.read_resource(render_graph, "scene draw list");
             wb.read_resource(render_graph, "scene lighting");
-			
-			wb.create_resource(render_graph, "game view", ^wb.Framebuffer);
+            wb.create_resource(render_graph, "game view color", wb.Texture);
+            wb.create_resource(render_graph, "game view depth", wb.Texture);
 		}, 
 		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
 			lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
             wb.flush_cbuffer_from_struct(&g_cbuffer_lighting, lighting^);
             wb.bind_cbuffer(&g_cbuffer_lighting, cast(int)CBuffer_Slot.Lighting);
 
-            wb.PUSH_CAMERA(&g_game_camera, true);
+            color_buffer, depth_buffer := wb.create_color_and_depth_buffers(1920, 1080, .R8G8B8A8_UINT);
+            
+            {
+	            pass: wb.Render_Pass;
+	            pass.camera = &g_game_camera;
+	            pass.color_buffers[0] = &color_buffer;
+	            pass.depth_buffer = &depth_buffer;
+	            pass.resize_render_targets_to_screen = true;
+	            wb.BEGIN_RENDER_PASS(&pass);
 
-            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
-            for cmd in draw_commands {
-                if len(cmd.model.meshes) > 0 {
-                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color);
-                }
-            }
+	            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
+	            for cmd in draw_commands {
+	                if len(cmd.model.meshes) > 0 {
+	                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color);
+	                }
+	            }
+        	}
 
-            wb.set_resource(render_graph, "game view", &g_game_view, nil);
+            wb.set_resource(render_graph, "game view color", color_buffer, nil);
+            wb.set_resource(render_graph, "game view depth", depth_buffer, nil);
 		});
 	// end draw scene
 	
@@ -175,9 +181,6 @@ Draw_Command :: struct {
     color:             Vector4,
     userdata:          rawptr,
 }
-
-
-
 
 logln :: logging.logln;
 

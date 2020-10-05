@@ -1,39 +1,55 @@
 package editor
 
 import "shared:wb"
-import "../configs"
+import "shared:wb/imgui"
 
-Base_Speed : f32 = 5;
+import "../configs"
+import "../entity"
+
+enabled := false;
 
 init :: proc() {
 }
 
-enabled_last_frame := false;
-
 update :: proc(dt: f32) {
-    // if !core.debug_window_open {
-    //     enabled_last_frame = false;
-    //     return;
-    // }
+    if wb.get_input(configs.key_config.toggle_editor) {
+        enabled = !enabled;
+    }
 
-    // if !enabled_last_frame {
-    //     // set the camera back to the editor position
-    //     // setting to play position will be handled by the camera controller
-    //     core.main_camera.position = configs.editor_config.camera_position;
-    //     core.main_camera.rotation = configs.editor_config.camera_rotation;
-    // }
+    if !enabled do return;
 
-    // if wb_plat.get_input(configs.key_config.camera_free_move) {
-    //     wb.do_camera_movement(wb.main_camera, dt, Base_Speed, Base_Speed * 3, Base_Speed * 0.3);
-
-    //     configs.editor_config.camera_position = wb.main_camera.position;
-    //     configs.editor_config.camera_rotation = wb.main_camera.rotation;
-    // }
-
-    enabled_last_frame = true;
+    draw_entity_inspector();
 }
 
 render :: proc(render_graph: ^wb.Render_Graph) {
-// TODO render terrain editor
-// TODO render animation window
+    
+}
+
+draw_entity_inspector :: proc() {
+    if imgui.begin("Entity Inspector") {
+
+    } imgui.end();
+
+    if imgui.begin("Scene Hierarchy") {
+        @static add_scene_buf: [64]u8;
+        scene_to_add := do_input_text(add_scene_buf[:]);
+        imgui.same_line();
+        if imgui.button("Add Scene") {
+            // TODO add scene
+        }
+
+        for scene_id, scene in entity.loaded_scenes {
+            if imgui.tree_node_ex(scene_id, imgui.Tree_Node_Flags.CollapsingHeader) {
+
+            }
+        }
+
+    } imgui.end();
+}
+
+do_input_text :: proc(buf: []byte) -> string {
+    imgui.input_text("", buf);
+    buf[len(buf)-1] = 0;
+    text := cast(string)cast(cstring)&buf[0];
+    return text;
 }

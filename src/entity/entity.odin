@@ -8,14 +8,16 @@ import "../shared"
 import "../save"
 import "../configs"
 
-all_entities: [2048]Entity;
+MAX_ENTITIES :: 2048;
+
+all_entities: [MAX_ENTITIES]Entity;
 player_characters: [dynamic]^Player_Character;
 enemies: [dynamic]^Enemy;
 
 last_entity_slot := 0;
 available_entity_slots: [dynamic]int;
 
-create_entity :: proc(pos: wb.Vector3, rotation: wb.Quaternion, scale: wb.Vector3) -> ^Entity {
+create_entity :: proc(pos: wb.Vector3, rotation: wb.Quaternion, scale: wb.Vector3, dynamic_spawn := true) -> ^Entity {
 	id := last_entity_slot;
 	if len(available_entity_slots) > 0 {
 		id = available_entity_slots[len(available_entity_slots)];
@@ -32,10 +34,39 @@ create_entity :: proc(pos: wb.Vector3, rotation: wb.Quaternion, scale: wb.Vector
 	e.position = pos;
 	e.rotation = rotation;
 	e.scale = scale;
+	e.dynamically_spawned = dynamic_spawn;
 
 	e.active = true;
 
 	return e;
+}
+
+add_entity :: proc(_e: Entity) -> ^Entity {
+	entity := _e;
+
+	id := last_entity_slot;
+	if len(available_entity_slots) > 0 {
+		id = available_entity_slots[len(available_entity_slots)];
+		pop(&available_entity_slots);
+	} else {
+		last_entity_slot += 1;
+	}
+
+	entity.id = id;
+	entity.network_id = -1;
+	entity.active = true;
+
+	// this is currently only used for loading from a scene. so that is never dynamic
+	entity.dynamically_spawned = false;
+
+	all_entities[id] = entity;
+
+	switch kind in entity.kind {
+		case Player_Character: append(&player_characters, cast(^Player_Character) &all_entities[id]);
+		case Enemy:            append(&enemies          , cast(^Enemy)            &all_entities[id]);
+	}
+
+	return &all_entities[id];
 }
 
 destroy_entity :: proc(id: int) {
@@ -74,6 +105,8 @@ Entity :: struct {
 	position: wb.Vector3,
 	rotation: wb.Quaternion,
 	scale   : wb.Vector3,
+
+	dynamically_spawned: bool,
 
 	active: bool,
 }

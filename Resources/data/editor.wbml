@@ -1,10 +1,10 @@
 {
-	camera_position [
-		0.000
-		0.000
-		0.000
-	]
+    camera_position [
+        0.000
+        0.000
+        0.000
+    ]
 
-	camera_rotation quat 0.000 0.000 0.000 0.000
+    camera_rotation quat 0.000 0.000 0.000 0.000
 
 }
