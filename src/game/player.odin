@@ -23,7 +23,7 @@ on_login_players :: proc(player_save: save.Player_Save) {
 }
 
 update_players :: proc(dt: f32) {
-    for player in entity.player_characters {
+    for player in entity.all_Player_Character {
         if player.is_local do update_local_player_character(player, dt);
         update_player_character(player, dt);
     }
@@ -90,7 +90,7 @@ update_player_character :: proc(player: ^Player_Character, dt: f32) {
         }
 
         height := terrain_get_height_at_position(player_entity.position + {0,2,0}); // add two for player height 
-        p1 := move_towards({player_entity.position.x, 0, player_entity.position.z}, {next_target_position.x, 0, next_target_position.z}, player.base_move_speed * dt);
+        p1 := move_towards(Vector3{player_entity.position.x, 0, player_entity.position.z}, Vector3{next_target_position.x, 0, next_target_position.z}, player.base_move_speed * dt);
 
         player_entity.position = {p1.x, height, p1.z};
         player_entity.rotation = wb.degrees_to_quaternion({0, look_y_rot(player_entity.position, next_target_position) - wb.PI / 2, 0});
@@ -100,16 +100,6 @@ update_player_character :: proc(player: ^Player_Character, dt: f32) {
         // player.animator.controller.player.current_animation = "idle";
     }
     // animate, move
-}
-
-move_towards :: proc(current, target: Vector3, maxDelta: f32) -> Vector3 {
-    a := target - current;
-    mag := wb.length(a);
-    if (mag <= maxDelta || mag == 0) {
-        return target;
-    }
-
-    return current + a / mag * maxDelta;
 }
 
 look_y_rot :: proc(current, target: Vector3) -> f32 {

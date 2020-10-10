@@ -29,15 +29,23 @@ main_update :: proc(dt: f32) -> bool {
         // if core.get_input_down(core.Input.Escape) do core.exit();
     }
 
+    if wb.get_input_down(configs.key_config.toggle_editor) {
+        editor.enabled = !editor.enabled;
+    }
+
+    // maybe not in editor?
+    // we would have to allow for offline play
     net.update(dt);
-    game.update(dt);
-    editor.update(dt);
+    if !editor.enabled do game.update(dt);
+    if  editor.enabled do editor.update(dt);
 
     return true;
 }
 
 g_main_camera: wb.Camera;
-g_screen_render_context: wb.IM_Context;
+g_screen_context: wb.IM_Context;
+g_world_context: wb.IM_Context;
+g_editor_context: wb.IM_Context;
 
 main_render :: proc() {
     if !net.is_logged_in do return;
@@ -54,16 +62,29 @@ main_render :: proc() {
         g_main_camera.size = 45;
     }
 
-    wb.init_im_context(&g_screen_render_context, &g_main_camera, {0, 0, 0});
+    wb.init_im_context(&g_screen_context, &g_main_camera, {0, 0, 0});
+    wb.init_im_context(&g_world_context, &g_main_camera, {0, 0, 0});
+    wb.init_im_context(&g_editor_context, &g_main_camera, {0, 0, 0});
 
     render_graph: wb.Render_Graph;
     wb.init_render_graph(&render_graph, graphics_memory);
     defer wb.destroy_render_graph(&render_graph);
 
-    game.render(&render_graph);
-    editor.render(&render_graph);
+    render_context: shared.Render_Graph_Context;
+    if editor.enabled {
+        render_context.target_camera = &editor.g_editor_camera;
+    } else {
+        render_context.target_camera = &game.g_game_camera;
+    }
 
-    wb.add_render_graph_node(&render_graph, "screen", nil, 
+    render_context.screen_im_context = &g_screen_context;
+    render_context.world_im_context = &g_world_context;
+    render_context.editor_im_context = &g_editor_context;
+
+    game.render(&render_graph, &render_context);
+    if editor.enabled do editor.render(&render_graph, &render_context);
+
+    wb.add_render_graph_node(&render_graph, "screen", &render_context, 
         proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
             wb.read_resource(render_graph, "game view color");
             wb.has_side_effects(render_graph);
@@ -74,8 +95,11 @@ main_render :: proc() {
             wb.BEGIN_RENDER_PASS(&pass);
 
             game_view := wb.get_resource(render_graph, "game view color", wb.Texture);
-            wb.im_quad(&g_screen_render_context, .Pixel, {0,0,0}, {shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, 0}, {1,1,1,1}, game_view);
-            wb.draw_im_context(&g_screen_render_context);
+            wb.im_quad(&g_screen_context, .Pixel, {0,0,0}, {shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, 0}, {1,1,1,1}, game_view);
+
+            wb.draw_im_context(&g_world_context);
+            wb.draw_im_context(&g_screen_context);
+            wb.draw_im_context(&g_editor_context);
         });
 
     wb.execute_render_graph(&render_graph);

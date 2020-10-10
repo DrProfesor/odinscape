@@ -8,14 +8,24 @@ import "../shared"
 import "../save"
 import "../configs"
 
-MAX_ENTITIES :: 2048;
+MAX_ENTITIES :: 4096;
 
 all_entities: [MAX_ENTITIES]Entity;
-player_characters: [dynamic]^Player_Character;
-enemies: [dynamic]^Enemy;
 
-last_entity_slot := 0;
+// Start at 1 to avoid any default value nonsense with ids
+last_entity_slot := 1;
 available_entity_slots: [dynamic]int;
+
+get_entity :: proc(id: int) -> ^Entity {
+	if id <= 0 do return nil;
+	if id >= len(all_entities) do return nil;
+
+	e := &all_entities[id];
+
+	if !e.active do return nil;
+
+	return e;
+}
 
 create_entity :: proc(pos: wb.Vector3, rotation: wb.Quaternion, scale: wb.Vector3, dynamic_spawn := true) -> ^Entity {
 	id := last_entity_slot;
@@ -61,10 +71,7 @@ add_entity :: proc(_e: Entity) -> ^Entity {
 
 	all_entities[id] = entity;
 
-	switch kind in entity.kind {
-		case Player_Character: append(&player_characters, cast(^Player_Character) &all_entities[id]);
-		case Enemy:            append(&enemies          , cast(^Enemy)            &all_entities[id]);
-	}
+	_add_entity(&all_entities[id]);
 
 	return &all_entities[id];
 }
@@ -74,19 +81,7 @@ destroy_entity :: proc(id: int) {
 
 	if !e.active do return;
 
-	switch kind in e.kind {
-		case Player_Character: {
-			for pc, i in player_characters {
-				if cast(^Entity) pc == e {
-					unordered_remove(&player_characters, i);
-					break;
-				}
-			}
-		}
-		case Enemy: {
-
-		}
-	}
+	_destroy_entity(&all_entities[id]);
 
 	append(&available_entity_slots, id);
 	all_entities[id].active = false;
@@ -106,9 +101,10 @@ Entity :: struct {
 	rotation: wb.Quaternion,
 	scale   : wb.Vector3,
 
-	dynamically_spawned: bool,
-
+	name: string,
 	active: bool,
+
+	dynamically_spawned: bool,
 }
 
 create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Player_Character{
@@ -161,13 +157,14 @@ create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Playe
 	}
 
 	player.kind = pc;
-	append(&player_characters, cast(^Player_Character) player);
+	append(&all_Player_Character, cast(^Player_Character) player);
 
 	log.logln("Create player");
 
 	return cast(^Player_Character) player;
 }
 
+@entity
 Player_Character :: struct {
 	is_local : bool,
 
@@ -189,6 +186,7 @@ Player_Character :: struct {
 	using caster: Spell_Caster,
 }
 
+@entity
 Enemy :: struct {
 	target_position: wb.Vector3 "replicate:server",
     

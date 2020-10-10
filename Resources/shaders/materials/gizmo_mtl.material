@@ -1,0 +1,12 @@
+{
+    shader "simple_rgba"
+
+    cull_backfaces false
+
+    properties [
+        { name "base_color" value .Vector4 [ 1.0 1.0 1.0 1.0 ] }
+    ]
+
+    textures [
+    ]
+}

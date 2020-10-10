@@ -1,5 +1,7 @@
 package shared
 
+import "shared:wb"
+
 WINDOW_SIZE_X :: 1920;
 WINDOW_SIZE_Y :: 1080;
 
@@ -12,3 +14,26 @@ Game_State :: enum {
     Character_Select,
     In_Game,
 }
+
+Render_Graph_Context :: struct {
+    target_camera: ^wb.Camera,
+    screen_im_context: ^wb.IM_Context,
+    world_im_context: ^wb.IM_Context,
+    editor_im_context: ^wb.IM_Context,
+}
+
+Draw_Command :: struct {
+    model:             ^wb.Model,
+    position:          Vector3,
+    scale:             Vector3,
+    orientation:       Quaternion,
+    material_override: ^wb.Material,
+    color:             Vector4,
+    userdata:          rawptr,
+}
+
+Vector2 :: wb.Vector2;
+Vector3 :: wb.Vector3;
+Vector4 :: wb.Vector4;
+Quaternion :: wb.Quaternion;
+Matrix4 :: wb.Matrix4;

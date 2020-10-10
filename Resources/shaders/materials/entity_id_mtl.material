@@ -1,0 +1,11 @@
+{
+    shader "entity_id_shader"
+
+    blend_mode No_Alpha_Blend
+
+    properties [
+    ]
+
+    textures [
+    ]
+}
