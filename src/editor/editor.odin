@@ -16,8 +16,6 @@ import "../configs"
 import "../entity"
 import "../shared"
 
-enabled := false;
-
 g_editor_camera: wb.Camera;
 
 entity_id_color_buffer: wb.Texture;
@@ -36,22 +34,33 @@ init :: proc() {
 
     entity_id_color_buffer, entity_id_depth_buffer = wb.create_color_and_depth_buffers(wb.main_window.width_int, wb.main_window.height_int, .R32_INT);
 
-    texture_desc := entity_id_color_buffer.description;
-    texture_desc.render_target = false;
-    texture_desc.is_cpu_read_target = true;
-    entity_id_buffer_cpu_copy = wb.create_texture(texture_desc);
+    eid_texture_desc := entity_id_color_buffer.description;
+    eid_texture_desc.render_target = false;
+    eid_texture_desc.is_cpu_read_target = true;
+    entity_id_buffer_cpu_copy = wb.create_texture(eid_texture_desc);
+
+    game_texture_desc := wb.Texture_Description {
+        type = .Texture2D,
+        width = 1920,
+        height = 1080,
+        format = .R8G8B8A8_UINT,
+        render_target = true
+    };
+    g_game_view_texture = wb.create_texture(game_texture_desc);
 
     init_gizmo();
 
-    wb.register_developer_program("Inspector", draw_inspector_window, .Window, nil);
-    wb.register_developer_program("Resources", draw_resources_window, .Window, nil);
-    wb.register_developer_program("Hierarchy", draw_scene_hierarchy , .Window, nil);
+    wb.register_developer_program("Inspector", draw_inspector, .Window, nil);
+    wb.register_developer_program("Hierarchy", draw_scene_hierarchy, .Window, nil);
+    wb.register_developer_program("Resources", draw_resource_inspector, .Window, nil);
+    wb.register_developer_program("Game View", draw_game_view, .Window, nil);
 
     register_modal("Select Entity", draw_entity_select_modal, nil);
 }
 
 update :: proc(dt: f32) {
     gizmo_new_frame();
+    // imgui.show_demo_window();
     
     // Get entity mouse is hovering
     {
@@ -67,8 +76,16 @@ update :: proc(dt: f32) {
         }
     }
 
-    if wb.get_input(.Mouse_Right) {
+    if !g_can_move_game_view && wb.get_global_input(.Mouse_Right) {
+        g_clicked_outside_scene = true;
+    }
 
+    if wb.get_global_input_up(.Mouse_Right) {
+        g_clicked_outside_scene = false;
+    }
+
+    if g_can_move_game_view && !g_clicked_outside_scene {
+        wb.do_camera_movement(&g_editor_camera.position, &g_editor_camera.orientation, dt, 5, 10, 1, true);
     }
 
     selected_count := len(selected_entities);
@@ -115,9 +132,9 @@ update :: proc(dt: f32) {
     }
 }
 
-draw_inspector_window :: proc(userdata: rawptr) {
+draw_inspector :: proc(userdata: rawptr, open: ^bool) {
     // No multi selection for now
-    if imgui.begin("Entity Inspector") && len(selected_entities) == 1 {
+    if imgui.begin("Entity Inspector", open) && len(selected_entities) == 1 {
         selected_entity := entity.get_entity(selected_entities[0]);
 
         // Name
@@ -195,31 +212,196 @@ draw_inspector_ti :: proc(entity: ^Entity, name: string, ptr: rawptr, ti: ^runti
     defer imgui.pop_id();
 }
 
-draw_scene_hierarchy :: proc(userdata: rawptr) {
-    if !imgui.begin("Hierarchy") do return;
-    defer imgui.end();
+DEFAULT_TREE_FLAGS : imgui.Tree_Node_Flags : .OpenOnArrow | .SpanAvailWidth | .OpenOnDoubleClick;
+DEFAULT_WINDOW_FLAGS : imgui.Window_Flags = .NoCollapse;
 
-    if imgui.begin_popup_context_item("context menu") {
+draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
+    open := imgui.begin("Hierarchy", open, DEFAULT_WINDOW_FLAGS);
+    defer imgui.end();
+    if !open do return;
+
+    if imgui.begin_popup_context_item("entity context menu") {
 
         if imgui.menu_item("Add Entity") do
             open_modal("Select Entity");
 
         imgui.end_popup();
     }
+
+    draw_entity_node :: proc(e: ^Entity) {
+        flags := DEFAULT_TREE_FLAGS;
+        
+        if is_entity_selected(e) do flags |= .Selected;
+        if len(e.children) == 0 do flags |= .Leaf;
+        
+        open := imgui.tree_node_ex(e.name, flags);
+
+        if imgui.begin_drag_drop_source() {
+            imgui.set_drag_drop_payload("entity", &e.id, size_of(e.id));
+            imgui.text(e.name);
+            imgui.end_drag_drop_source();
+        }
+
+        if imgui.begin_drag_drop_target() {
+            payload := imgui.accept_drag_drop_payload("entity");
+            dropped_eid := (cast(^int)payload.data)^;
+            entity.set_parent(dropped_eid, e.id);
+            imgui.end_drag_drop_target();
+        }
+        
+        if !open do return;
+        defer imgui.tree_pop();
+
+        if imgui.is_item_clicked() {
+            select_entity(e.id);
+        }
+
+        for c in &e.children {
+            draw_entity_node(c);
+        }
+    }
+
+    for scene_id, scene in entity.loaded_scenes {
+        flags : imgui.Tree_Node_Flags = .OpenOnArrow | .SpanAvailWidth;
+        if !imgui.tree_node_ex(scene_id, flags) do continue;
+        defer imgui.tree_pop();
+
+        if imgui.begin_popup_context_item("scene context") {
+
+            if imgui.menu_item("Save") do
+                entity.save_scene(scene_id);
+
+            imgui.end_popup();
+        }
+
+        for eid in scene.entities {
+            e := entity.get_entity(eid);
+            if !e.active do continue;
+            if e.parent != nil do continue;
+            draw_entity_node(e);
+        }
+    }
+
+    flags := DEFAULT_TREE_FLAGS;
+    if imgui.tree_node_ex("Dynamic Entities", flags) {
+
+        if imgui.begin_drag_drop_target() {
+            payload := imgui.accept_drag_drop_payload("entity");
+            dropped_eid := (cast(^int)payload.data)^;
+            entity.add_entity_to_scene(entity.get_entity(dropped_eid));
+            imgui.end_drag_drop_target();
+        }
+
+        for e in &entity.all_entities {
+            if !e.active do continue;
+            if e.parent != nil do continue;
+            if !e.dynamically_spawned do continue;
+            draw_entity_node(&e);
+        }
+        imgui.tree_pop();
+    }
 }
 
-draw_resources_window :: proc(userdata: rawptr) {
-    if !imgui.begin("Resources") do return;
+RESOURCES_DIR :: "resources/";
+selected_resource: string;
+draw_resource_inspector :: proc(userdata: rawptr, open: ^bool) {
+    open := imgui.begin("Resources", open, DEFAULT_WINDOW_FLAGS);
+
+    if imgui.begin_drag_drop_target() {
+        // payload := imgui.accept_drag_drop_payload("entity");
+        imgui.end_drag_drop_target();
+    }
+
     defer imgui.end();
+    if !open do return;
+
+    draw_path :: proc(path: basic.Path) {
+        flags := DEFAULT_TREE_FLAGS;
+        if path.path == selected_resource do flags |= .Selected;
+        if !path.is_directory do flags |= .Leaf;
+
+        node_open := imgui.tree_node_ex(path.file_name, flags);
+
+        if imgui.begin_drag_drop_source() {
+            // imgui.set_drag_drop_payload("entity", &e.id, size_of(e.id));
+            // imgui.text(e.name);
+            imgui.end_drag_drop_source();
+        }
+
+        if imgui.begin_drag_drop_target() {
+            // payload := imgui.accept_drag_drop_payload("entity");
+            imgui.end_drag_drop_target();
+        }
+
+        if !node_open do return;
+        defer imgui.tree_pop();
+
+        if imgui.is_item_clicked() {
+            selected_resource = path.path;
+        }
+
+        if path.is_directory {
+            paths := basic.get_all_paths(path.path);
+            defer delete(paths);
+            for path in paths {
+                draw_path(path);
+            }
+        }
+    }
+
+    paths := basic.get_all_paths(RESOURCES_DIR);
+    defer delete(paths);
+    for path in paths {
+        draw_path(path);
+    }
+}
+
+g_game_view_texture: wb.Texture;
+g_can_move_game_view: bool;
+g_clicked_outside_scene: bool;
+draw_game_view :: proc(userdata: rawptr, open: ^bool) {
+    flags := DEFAULT_WINDOW_FLAGS | .NoTitleBar;
+    open := imgui.begin("Game View", open, flags);
+    defer imgui.end();
+    if !open do return;
+
+    g_can_move_game_view = imgui.is_window_hovered();
+
+    window_size := imgui.get_window_size();
+    if g_game_view_texture.type != .Invalid {
+        // TODO aspect ratio
+        imgui.image(cast(imgui.Texture_ID)&g_game_view_texture, {window_size.x - 5, window_size.y - 5});
+    }
 }
 
 draw_entity_select_modal :: proc(modal: ^Modal, userdata: rawptr) {
 
+    @static selected_tid : typeid;
+
+    imgui.list_box_header("");
     for tid in entity.entity_typeids {
+        selected := tid == selected_tid;
+        if imgui.selectable(fmt.tprint(tid), selected) {
+            selected_tid = tid;
+        }
     }
-    // draw all the entity types
-    // allow user to select and create
-    // allow user to cancel
+    imgui.list_box_footer();
+
+    if imgui.button("Create") {
+        created_entity := entity.create_entity_by_type(selected_tid);
+        camera_direction := wb.get_mouse_direction_from_camera(&g_editor_camera, {0.5,0.5});
+        // TODO maybe entity creation window to set certain parameters?
+        // TODO try place between camera and object. With max dist away from cam
+        pos := g_editor_camera.position + camera_direction * 10;
+        spawned_entiy := entity.add_entity(created_entity);
+        entity.add_entity_to_scene(spawned_entiy);
+        spawned_entiy.position = pos;
+        modal.is_open = false;
+    }
+    imgui.same_line();
+    if imgui.button("Cancel") {
+        modal.is_open = false;
+    }
 }
 
 render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Context) {
@@ -258,6 +440,17 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             render_context := cast(^shared.Render_Graph_Context)userdata;
             gizmo_render(render_graph, render_context.editor_im_context);
         });
+
+    wb.add_render_graph_node(render_graph, "scene view", ctxt,
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            wb.has_side_effects(render_graph);
+            wb.read_resource(render_graph, "game view color");
+        },
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            game_view := wb.get_resource(render_graph, "game view color", wb.Texture);
+            wb.ensure_texture_size(&g_game_view_texture, game_view.width, game_view.height);
+            wb.copy_texture(&g_game_view_texture, game_view);
+        });
 }
 
 //
@@ -278,9 +471,16 @@ select_entity :: proc(eid: int, override_selection: bool = true) {
     }
 }
 
-//
-//
+is_entity_selected :: proc(e: ^Entity) -> bool {
+    for se in selected_entities {
+        if se == e.id do return true;
+    }
+    return false;
+}
 
+
+//
+//
 Modal :: struct {
     name: string,
     procedure: proc(^Modal, rawptr),
@@ -313,6 +513,8 @@ close_modal :: proc(name: string) {
         }
     }
 }
+
+
 
 
 do_input_text :: proc(buf: []byte) -> string {

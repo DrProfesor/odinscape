@@ -1,0 +1,11 @@
+{
+    shader "skybox_shader"
+
+    cull_backfaces false
+
+    properties [
+    ]
+
+    textures [
+    ]
+}

@@ -12,9 +12,14 @@ Tasks
   	x simple login flow (just use username)
   	x find cheap server to run on
   	x server stability
-    - idea of a scene
+    x idea of a scene
     - prefabs
+    - headless server
     - simple editor. Allow placing objects in the scence
+      - drag and drop assets
+      x model renderer
+      - model renderer colour
+      - scale gizmo
 
 
   v0.0.2

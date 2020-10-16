@@ -1,0 +1,19 @@
+{
+	compute "terrain_compute"
+	definitions "terrain_base"
+
+	buffers [
+		{ name "VerticesRW" buffer_type Read_Write type "Triangle" }
+		{ name "VertsCount" buffer_type Read_Write type "int" }
+	]
+
+	properties [
+		{ name "stp" type Float }
+		{ name "iso" type Float }
+		{ name "chunk_size" type Vector3 }
+	]
+	
+	textures [
+		{ name "DensityField" type Texture3D }
+	]
+}

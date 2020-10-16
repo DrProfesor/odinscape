@@ -1,49 +1,138 @@
 package entity
 
 import "core:os"
+import "core:fmt"
+import "core:strings"
 
 import "../util"
 import "shared:wb/basic"
 import "shared:wb/wbml"
+import "shared:wb/reflection"
+import "shared:wb/allocators"
 
 SCENE_DIR :: "resources/scenes";
 
-loaded_scenes: map[string]Scene;
-main_scene: string;
+loaded_scenes: map[string]^Scene;
+main_scene: ^Scene;
 
 Scene :: struct {
-	entities: [MAX_ENTITIES]int,
-	total_entities: int,
+	id: string,
+	entities: map[int]^Entity,
 }
 
 load_scene :: proc(scene_id: string, set_main := false) {
 	scene_path := util.tprint(SCENE_DIR, "/", scene_id);
 
+	entity_wbml_node_arena: allocators.Arena;
+    allocators.init_arena(&entity_wbml_node_arena, make([]byte, 1 * 1024 * 1024), true);
+    defer delete(entity_wbml_node_arena.memory);
+    entity_wbml_node_arena.panic_on_oom = true;
+
+    to_parent: map[int]string;
+    defer delete(to_parent);
+
 	scene: Scene;
+	scene.id = scene_id;
 	for entity_file in basic.get_all_filepaths_recursively(scene_path) {
 		bytes, ok := os.read_entire_file(entity_file);
 		assert(ok);
 
-		e: Entity;
-		wbml.deserialize(bytes, &e, context.allocator, context.allocator);
+		sec: Serializable_Entity_Container;
+		wbml.deserialize(bytes, &sec, allocators.arena_allocator(&entity_wbml_node_arena), allocators.arena_allocator(&entity_wbml_node_arena));
 
-		entity := add_entity(e);
-		scene.entities[scene.total_entities] = entity.id;
+		entity := add_entity(sec.entity);
+		scene.entities[entity.id] = entity;
 
-		scene.total_entities += 1;
+		if sec.parent != "" {
+			to_parent[entity.id] = sec.parent;
+		}
 	}
 
-	if set_main || main_scene == "" {
-		main_scene = scene_id;
+	// This seems pretty slow
+	for eid, pid in to_parent {
+		for e in scene.entities {
+			entity := get_entity(e);
+			if entity.uuid == pid {
+				set_parent(eid, entity.id);
+				break;
+			}
+		}
 	}
 
-	loaded_scenes[scene_id] = scene;
+	ns := new_clone(scene);
+
+	if set_main do main_scene = ns;
+	loaded_scenes[scene_id] = ns;
 }
 
-instantiate_entity_in_scene :: proc(scene, prefab: string) {
+entity_files_to_delete: map[string][dynamic]string;
 
+save_scene :: proc(scene_id: string) {
+	assert(scene_id in loaded_scenes);
+	scene := loaded_scenes[scene_id];
+
+	if scene_id in entity_files_to_delete {
+		for file in entity_files_to_delete[scene_id] {
+			basic.delete_file(file);
+		}
+		clear(&entity_files_to_delete[scene_id]);
+	}
+
+	if !basic.is_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id)) do
+		basic.create_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id));
+
+	for eid, entity in scene.entities {
+		file_path := fmt.tprintf("%s/%s/%s.e", SCENE_DIR, scene_id, entity.uuid);
+
+		sec: Serializable_Entity_Container;
+		sec.entity = entity^;
+		if entity.parent != nil {
+			sec.parent = entity.parent.uuid;
+		}
+
+		data := wbml.serialize(&sec);
+		ok := os.write_entire_file(file_path, transmute([]byte)data);
+
+	}
 }
 
 unload_scene :: proc(scene_id: string) {
-	// iterate scene entites and destroy
+
+}
+
+add_entity_to_scene :: proc(e: ^Entity, _scene: string = "") {
+	scene_id := _scene;
+	if scene_id == "" do scene_id = main_scene.id;
+	if e.dynamically_spawned do return; 
+
+	assert(scene_id != "", "No scene loaded");
+	
+	remove_from_scene(e);
+
+	scene := loaded_scenes[scene_id];
+	scene.entities[e.id] = e;
+	e.current_scene = scene_id;
+	e.uuid = strings.clone(util.uuid_create_string());
+
+	for child in e.children {
+		child.current_scene = scene_id;
+	}
+}
+
+remove_from_scene :: proc(e: ^Entity) {
+	if e.current_scene == "" do return;
+
+	current_scene := loaded_scenes[e.current_scene];
+	delete_key(&current_scene.entities, e.id);
+
+	if e.current_scene not_in entity_files_to_delete {
+		entity_files_to_delete[e.current_scene] = make([dynamic]string, 0, 1);
+	}
+
+	append(&entity_files_to_delete[e.current_scene], fmt.tprintf("%s/%s/%s.e", SCENE_DIR, e.current_scene, e.uuid));
+}
+
+Serializable_Entity_Container :: struct {
+	entity: Entity,
+	parent: string,
 }

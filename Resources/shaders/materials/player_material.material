@@ -1,0 +1,11 @@
+{
+    shader "simple_textured"
+
+    properties [
+        { name "base_color"   value .Vector4 [ 1 1 1 1 ] }
+    ]
+
+    textures [
+        { name "albedo_map" asset "blue_knight" }
+    ]
+}

@@ -53,18 +53,24 @@ main :: proc() {
     add_switch_builder: strings.Builder;
     destroy_switch_builder: strings.Builder;
     type_builder: strings.Builder;
+    create_switch: strings.Builder;
+    union_builder: strings.Builder;
 
     for t in entity_types {
     	fmt.sbprint(buf=&storage_builder, args={"\nall_",t,": [dynamic]^",t,";"}, sep="");
     	fmt.sbprint(buf=&add_switch_builder, args={"\n\t\tcase ",t,": append(&all_",t,", cast(^",t,") e);"}, sep="");
     	fmt.sbprint(buf=&destroy_switch_builder, args={"\n\t\tcase ",t,": for ep, i in all_",t," do if cast(^Entity) ep == e { unordered_remove(&all_",t,", i); break; }"}, sep="");
         fmt.sbprint(buf=&type_builder, args={"\n\ttypeid_of(",t,"),"}, sep="");
+        fmt.sbprint(buf=&create_switch, args={"\n\t\tcase ",t,": e.kind = ",t,"{};"}, sep="");
+        fmt.sbprint(buf=&union_builder, args={"\n\t",t,","}, sep="");
     }
 
     generated_code, _ := strings.replace(GENERATED_CODE_FORMAT, "{storage}", strings.to_string(storage_builder), 1);
     generated_code, _ = strings.replace(generated_code, "{add_switch}", strings.to_string(add_switch_builder), 1);
     generated_code, _ = strings.replace(generated_code, "{destroy_switch}", strings.to_string(destroy_switch_builder), 1);
     generated_code, _ = strings.replace(generated_code, "{types}", strings.to_string(type_builder), 1);
+    generated_code, _ = strings.replace(generated_code, "{create_switch}", strings.to_string(create_switch), 1);
+    generated_code, _ = strings.replace(generated_code, "{union}", strings.to_string(union_builder), 1);
 
     generated_code, _ = strings.replace_all(generated_code, "{type_count}", fmt.tprint(len(entity_types)));
 
@@ -73,7 +79,12 @@ main :: proc() {
 
 GENERATED_CODE_FORMAT :: 
 `package entity
+
+import "shared:wb"
 {storage}
+
+Entity_Union :: union {{union}
+}
 
 entity_typeids := [{type_count}]typeid{{types}
 };
@@ -86,6 +97,15 @@ _add_entity :: proc(e: ^Entity) {
 _destroy_entity :: proc(e: ^Entity) {
 	switch kind in e.kind {{destroy_switch}
 	}
+}
+
+create_entity_by_type :: proc(t: typeid) -> Entity {
+    e := _create_entity();
+
+    switch t {{create_switch}
+    }
+
+    return e;
 }
 
 `;

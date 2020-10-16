@@ -26,6 +26,10 @@ g_skybox: wb.Texture;
 init :: proc() {
 
 	if net.is_client {
+		wb.track_asset_folder("resources/shaders/src");
+		wb.track_asset_folder("resources/shaders/shaders");
+		wb.track_asset_folder("resources/shaders/materials");
+		
 		wb.track_asset_folder("resources/character");
 		wb.track_asset_folder("resources/creature");
 		wb.track_asset_folder("resources/data");
@@ -34,9 +38,6 @@ init :: proc() {
 		wb.track_asset_folder("resources/prefabs");
 		wb.track_asset_folder("resources/scenes");
 		wb.track_asset_folder("resources/textures");
-		wb.track_asset_folder("resources/shaders/src");
-		wb.track_asset_folder("resources/shaders/shaders");
-		wb.track_asset_folder("resources/shaders/materials");
 
 		// wb.main_camera.is_perspective = true;
 		// wb.main_camera.size = 70;
@@ -80,6 +81,8 @@ init :: proc() {
 	configs.add_config_load_listener(entity.on_config_load);
 
 	init_players();
+
+	entity.load_scene("main", true);
 }
 
 update :: proc(dt: f32) {
@@ -111,17 +114,40 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 			cmds: [dynamic]Draw_Command;
 			lighting: CBuffer_Lighting;
 
-			for player in entity.all_Player_Character {
-				player_entity := cast(^entity.Entity)player;
-				cmd := Draw_Command {
-					wb.g_models[player.model_id],
-					player_entity.position,
-					player_entity.scale,
-					player_entity.rotation,
-					wb.g_materials["simple_rgba_mtl"],
-					{ 1, 1, 1, 1 },
-					player,
+			get_simple_model_renderer_command :: proc(model_renderer: entity.Model_Renderer, entity: ^Entity) -> Draw_Command {
+
+				model : ^wb.Model;
+				if model_renderer.model_id in wb.g_models {
+					model = wb.g_models[model_renderer.model_id];
+				} else {
+					model = wb.g_models["cube_model"];
+				}
+
+				material : ^wb.Material;
+				if model_renderer.material_id in wb.g_materials {
+					material = wb.g_materials[model_renderer.material_id];
+				} else {
+					material = wb.g_materials["simple_rgba_mtl"];
+				}
+
+				return Draw_Command {
+					model,
+					entity.position,
+					entity.scale,
+					entity.rotation,
+					material,
+					model_renderer.tint,
+					entity
 				};
+			}
+
+			for player in entity.all_Player_Character {
+				cmd := get_simple_model_renderer_command(player.model, cast(^Entity)player);
+				append(&cmds, cmd);
+			}
+
+			for simple_model in entity.all_Simple_Model {
+				cmd := get_simple_model_renderer_command(simple_model.model, cast(^Entity)simple_model);
 				append(&cmds, cmd);
 			}
 
@@ -131,6 +157,12 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             wb.set_resource(render_graph, "scene lighting", lighting, nil);			
 		}); 
 	// end build draw commands
+
+	// TODO draw shadows
+	// TODO draw bloom
+	// TODO ambient occlusion
+	// TODO auto exposure
+	// TODO fog
 
 	// draw scene
 	wb.add_render_graph_node(render_graph, "draw", ctxt, 
