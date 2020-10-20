@@ -64,7 +64,6 @@ Character_Save :: struct {
 
 	// customization data
 	model_id: string, // TODO actual character customization
-	texture_id: string,
 
 	// stats
 	stats: [16]Stat,

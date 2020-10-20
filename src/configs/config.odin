@@ -480,11 +480,14 @@ default_meta_config :: proc() -> Meta_Config {
 Editor_Save :: struct {
     camera_position: wb.Vector3,
     camera_rotation: wb.Quaternion,
+
+    open_editor_windows: [dynamic]string,
 }
 default_editor_config :: proc() -> Editor_Save {
     return Editor_Save {
         wb.Vector3{}, 
         wb.Quaternion{},
+        {}
     };
 }
 

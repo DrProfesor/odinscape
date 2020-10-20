@@ -2,8 +2,10 @@ package shared
 
 import "shared:wb"
 
-WINDOW_SIZE_X :: 1920;
-WINDOW_SIZE_Y :: 1080;
+WINDOW_SIZE_X :: 2560;
+WINDOW_SIZE_Y :: 1440;
+
+NUM_SHADOW_MAPS :: 4;
 
 Current_Game_State := Game_State.Initializing;
 

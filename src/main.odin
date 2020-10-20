@@ -89,6 +89,8 @@ main_render :: proc() {
             wb.has_side_effects(render_graph);
         }, 
         proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            render_context := cast(^shared.Render_Graph_Context)userdata;
+
             pass: wb.Render_Pass;
             pass.camera = &g_main_camera;
             wb.BEGIN_RENDER_PASS(&pass);
@@ -98,16 +100,16 @@ main_render :: proc() {
 
             wb.draw_im_context(&g_world_context, &g_main_camera);
             wb.draw_im_context(&g_screen_context, &g_main_camera);
-            wb.draw_im_context(&g_editor_context, &g_main_camera);
         });
 
     wb.execute_render_graph(&render_graph);
 }
 
 main_end :: proc() {
-    configs.save();
     net.shutdown();
 	game.shutdown();
+    editor.shutdown();
+    configs.save();
 }
 
 main :: proc() {

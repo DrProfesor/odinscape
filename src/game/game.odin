@@ -53,7 +53,7 @@ init :: proc() {
 		
 		g_cbuffer_lighting = wb.create_cbuffer_from_struct(CBuffer_Lighting);
 
-		g_color_buffer, g_depth_buffer = wb.create_color_and_depth_buffers(1920, 1080, .R8G8B8A8_UINT);
+		g_color_buffer, g_depth_buffer = wb.create_color_and_depth_buffers(shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, .R8G8B8A8_UINT);
 
 
 		width: i32;
@@ -151,14 +151,120 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 				append(&cmds, cmd);
 			}
 
-			submit_sun(&lighting, wb.construct_perspective_matrix(wb.to_radians(60), 1920/1080, 0.1, 1000), wb.construct_view_matrix({0,100,0}, wb.Quaternion(1)), {-60, -60, 0}, Vector3{1,1,1}, 10);
-
+			wb.set_resource(render_graph, "scene lighting", lighting, nil);
 			wb.set_resource(render_graph, "scene draw list", cmds[:], nil);
-            wb.set_resource(render_graph, "scene lighting", lighting, nil);			
 		}); 
 	// end build draw commands
 
-	// TODO draw shadows
+	// draw shadows
+	Cascaded_Shadow_Maps :: struct {
+	    render_targets: [shared.NUM_SHADOW_MAPS]^wb.Texture,
+	    matrices: [shared.NUM_SHADOW_MAPS]Matrix4,
+	};
+	wb.add_render_graph_node(render_graph, "shadows", ctxt, 
+		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			wb.read_resource(render_graph, "scene draw list");
+	        wb.read_resource(render_graph, "scene lighting");
+	        wb.create_resource(render_graph, "scene shadow map", Cascaded_Shadow_Maps);
+		}, 
+		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			shadow_maps: Cascaded_Shadow_Maps;
+			defer {
+				lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
+				submit_sun(lighting, wb.construct_perspective_matrix(wb.to_radians(60), shared.WINDOW_SIZE_X / shared.WINDOW_SIZE_Y, 0.1, 1000), wb.construct_view_matrix({0,100,0}, wb.Quaternion(1)), {-60, -60, 0}, Vector3{1,1,1}, 10);
+				wb.set_resource(render_graph, "scene shadow map", shadow_maps, nil);
+			}
+
+			if len(entity.all_Directional_Light) == 0 do return;
+			
+			sun := entity.all_Directional_Light[0];
+
+			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 10, 20, 30, 1000};
+            for map_idx in 0..<shared.NUM_SHADOW_MAPS {
+                shadow_camera := &sun.cameras[map_idx];
+                shadow_color_buffer := &sun.color_buffers[map_idx];
+                shadow_depth_buffer := &sun.depth_buffers[map_idx];
+                frustum_corners := [8]Vector3 {
+                    {-1,  1, -1},
+                    { 1,  1, -1},
+                    { 1, -1, -1},
+                    {-1, -1, -1},
+                    {-1,  1,  1},
+                    { 1,  1,  1},
+                    { 1, -1,  1},
+                    {-1, -1,  1},
+                };
+
+                // calculate sub-frustum for this cascade
+                cascade_proj := perspective(to_radians(g_game_camera.size), f32(wb.main_window.width) / wb.main_window.height, g_game_camera.near_plane + cascade_distances[map_idx], min(g_game_camera.far_plane, g_game_camera.near_plane + cascade_distances[map_idx+1]), false);
+                cascade_view := wb.construct_view_matrix(g_game_camera.position, g_game_camera.orientation);
+                cascade_viewport_to_world := mat4_inverse(mul(cascade_proj, cascade_view));
+
+                transform_point :: proc(matrix: Matrix4, pos: Vector3) -> Vector3 {
+                    pos4 := to_vec4(pos);
+                    pos4.w = 1;
+                    pos4 = mul(matrix, pos4);
+                    if pos4.w != 0 do pos4 /= pos4.w;
+                    return to_vec3(pos4);
+                }
+
+
+
+                // calculate center point and radius of frustum
+                center_point: Vector3;
+                for _, idx in frustum_corners {
+                    frustum_corners[idx] = transform_point(cascade_viewport_to_world, frustum_corners[idx]);
+                    center_point += frustum_corners[idx];
+                }
+                center_point /= len(frustum_corners);
+
+
+
+                // todo(josh): this radius changes very slightly as the camera rotates around for some reason. this shouldn't be happening and I believe it's causing the flickering
+                // note(josh): @ShadowFlickerHack hacked around the problem by clamping the radius to an int. pretty shitty, should investigate a proper solution
+                radius := cast(f32)cast(int)(length(frustum_corners[0] - frustum_corners[6]) / 2 + 1.0);
+
+                light_rotation := sun.rotation;
+                light_direction := quaternion_forward(light_rotation);
+
+                texels_per_unit := SHADOW_MAP_DIM / (radius * 2);
+                scale_matrix := mat4_scale(Vector3{texels_per_unit, texels_per_unit, texels_per_unit});
+                scale_matrix = mul(scale_matrix, quat_to_mat4(quat_inverse(light_rotation)));
+
+                center_point_texel_space := transform_point(scale_matrix, center_point);
+                center_point_texel_space.x = round(center_point_texel_space.x);
+                center_point_texel_space.y = round(center_point_texel_space.y);
+                center_point_texel_space.z = round(center_point_texel_space.z);
+                center_point = transform_point(mat4_inverse(scale_matrix), center_point_texel_space);
+
+                // position the shadow camera looking at that point
+                shadow_camera.position = center_point - light_direction * radius;
+                shadow_camera.orientation = light_rotation;
+                shadow_camera.size = radius;
+                shadow_camera.far_plane = radius * 2;
+
+                shadow_pass_desc: wb.Render_Pass;
+                shadow_pass_desc.camera = shadow_camera;
+                shadow_pass_desc.color_buffers[0] = shadow_color_buffer;
+                shadow_pass_desc.depth_buffer     = shadow_depth_buffer;
+                shadow_pass_desc.clear_color      = {1, 1, 1, 1};
+                shadow_pass_desc.dont_resize_render_targets_to_screen = true;
+                wb.BEGIN_RENDER_PASS(&shadow_pass_desc);
+                shadow_maps.matrices[map_idx] = mul(shadow_camera.projection_matrix, shadow_camera.view_matrix);
+
+                shadow_material := wb.g_materials["shadow_mtl"];
+                draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
+                wb.BIND_MATERIAL(shadow_material);
+                for cmd in draw_commands {
+                    if len(cmd.model.meshes) > 0 {
+                        wb.draw_model_no_material(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.color);
+                    }
+                }
+
+                shadow_maps.render_targets[map_idx] = shadow_color_buffer;
+            }
+		});
+
 	// TODO draw bloom
 	// TODO ambient occlusion
 	// TODO auto exposure
@@ -169,6 +275,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
 			wb.read_resource(render_graph, "scene draw list");
             wb.read_resource(render_graph, "scene lighting");
+            wb.read_resource(render_graph, "scene shadow map");
             wb.create_resource(render_graph, "game view color", wb.Texture);
             wb.create_resource(render_graph, "game view depth", wb.Texture);
 		}, 
@@ -180,11 +287,26 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             wb.bind_cbuffer(&g_cbuffer_lighting, cast(int)CBuffer_Slot.Lighting);
 
             {
+				shadow_maps := wb.get_resource(render_graph, "scene shadow map", Cascaded_Shadow_Maps);
+				if shadow_maps.render_targets[0] != nil {
+		            for render_target, idx in &shadow_maps.render_targets {
+		                wb.bind_texture(render_target, cast(int)Texture_Slot.Shadow_Map1+idx);
+		            }
+		            defer for _, idx in &shadow_maps.render_targets {
+		                wb.bind_texture(nil, cast(int)Texture_Slot.Shadow_Map1+idx);
+		            }
+		        }
+
 	            pass: wb.Render_Pass;
 	            pass.camera = render_context.target_camera;
 	            pass.color_buffers[0] = &g_color_buffer;
 	            pass.depth_buffer = &g_depth_buffer;
 	            wb.BEGIN_RENDER_PASS(&pass);
+
+	            // skybox
+	            skybox_mtl := wb.g_materials["skybox_mtl"];
+	            wb.set_material_texture(skybox_mtl, "albedo_map", &g_skybox, .Wrap_Linear);
+	            wb.draw_model(wb.g_models["cube_model"], render_context.target_camera.position, {1, 1, 1}, Quaternion(1), skybox_mtl);
 
 	            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
 	            for cmd in draw_commands {
@@ -192,10 +314,6 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 	                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color);
 	                }
 	            }
-
-	            skybox_mtl := wb.g_materials["skybox_mtl"];
-	            wb.set_material_texture(skybox_mtl, "albedo_map", &g_skybox, .Wrap_Linear);
-	            wb.draw_model(wb.g_models["cube_model"], render_context.target_camera.position, {1, 1, 1}, Quaternion(1), skybox_mtl);
         	}
 
             wb.set_resource(render_graph, "game view color", g_color_buffer, nil);
@@ -211,6 +329,12 @@ shutdown :: proc() {
 }
 
 
+Texture_Slot :: enum {
+    Shadow_Map1 = len(wb.Builtin_Texture),
+    Shadow_Map2,
+    Shadow_Map3,
+    Shadow_Map4,
+}
 
 CBuffer_Slot :: enum {
     Lighting = len(wb.Builtin_CBuffer),
@@ -247,6 +371,7 @@ submit_sun :: proc(cbuffer: ^CBuffer_Lighting, proj, view: Matrix4, direction: V
     cbuffer.sun_matrix = wb.mul(proj, view);
     cbuffer.shadow_map_dimensions = {SHADOW_MAP_DIM, SHADOW_MAP_DIM};
 }
+
 
 Entity :: entity.Entity;
 Player_Character :: entity.Player_Character;

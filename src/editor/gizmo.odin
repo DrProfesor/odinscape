@@ -5,6 +5,8 @@ import coll "shared:wb/collision"
 import "shared:wb/basic"
 import "shared:wb/imgui"
 
+import "../shared"
+
 direction_unary := [3]Vector3{ Vector3{1,0,0}, Vector3{0,1,0}, Vector3{0,0,1}  };
 direction_color := [4]Vector4{ Vector4{1,0,0,1}, Vector4{0,1,0,1}, Vector4{0,0,1,1}, Vector4{1,1,1,1} };
 selection_color := Vector4{1,1,0.1,1};
@@ -61,7 +63,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
     rotation^ = quat_norm(rotation^);
 
     was_move_type := move_type;
-    if wb.get_input_up(.Mouse_Left) {
+    if wb.get_global_input_up(.Mouse_Left) {
         move_type = .NONE;
     }
 
@@ -75,10 +77,10 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
     translation_vec := -direction_to_camera * plane_dist;
     plane_point := origin + translation_vec;
 
-    size = length(plane_point - g_editor_camera.position) * 0.05;
+    size = length(plane_point - g_editor_camera.position) * 0.075;
 
     // todo(josh): remove hardcoded Mouse_Right thing. this is only here because the scene view in Mathy Game uses right click to know when to move the camera in edit mode
-    if move_type == .NONE && !wb.get_input(.Mouse_Right) {
+    if move_type == .NONE && !wb.get_global_input(.Mouse_Right) {
         if wb.get_input_down(.Q, true) do if manipulation_mode == .World do manipulation_mode = .Local else do manipulation_mode = .World;
         if wb.get_input_down(.W, true) do operation = .Translate;
         if wb.get_input_down(.E, true) do operation = .Rotate;
@@ -87,13 +89,11 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
     }
 
 
-
-    #partial
-    switch operation {
+    unit_mouse_pos := g_game_view_mouse_pos / {shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y};
+    mouse_world := wb.get_mouse_world_position(camera, unit_mouse_pos);
+    mouse_direction := wb.get_mouse_direction_from_camera(camera, unit_mouse_pos);
+    #partial switch operation {
         case .Translate: {
-            mouse_world := wb.get_mouse_world_position(camera, wb.main_window.mouse_position_unit);
-            mouse_direction := wb.get_mouse_direction_from_camera(camera, wb.main_window.mouse_position_unit);
-
             was_active := move_type != .NONE;
             // arrows
             if move_type == .NONE {
@@ -102,12 +102,12 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
                     center_on_screen := wb.world_to_unit(camera, origin);
                     tip_on_screen := wb.world_to_unit(camera, origin + rotated_direction(rotation^, direction_unary[i]) * size);
 
-                    p := coll.closest_point_on_line(to_vec3(wb.main_window.mouse_position_unit), center_on_screen, tip_on_screen);
-                    dist := length(p - to_vec3(wb.main_window.mouse_position_unit));
+                    p := coll.closest_point_on_line(to_vec3(unit_mouse_pos), center_on_screen, tip_on_screen);
+                    dist := length(p - to_vec3(unit_mouse_pos));
                     if dist < size * 0.005 && dist < current_closest {
                         current_closest = dist;
                         hovered_type = Move_Type.MOVE_X + Move_Type(i);
-                        if wb.get_input_down(.Mouse_Left, true) {
+                        if wb.get_global_input_down(.Mouse_Left, true) {
                             gizmo_state.position_on_move_clicked = position^;
                             move_type = hovered_type;
                         }
@@ -126,7 +126,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
                     intersect_point, ok := coll.plane_intersect(quad_center, normal, g_editor_camera.position, mouse_direction);
                     if length(intersect_point - quad_center) < (TRANSLATE_PLANE_SIZE * size) { // todo(josh): for the planes we are just doing a circle check right now. kinda dumb but it's easy :)
                         hovered_type = Move_Type.MOVE_YZ + Move_Type(i);
-                        if wb.get_input_down(.Mouse_Left, true) {
+                        if wb.get_global_input_down(.Mouse_Left, true) {
                             gizmo_state.position_on_move_clicked = position^;
                             move_type = hovered_type;
                             break;
@@ -203,10 +203,6 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
             break;
         }
         case .Rotate: {
-            mouse_world := wb.get_mouse_world_position(camera, wb.main_window.mouse_position_unit);
-            mouse_direction := wb.get_mouse_direction_from_camera(camera, wb.main_window.mouse_position_unit);
-
-
             closest_plane_distance := max(f32);
             closest_index := -1;
             for i in 0..2 {
@@ -227,8 +223,8 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
 
             if closest_index >= 0 {
                 hovered_type = .ROTATE_X + Move_Type(closest_index);
-                if wb.get_input_down(.Mouse_Left, true) {
-                    mouse_pixel_position_on_rotate_clicked = wb.main_window.mouse_position_pixel;
+                if wb.get_global_input_down(.Mouse_Left, true) {
+                    mouse_pixel_position_on_rotate_clicked = g_game_view_mouse_pos;
                     rotation_on_rotate_clicked = rotation^;
                     move_type = hovered_type;
                 }
@@ -240,7 +236,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
                 sensitivity : f32 = 0.01;
                 if wb.get_input(.Alt) do sensitivity *= 0.5;
                 else if wb.get_input(.Shift) do sensitivity *= 2;
-                rads := (wb.main_window.mouse_position_pixel.x - mouse_pixel_position_on_rotate_clicked.x) * sensitivity;
+                rads := (g_game_view_mouse_pos.x - mouse_pixel_position_on_rotate_clicked.x) * sensitivity;
 
                 dir_idx := -1;
                 #partial
@@ -256,7 +252,61 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
             break;
         }
         case .Scale: {
-            break;
+            was_active := move_type != .NONE;
+
+            if move_type == .NONE {
+                current_closest := max(f32);
+                for i in 0..2 {
+                    center_on_screen := wb.world_to_unit(camera, origin);
+                    tip_on_screen := wb.world_to_unit(camera, origin + rotated_direction(rotation^, direction_unary[i]) * size);
+
+                    p := coll.closest_point_on_line(to_vec3(unit_mouse_pos), center_on_screen, tip_on_screen);
+                    dist := length(p - to_vec3(unit_mouse_pos));
+                    if dist < size * 0.005 && dist < current_closest {
+                        current_closest = dist;
+                        hovered_type = Move_Type.SCALE_X + Move_Type(i);
+                        if wb.get_global_input_down(.Mouse_Left, true) {
+                            gizmo_state.scale_on_scale_clicked = scale^;
+                            move_type = hovered_type;
+                        }
+                    }
+                }
+            }
+
+            if move_type != .NONE {
+                plane_norm: Vector3;
+                #partial
+                switch move_type {
+                    case .SCALE_X:  plane_norm = rotated_direction(rotation^, Vector3{0, 0, 1});
+                    case .SCALE_Y:  plane_norm = rotated_direction(rotation^, Vector3{0, 0, 1});
+                    case .SCALE_Z:  plane_norm = rotated_direction(rotation^, Vector3{1, 0, 0});
+                    case: panic(tprint(move_type)); // note(josh): this was a return
+                }
+
+                diff := mouse_world - origin;
+                prod := dot(diff, plane_norm);
+                prod2 := dot(mouse_direction, plane_norm);
+                prod3 := prod / prod2;
+                intersect := mouse_world - mouse_direction * prod3;
+
+                if !was_active {
+                    last_point = intersect;
+                }
+
+                full_delta_move := intersect - last_point;
+                delta_move: Vector3;
+
+                #partial
+                switch move_type {
+                    case .SCALE_X: delta_move.x = dot(full_delta_move, rotated_direction(rotation^, direction_unary[0]));
+                    case .SCALE_Y: delta_move.y = dot(full_delta_move, rotated_direction(rotation^, direction_unary[1]));
+                    case .SCALE_Z: delta_move.z = dot(full_delta_move, rotated_direction(rotation^, direction_unary[2]));
+                    case: delta_move = full_delta_move;
+                }
+
+                scale^ += rotated_direction(rotation^, delta_move);
+                last_point = intersect;
+            }
         }
     }
 
@@ -268,6 +318,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
             case .NONE: unreachable();
             case .MOVE_X, .MOVE_Y, .MOVE_Z, .MOVE_YZ, .MOVE_ZX, .MOVE_XY: return Gizmo_Move{gizmo_state.position_on_move_clicked, position^};
             case .ROTATE_X, .ROTATE_Y, .ROTATE_Z:                         return Gizmo_Rotate{gizmo_state.rotation_on_rotate_clicked, rotation^};
+            case .SCALE_X, .SCALE_Y, .SCALE_Z:                            return Gizmo_Scale{};
         }
     }
     else {
@@ -312,11 +363,9 @@ gizmo_render :: proc(graph: ^wb.Render_Graph, im_context: ^wb.IM_Context) {
                 rotation = Quaternion(1);
             }
 
-            #partial
-            switch operation {
+            detail :: 10;
+            #partial switch operation {
                 case .Translate: {
-                    detail :: 10;
-
                     verts: [detail*6]wb.Vertex;
                     head_verts: [detail*3]wb.Vertex;
                     quad_verts : [6]wb.Vertex;
@@ -508,13 +557,62 @@ gizmo_render :: proc(graph: ^wb.Render_Graph, im_context: ^wb.IM_Context) {
                     break;
                 }
                 case .Scale: {
-                    break;
+                    verts: [detail*6]wb.Vertex;
+                    head_verts: [detail*3]wb.Vertex;
+                    quad_verts : [6]wb.Vertex;
+
+                    for i in 0..2 {
+                        dir   := direction_unary[i] * size;
+                        dir_x := direction_unary[(i+1) % 3] * size;
+                        dir_y := direction_unary[(i+2) % 3] * size;
+
+                        color := direction_color[i];
+
+                        if hovered_type == Move_Type.MOVE_X + Move_Type(i) || hovered_type == Move_Type.MOVE_YZ + Move_Type(i) {
+                            color = selection_color;
+                        }
+
+                        RAD :: 0.03;
+
+                        step := 0;
+                        for i := 0; i < (detail * 6); i += 6 {
+                            theta := TAU * f32(step) / f32(detail);
+                            theta2 := TAU * f32(step+1) / f32(detail);
+
+                            pt := dir_x * cos(theta) * RAD;
+                            pt += dir_y * sin(theta) * RAD;
+                            pt += dir * 0.9;
+                            verts[i]   = wb.Vertex{ Vector4{pt.x, pt.y, pt.z, 1}, {}, color, {}, {}, {}, {}, {} };
+
+                            pt  = dir_x * cos(theta2) * RAD;
+                            pt += dir_y * sin(theta2) * RAD;
+                            pt += dir * 0.9;
+                            verts[i+1] = wb.Vertex{ Vector4{pt.x, pt.y, pt.z, 1}, {}, color, {}, {}, {}, {}, {} };
+
+                            pt  = dir_x * cos(theta) * RAD;
+                            pt += dir_y * sin(theta) * RAD;
+                            verts[i+2] = wb.Vertex{ Vector4{pt.x, pt.y, pt.z, 1}, {}, color, {}, {}, {}, {}, {} };
+
+                            verts[i+3] = verts[i+1];
+
+                            pt  = dir_x * cos(theta2) * RAD;
+                            pt += dir_y * sin(theta2) * RAD;
+                            verts[i+4] = wb.Vertex{ Vector4{pt.x, pt.y, pt.z, 1}, {}, color, {}, {}, {}, {}, {} };
+
+                            verts[i+5] = verts[i+2];
+
+                            step += 1;
+                        }
+
+                        wb.update_mesh(&gizmo_mesh, 0, verts[:], []u32{});
+                        wb.draw_model(&gizmo_mesh, position, {1,1,1}, rotation, {}, {1, 1, 1, 1});
+                    }
                 }
             }
         }
     }
 
-    wb.im_quad(im_context, .Unit, {0, 0, 0}, {1, 1, 0}, {1, 1, 1, 1}, &gizmo_color_buffer);
+    // wb.im_quad(im_context, .Unit, {0, 0, 0}, {1, 1, 0}, {1, 1, 1, 1}, &gizmo_color_buffer);
 }
 
 Manipulation_Mode :: enum {
@@ -542,4 +640,8 @@ Move_Type :: enum {
     ROTATE_X, ROTATE_BEGIN = ROTATE_X,
     ROTATE_Y,
     ROTATE_Z, ROTATE_END = ROTATE_Z,
+
+    SCALE_X, SCALE_BEGIN = SCALE_X,
+    SCALE_Y,
+    SCALE_Z, SCALE_END = SCALE_Z,
 }

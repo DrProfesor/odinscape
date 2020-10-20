@@ -99,11 +99,9 @@ AOE_Spell :: struct {
 
 // Renderers
 Model_Renderer :: struct {
-	model_id: string,
-    texture_id: string,
-    shader_id: string,
-    material_id: string,
-    tint: wb.Vector4,
+	model_id:    string `model`,
+    material_id: string `material`,
+    tint:    wb.Vector4 `colour`,
 }
 
 Animator :: struct {
@@ -126,6 +124,8 @@ Animator :: struct {
 
 @entity
 Player_Character :: struct {
+	using base: ^Entity `wbml_noserialize`,
+
 	is_local : bool,
 
 	// configuration
@@ -160,10 +160,8 @@ create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Playe
 	// Model
 	// TODO more advanced character loading
 	pc.model.model_id = character.model_id;
-	pc.model.texture_id = character.texture_id;
-	pc.model.shader_id = "simple_rgba";
     pc.model.material_id = "player_material";
-    // pc.model.color = core.Colorf{1, 1, 1, 1};
+    pc.model.tint = {1, 1, 1, 1};
 
 	// Animator
 	// model, ok := wb.try_get_model(pc.model.model_id);
@@ -198,7 +196,7 @@ create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Playe
 	}
 
 	player.kind = pc;
-	append(&all_Player_Character, cast(^Player_Character) player);
+	_add_entity(player);
 
 	log.logln("Create player");
 
@@ -209,6 +207,8 @@ create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Playe
 
 @entity
 Enemy :: struct {
+	using base: ^Entity `wbml_noserialize`,
+
 	target_position: wb.Vector3 "replicate:server",
     
     path: []wb.Vector3,
@@ -230,8 +230,38 @@ Enemy :: struct {
 }
 
 
-
 @entity
 Simple_Model :: struct {
+	using base: ^Entity `wbml_noserialize`,
+
 	using model: Model_Renderer,
+}
+
+@entity_init 
+init_simple_model :: proc(model: ^Simple_Model, is_creation: bool) {
+	if is_creation {
+		model.tint = {1,1,1,1};
+	}
+}
+
+@entity
+Directional_Light :: struct {
+	using base: ^Entity `wbml_noserialize`,
+
+	color: wb.Vector4 `colour`,
+	intensity: f32,
+
+	cameras: [shared.NUM_SHADOW_MAPS]wb.Camera `hidden,wbml_noserialize`,
+    color_buffers: [shared.NUM_SHADOW_MAPS]wb.Texture `hidden,wbml_noserialize`,
+    depth_buffers: [shared.NUM_SHADOW_MAPS]wb.Texture `hidden,wbml_noserialize`,
+}
+
+SHADOW_MAP_DIM :: 2048;
+
+@entity_init
+init_directional_light :: proc(light: ^Directional_Light, is_creation: bool) {
+	for idx in 0..<shared.NUM_SHADOW_MAPS {
+        wb.init_camera(&light.cameras[idx]);
+        light.color_buffers[idx], light.depth_buffers[idx] = wb.create_color_and_depth_buffers(SHADOW_MAP_DIM, SHADOW_MAP_DIM, .R32G32B32A32_FLOAT);
+    }
 }

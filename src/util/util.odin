@@ -9,6 +9,10 @@ tprint :: proc(_args: ..any) -> string {
 	return fmt.tprint(args=_args, sep="");
 }
 
+remap :: proc(val, from1, to1, from2, to2: f32) -> f32 {
+    return (val - from1) / (to1 - from1) * (to2 - from2) + from2;
+}
+
 Uuid :: struct #raw_union {
     using _: struct #packed {
         time_low : u32,

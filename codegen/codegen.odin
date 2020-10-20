@@ -14,6 +14,7 @@ SRC :: "./src";
 
 main :: proc() {
 	entity_types: [dynamic]string;
+    entity_inits: map[string]string;
 
 	for fp in basic.get_all_filepaths_recursively(SRC) {
 		if !basic.string_ends_with(fp, ".odin") do continue;
@@ -35,11 +36,14 @@ main :: proc() {
                         for elem in attribute.elems {
                             switch elem_kind in elem.derived {
                                 case ast.Ident: {
-                                	switch elem_kind.name {
-                                		case "entity": {
-                                			append(&entity_types, decl_kind.names[0].derived.(ast.Ident).name);	
-                                		}
-                                	}
+                            		if elem_kind.name == "entity" {
+                            			append(&entity_types, decl_kind.names[0].derived.(ast.Ident).name);	
+                            		}
+
+                                    if elem_kind.name == "entity_init" {
+                                        // What a hack
+                                        entity_inits[entity_types[len(entity_types)-1]] = decl_kind.names[0].derived.(ast.Ident).name;
+                                    }
                                 }
                             }
                         }
@@ -55,14 +59,23 @@ main :: proc() {
     type_builder: strings.Builder;
     create_switch: strings.Builder;
     union_builder: strings.Builder;
+    init_builder: strings.Builder;
+
+    sbprint :: proc(builder: ^strings.Builder, args: ..any) {
+        fmt.sbprint(buf=builder, args=args, sep="");
+    }
 
     for t in entity_types {
-    	fmt.sbprint(buf=&storage_builder, args={"\nall_",t,": [dynamic]^",t,";"}, sep="");
-    	fmt.sbprint(buf=&add_switch_builder, args={"\n\t\tcase ",t,": append(&all_",t,", cast(^",t,") e);"}, sep="");
-    	fmt.sbprint(buf=&destroy_switch_builder, args={"\n\t\tcase ",t,": for ep, i in all_",t," do if cast(^Entity) ep == e { unordered_remove(&all_",t,", i); break; }"}, sep="");
-        fmt.sbprint(buf=&type_builder, args={"\n\ttypeid_of(",t,"),"}, sep="");
-        fmt.sbprint(buf=&create_switch, args={"\n\t\tcase ",t,": e.kind = ",t,"{};"}, sep="");
-        fmt.sbprint(buf=&union_builder, args={"\n\t",t,","}, sep="");
+    	sbprint(&storage_builder, "\nall_",t,": [dynamic]^",t,";");
+    	sbprint(&add_switch_builder, "\n\t\tcase ",t,": { \n\t\t\tappend(&all_",t,", cast(^",t,") e); \n\t\t\t(cast(^",t,") e).base = e;\n\t\t}");
+    	sbprint(&destroy_switch_builder, "\n\t\tcase ",t,": for ep, i in all_",t," do if cast(^Entity) ep == e { unordered_remove(&all_",t,", i); break; }");
+        sbprint(&type_builder, "\n\ttypeid_of(",t,"),");
+        sbprint(&create_switch, "\n\t\tcase ",t,": e.kind = ",t,"{};");
+        sbprint(&union_builder, "\n\t",t,",");
+    }
+
+    for t, init_proc in entity_inits {
+        sbprint(&init_builder, "\n\t\tcase ", t, ": ", init_proc, "(cast(^",t,") e, is_creation);");
     }
 
     generated_code, _ := strings.replace(GENERATED_CODE_FORMAT, "{storage}", strings.to_string(storage_builder), 1);
@@ -71,6 +84,7 @@ main :: proc() {
     generated_code, _ = strings.replace(generated_code, "{types}", strings.to_string(type_builder), 1);
     generated_code, _ = strings.replace(generated_code, "{create_switch}", strings.to_string(create_switch), 1);
     generated_code, _ = strings.replace(generated_code, "{union}", strings.to_string(union_builder), 1);
+    generated_code, _ = strings.replace(generated_code, "{init_switch}", strings.to_string(init_builder), 1);
 
     generated_code, _ = strings.replace_all(generated_code, "{type_count}", fmt.tprint(len(entity_types)));
 
@@ -106,6 +120,12 @@ create_entity_by_type :: proc(t: typeid) -> Entity {
     }
 
     return e;
+}
+
+init_entity :: proc(e: ^Entity, is_creation := false) {
+    #partial switch kind in e.kind {{init_switch}
+        case: break;
+    }
 }
 
 `;

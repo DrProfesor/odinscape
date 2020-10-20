@@ -11,10 +11,12 @@ import la "core:math/linalg"
 import "shared:wb"
 import "shared:wb/basic"
 import "shared:wb/imgui"
+import "shared:wb/reflection"
 
 import "../configs"
 import "../entity"
 import "../shared"
+import "../util"
 
 g_editor_camera: wb.Camera;
 
@@ -41,8 +43,8 @@ init :: proc() {
 
     game_texture_desc := wb.Texture_Description {
         type = .Texture2D,
-        width = 1920,
-        height = 1080,
+        width = shared.WINDOW_SIZE_X,
+        height = shared.WINDOW_SIZE_Y,
         format = .R8G8B8A8_UINT,
         render_target = true
     };
@@ -55,12 +57,20 @@ init :: proc() {
     wb.register_developer_program("Resources", draw_resource_inspector, .Window, nil);
     wb.register_developer_program("Game View", draw_game_view, .Window, nil);
 
+    for open_prog in configs.editor_config.open_editor_windows {
+        for prog in &wb.developer_programs {
+            if prog.name == open_prog {
+                prog.is_open = true;
+                break;
+            }
+        }
+    }
+
     register_modal("Select Entity", draw_entity_select_modal, nil);
 }
 
 update :: proc(dt: f32) {
     gizmo_new_frame();
-    // imgui.show_demo_window();
     
     // Get entity mouse is hovering
     {
@@ -68,9 +78,8 @@ update :: proc(dt: f32) {
         defer wb.return_texture_pixels(&entity_id_buffer_cpu_copy, pixels);
 
         hovered_entity_index = -1;
-
         pixels_int := mem.slice_data_cast([]i32, pixels);
-        idx := cast(int)wb.main_window.mouse_position_pixel.x + cast(int)(wb.main_window.height - wb.main_window.mouse_position_pixel.y) * entity_id_buffer_cpu_copy.width;
+        idx := cast(int)g_game_view_mouse_pos.x + cast(int)(shared.WINDOW_SIZE_Y - g_game_view_mouse_pos.y) * entity_id_buffer_cpu_copy.width;
         if idx >= 0 && idx < len(pixels_int) {
             hovered_entity_index = cast(int)pixels_int[idx];
         }
@@ -84,7 +93,7 @@ update :: proc(dt: f32) {
         g_clicked_outside_scene = false;
     }
 
-    if g_can_move_game_view && !g_clicked_outside_scene {
+    if g_can_move_game_view && !g_clicked_outside_scene && wb.get_global_input(.Mouse_Right) {
         wb.do_camera_movement(&g_editor_camera.position, &g_editor_camera.orientation, dt, 5, 10, 1, true);
     }
 
@@ -114,13 +123,21 @@ update :: proc(dt: f32) {
         // TODO put the gizmo in the center, and affect all selected things
     }
 
-    if wb.get_input_down(.Mouse_Left, true) {
+    if wb.get_global_input_down(.Mouse_Left, true) && g_can_move_game_view && !gizmo_state.is_manipulating {
         select_entity(hovered_entity_index, !wb.get_input(.Control));
     }
 
     if wb.get_input_down(.Z, true) && wb.get_input(.Control) {
         if wb.get_input(.Shift) do redo();
         else do undo();
+    }
+
+    if wb.get_input_down(.Delete, true) {
+        // TODO undo/redo
+        for eid in selected_entities {
+            entity.destroy_entity(eid);
+        }
+        clear(&selected_entities);
     }
 
     for modal in &modals {
@@ -138,9 +155,11 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
         selected_entity := entity.get_entity(selected_entities[0]);
 
         // Name
-        @static name_buffer: [256]u8;
-        bprint(name_buffer[:], selected_entity.name);
-        selected_entity.name = do_input_text(name_buffer[:]);
+        // TODO I hate imgui input text
+        bprint(selected_entity.name_buffer[:], selected_entity.name);
+        selected_entity.name_buffer[len(selected_entity.name)] = 0;
+        imgui.input_text("", selected_entity.name_buffer[:]);
+        selected_entity.name = cast(string)cast(cstring)&selected_entity.name_buffer[0];
 
         // Enabled
         imgui.same_line();
@@ -201,15 +220,200 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
             imgui.input_float("z", &selected_entity.scale.z);
         }
 
+        auto_field_gen :: proc(name: string, ti: ^runtime.Type_Info, data: rawptr, tags: string, is_root := true) {
+            if strings.contains(tags, "hidden") do return;
+
+            if !is_root do imgui.indent();
+            imgui.push_id(name);
+            defer imgui.pop_id();
+
+            #partial switch kind in ti.variant {
+                case runtime.Type_Info_Integer: {
+                    if kind.signed {
+                        switch ti.size {
+                            case 8: new_data := cast(i32)(cast(^i64)data)^; imgui.input_int(name, &new_data); (cast(^i64)data)^ = cast(i64)new_data;
+                            case 4: new_data := cast(i32)(cast(^i32)data)^; imgui.input_int(name, &new_data); (cast(^i32)data)^ = cast(i32)new_data;
+                            case 2: new_data := cast(i32)(cast(^i16)data)^; imgui.input_int(name, &new_data); (cast(^i16)data)^ = cast(i16)new_data;
+                            case 1: new_data := cast(i32)(cast(^i8 )data)^; imgui.input_int(name, &new_data); (cast(^i8 )data)^ = cast(i8 )new_data;
+                            case: assert(false, tprint(ti.size));
+                        }
+                    }
+                    else {
+                        switch ti.size {
+                            case 8: new_data := cast(i32)(cast(^u64)data)^; imgui.input_int(name, &new_data); (cast(^u64)data)^ = cast(u64)new_data;
+                            case 4: new_data := cast(i32)(cast(^u32)data)^; imgui.input_int(name, &new_data); (cast(^u32)data)^ = cast(u32)new_data;
+                            case 2: new_data := cast(i32)(cast(^u16)data)^; imgui.input_int(name, &new_data); (cast(^u16)data)^ = cast(u16)new_data;
+                            case 1: new_data := cast(i32)(cast(^u8 )data)^; imgui.input_int(name, &new_data); (cast(^u8 )data)^ = cast(u8 )new_data;
+                            case: assert(false, tprint(ti.size));
+                        }
+                    }
+                }
+                case runtime.Type_Info_Float: {
+                    switch ti.size {
+                        case 8: {}
+                        case 4: {
+                            new_data := cast(f32)(cast(^f32)data)^;
+                            imgui.push_item_width(100);
+                            imgui.input_float(tprint(name, "##non_range"), &new_data);
+                            imgui.pop_item_width();
+                            (cast(^f32)data)^ = cast(f32)new_data;
+                        }
+                        case: assert(false, tprint(ti.size));
+                    }
+                }
+                case runtime.Type_Info_Boolean: {
+                    imgui.checkbox(name, cast(^bool)data);
+                }
+                case runtime.Type_Info_Enum: {
+                     if len(kind.values) > 0 {
+                        current_item_index : i32 = -1;
+                        switch kind.base.id {
+                            case u8:        for v, idx in kind.values { if (cast(^u8     )data)^ == cast(u8     )v { current_item_index = cast(i32)idx; break; } }
+                            case u16:       for v, idx in kind.values { if (cast(^u16    )data)^ == cast(u16    )v { current_item_index = cast(i32)idx; break; } }
+                            case u32:       for v, idx in kind.values { if (cast(^u32    )data)^ == cast(u32    )v { current_item_index = cast(i32)idx; break; } }
+                            case u64:       for v, idx in kind.values { if (cast(^u64    )data)^ == cast(u64    )v { current_item_index = cast(i32)idx; break; } }
+                            case uint:      for v, idx in kind.values { if (cast(^uint   )data)^ == cast(uint   )v { current_item_index = cast(i32)idx; break; } }
+                            case i8:        for v, idx in kind.values { if (cast(^i8     )data)^ == cast(i8     )v { current_item_index = cast(i32)idx; break; } }
+                            case i16:       for v, idx in kind.values { if (cast(^i16    )data)^ == cast(i16    )v { current_item_index = cast(i32)idx; break; } }
+                            case i32:       for v, idx in kind.values { if (cast(^i32    )data)^ == cast(i32    )v { current_item_index = cast(i32)idx; break; } }
+                            case i64:       for v, idx in kind.values { if (cast(^i64    )data)^ == cast(i64    )v { current_item_index = cast(i32)idx; break; } }
+                            case int:       for v, idx in kind.values { if (cast(^int    )data)^ == cast(int    )v { current_item_index = cast(i32)idx; break; } }
+                            case rune:      for v, idx in kind.values { if (cast(^rune   )data)^ == cast(rune   )v { current_item_index = cast(i32)idx; break; } }
+                            case uintptr:   for v, idx in kind.values { if (cast(^uintptr)data)^ == cast(uintptr)v { current_item_index = cast(i32)idx; break; } }
+                            case: panic(tprint(kind.values[0]));
+                        }
+
+                        item := current_item_index;
+                        imgui.combo(name, &item, kind.names, cast(i32)min(5, len(kind.names)));
+                        if item != current_item_index {
+                            switch kind.base.id {
+                                case u8:        (cast(^u8     )data)^ = cast(u8     )kind.values[item];
+                                case u16:       (cast(^u16    )data)^ = cast(u16    )kind.values[item];
+                                case u32:       (cast(^u32    )data)^ = cast(u32    )kind.values[item];
+                                case u64:       (cast(^u64    )data)^ = cast(u64    )kind.values[item];
+                                case uint:      (cast(^uint   )data)^ = cast(uint   )kind.values[item];
+                                case i8:        (cast(^i8     )data)^ = cast(i8     )kind.values[item];
+                                case i16:       (cast(^i16    )data)^ = cast(i16    )kind.values[item];
+                                case i32:       (cast(^i32    )data)^ = cast(i32    )kind.values[item];
+                                case i64:       (cast(^i64    )data)^ = cast(i64    )kind.values[item];
+                                case int:       (cast(^int    )data)^ = cast(int    )kind.values[item];
+                                case rune:      (cast(^rune   )data)^ = cast(rune   )kind.values[item];
+                                case uintptr:   (cast(^uintptr)data)^ = cast(uintptr)kind.values[item];
+                                case: panic(tprint(kind));
+                            }
+                        }
+                    }
+                }
+                case runtime.Type_Info_Quaternion: {}
+                case runtime.Type_Info_String: {
+                    if tags == "" {
+                        text_edit_buffer: [256]u8;
+                        bprint(text_edit_buffer[:], (cast(^string)data)^);
+
+                        if imgui.input_text(name, text_edit_buffer[:], .EnterReturnsTrue) {
+                            result := text_edit_buffer[:];
+                            for b, i in text_edit_buffer {
+                                if b == '\x00' {
+                                    result = text_edit_buffer[:i];
+                                    break;
+                                }
+                            }
+                            str := strings.clone(cast(string)result);
+                            (cast(^string)data)^ = str; // @Leak
+                        }
+                    } else {
+                        draw_resource_combo :: proc(name: string, data: rawptr, m: $T/map[string]$E) {
+                            selection := (cast(^string)data)^;
+                            if !imgui.begin_combo(name, selection) do return;
+                            defer imgui.end_combo();
+
+                            for k, _ in m {
+                                if imgui.selectable(k, selection == k) {
+                                    (cast(^string)data)^ = k;
+                                }
+                            }
+                        }
+                        if strings.contains(tags, "model") {
+                            draw_resource_combo(name, data, wb.g_models);
+                        }
+
+                        if strings.contains(tags, "material") {
+                            draw_resource_combo(name, data, wb.g_materials);
+                        }
+
+                        if strings.contains(tags, "texture") {
+                            draw_resource_combo(name, data, wb.g_textures);
+                        }
+                    }
+                }
+
+                case runtime.Type_Info_Named: {
+                    auto_field_gen(name, kind.base, data, tags);
+                }
+                case runtime.Type_Info_Struct: {
+                    base_ptr := data;
+                    for field, i in kind.names {
+                        auto_field_gen(field, kind.types[i], rawptr(uintptr(base_ptr)+kind.offsets[i]), kind.tags[i], false);
+                    }
+                }
+                
+                case runtime.Type_Info_Slice: {}
+                case runtime.Type_Info_Array: {
+                    if strings.contains(tags, "colour") {
+                        assert(kind.elem_size == 4);
+                        assert(kind.elem == type_info_of(f32));
+
+                        imgui.push_id(name);
+                        defer imgui.pop_id();
+
+
+                        col := mem.slice_ptr(cast(^f32) data, 4);
+                        if imgui.color_button(name, imgui.Vec4{col[0], col[1], col[2], col[3]}, .None, imgui.Vec2{75, 20}) {
+                            imgui.open_popup("colour_picker");
+                        }
+                        imgui.same_line();
+                        imgui.text(name);
+
+                        if imgui.begin_popup("colour_picker", .NoTitleBar | .NoResize | .NoDocking) {
+                            imgui.color_picker4(name, cast(^f32) data);
+                            imgui.end_popup();
+                        }
+                    }
+                }
+                case runtime.Type_Info_Dynamic_Array: {}
+                case runtime.Type_Info_Map: {}
+                
+                case runtime.Type_Info_Tuple: {}
+                case runtime.Type_Info_Any: {}
+                case runtime.Type_Info_Union: {}
+                case runtime.Type_Info_Type_Id: {}
+            }
+
+            if !is_root do imgui.unindent();
+        }
+
+        ti := reflection.get_union_type_info(selected_entity.kind);
+        assert(ti != nil);
+        struct_ti : runtime.Type_Info_Struct;
+        #partial switch kind in ti.variant {
+            case runtime.Type_Info_Named: {
+                struct_ti = kind.base.variant.(runtime.Type_Info_Struct);
+            }
+            case runtime.Type_Info_Struct: {
+                struct_ti = kind;
+            }
+            case: logln("Unhandled type: ", kind);
+        }
+
+        base_ptr := &selected_entity.kind;
+        for field, i in struct_ti.names {
+            auto_field_gen(field, struct_ti.types[i], rawptr(uintptr(base_ptr)+struct_ti.offsets[i]), struct_ti.tags[i]);
+        }
+
         // Entity types can sub their own editors in, if they want special things
         // otherwise generic, and uses tags on fields to modify things
 
     } imgui.end();
-}
-
-draw_inspector_ti :: proc(entity: ^Entity, name: string, ptr: rawptr, ti: ^runtime.Type_Info) {
-    imgui.push_id(name);
-    defer imgui.pop_id();
 }
 
 DEFAULT_TREE_FLAGS : imgui.Tree_Node_Flags : .OpenOnArrow | .SpanAvailWidth | .OpenOnDoubleClick;
@@ -220,62 +424,58 @@ draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
     defer imgui.end();
     if !open do return;
 
-    if imgui.begin_popup_context_item("entity context menu") {
-
-        if imgui.menu_item("Add Entity") do
-            open_modal("Select Entity");
-
-        imgui.end_popup();
-    }
-
     draw_entity_node :: proc(e: ^Entity) {
+        assert(e != nil);
+
         flags := DEFAULT_TREE_FLAGS;
         
         if is_entity_selected(e) do flags |= .Selected;
         if len(e.children) == 0 do flags |= .Leaf;
         
         open := imgui.tree_node_ex(e.name, flags);
-
         if imgui.begin_drag_drop_source() {
             imgui.set_drag_drop_payload("entity", &e.id, size_of(e.id));
             imgui.text(e.name);
             imgui.end_drag_drop_source();
         }
-
         if imgui.begin_drag_drop_target() {
             payload := imgui.accept_drag_drop_payload("entity");
             dropped_eid := (cast(^int)payload.data)^;
             entity.set_parent(dropped_eid, e.id);
             imgui.end_drag_drop_target();
         }
-        
+
         if !open do return;
         defer imgui.tree_pop();
-
         if imgui.is_item_clicked() {
             select_entity(e.id);
         }
-
-        for c in &e.children {
-            draw_entity_node(c);
+        if e.children != nil {
+            for c in &e.children {
+                draw_entity_node(c);
+            }
         }
     }
 
     for scene_id, scene in entity.loaded_scenes {
         flags : imgui.Tree_Node_Flags = .OpenOnArrow | .SpanAvailWidth;
-        if !imgui.tree_node_ex(scene_id, flags) do continue;
-        defer imgui.tree_pop();
-
+        open := imgui.tree_node_ex(scene_id, flags);
+        
         if imgui.begin_popup_context_item("scene context") {
 
             if imgui.menu_item("Save") do
                 entity.save_scene(scene_id);
 
+            if imgui.menu_item("Add Entity") do
+                open_modal("Select Entity");
+
             imgui.end_popup();
         }
 
-        for eid in scene.entities {
-            e := entity.get_entity(eid);
+        if !open do continue;
+        defer imgui.tree_pop();
+
+        for eid, e in scene.entities {
             if !e.active do continue;
             if e.parent != nil do continue;
             draw_entity_node(e);
@@ -359,6 +559,8 @@ draw_resource_inspector :: proc(userdata: rawptr, open: ^bool) {
 g_game_view_texture: wb.Texture;
 g_can_move_game_view: bool;
 g_clicked_outside_scene: bool;
+g_game_view_mouse_pos: Vector2;
+
 draw_game_view :: proc(userdata: rawptr, open: ^bool) {
     flags := DEFAULT_WINDOW_FLAGS | .NoTitleBar;
     open := imgui.begin("Game View", open, flags);
@@ -368,9 +570,41 @@ draw_game_view :: proc(userdata: rawptr, open: ^bool) {
     g_can_move_game_view = imgui.is_window_hovered();
 
     window_size := imgui.get_window_size();
+    window_pos := imgui.get_window_pos();
+
+    target_width := window_size.x;
+    target_height := window_size.y;
+
+    current_width := cast(f32) shared.WINDOW_SIZE_X;
+    current_height := cast(f32) shared.WINDOW_SIZE_Y;
+
+    width := target_width;
+    height := target_height;
+
+    image_ar := current_width / current_height;
+    target_ar := target_width / target_height;
+
+    if image_ar > target_ar { // taller than what we want
+        height = target_width / image_ar;
+    } else if image_ar < target_ar { // wider than what we want
+        width = target_height * image_ar;
+    }
+
+    // TODO center image in window
+
     if g_game_view_texture.type != .Invalid {
-        // TODO aspect ratio
-        imgui.image(cast(imgui.Texture_ID)&g_game_view_texture, {window_size.x - 5, window_size.y - 5});
+        imgui.image(cast(imgui.Texture_ID)&g_game_view_texture, {width, height});
+        p_min, p_max: imgui.Vec2;
+        imgui.get_item_rect_min(&p_min); imgui.get_item_rect_max(&p_max);
+
+        x_scale := shared.WINDOW_SIZE_X / width;
+        y_scale := shared.WINDOW_SIZE_Y / height;
+
+        wb_pixel_pos := wb.main_window.mouse_position_pixel;
+        g_game_view_mouse_pos.x = (wb_pixel_pos.x - window_pos.x) * x_scale;
+        g_game_view_mouse_pos.y = (wb_pixel_pos.y - (shared.WINDOW_SIZE_Y - p_max.y) + p_min.y + 15) * y_scale;
+
+        imgui.draw_list_add_image(imgui.get_window_draw_list(), cast(imgui.Texture_ID)&gizmo_color_buffer, p_min, p_max);
     }
 }
 
@@ -393,7 +627,7 @@ draw_entity_select_modal :: proc(modal: ^Modal, userdata: rawptr) {
         // TODO maybe entity creation window to set certain parameters?
         // TODO try place between camera and object. With max dist away from cam
         pos := g_editor_camera.position + camera_direction * 10;
-        spawned_entiy := entity.add_entity(created_entity);
+        spawned_entiy := entity.add_entity(created_entity, true);
         entity.add_entity_to_scene(spawned_entiy);
         spawned_entiy.position = pos;
         modal.is_open = false;
@@ -451,6 +685,14 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             wb.ensure_texture_size(&g_game_view_texture, game_view.width, game_view.height);
             wb.copy_texture(&g_game_view_texture, game_view);
         });
+}
+
+shutdown :: proc() {
+    clear(&configs.editor_config.open_editor_windows);
+    for editr in wb.developer_programs {
+        if !editr.is_open do continue;
+        append(&configs.editor_config.open_editor_windows, editr.name);
+    }
 }
 
 //
@@ -515,14 +757,6 @@ close_modal :: proc(name: string) {
 }
 
 
-
-
-do_input_text :: proc(buf: []byte) -> string {
-    imgui.input_text("", buf);
-    buf[len(buf)-1] = 0;
-    text := cast(string)cast(cstring)&buf[0];
-    return text;
-}
 
 Draw_Command :: shared.Draw_Command;
 Entity :: entity.Entity;

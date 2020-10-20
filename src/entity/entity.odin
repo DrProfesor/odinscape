@@ -24,6 +24,7 @@ Entity :: struct {
 	kind: Entity_Union,
 
 	name: string,
+	name_buffer: [256]byte `wbml_noserialize`,
 
 	id: int `wbml_noserialize`,
 	network_id: int `wbml_noserialize`, // -1 for non networked
@@ -74,7 +75,7 @@ create_entity :: proc(pos := wb.Vector3{}, rotation := wb.Quaternion(1), scale :
 	return e;
 }
 
-add_entity :: proc(_e: Entity) -> ^Entity {
+add_entity :: proc(_e: Entity, is_creation := false) -> ^Entity {
 	entity := _e;
 
 	id := last_entity_slot;
@@ -99,6 +100,7 @@ add_entity :: proc(_e: Entity) -> ^Entity {
 	all_entities[id] = entity;
 
 	_add_entity(&all_entities[id]);
+	init_entity(&all_entities[id], is_creation);
 
 	return &all_entities[id];
 }

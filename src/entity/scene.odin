@@ -38,7 +38,7 @@ load_scene :: proc(scene_id: string, set_main := false) {
 		assert(ok);
 
 		sec: Serializable_Entity_Container;
-		wbml.deserialize(bytes, &sec, allocators.arena_allocator(&entity_wbml_node_arena), allocators.arena_allocator(&entity_wbml_node_arena));
+		wbml.deserialize(bytes, &sec, allocators.arena_allocator(&entity_wbml_node_arena), context.allocator);
 
 		entity := add_entity(sec.entity);
 		scene.entities[entity.id] = entity;
@@ -101,6 +101,8 @@ unload_scene :: proc(scene_id: string) {
 }
 
 add_entity_to_scene :: proc(e: ^Entity, _scene: string = "") {
+	assert(e != nil);
+
 	scene_id := _scene;
 	if scene_id == "" do scene_id = main_scene.id;
 	if e.dynamically_spawned do return; 
@@ -120,6 +122,8 @@ add_entity_to_scene :: proc(e: ^Entity, _scene: string = "") {
 }
 
 remove_from_scene :: proc(e: ^Entity) {
+	assert(e != nil);
+
 	if e.current_scene == "" do return;
 
 	current_scene := loaded_scenes[e.current_scene];
