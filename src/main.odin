@@ -8,6 +8,7 @@ import "core:os"
 import "shared:wb"
 import "shared:wb/basic"
 import "shared:wb/logging"
+import "shared:wb/profiler"
 
 import "entity"
 import "configs"
@@ -16,8 +17,7 @@ import "editor"
 import "net"
 import "game"
 import "physics"
-
-logln :: logging.logln;
+import "util"
 
 main_init :: proc() {
     configs.init();
@@ -28,9 +28,7 @@ main_init :: proc() {
 }
 
 main_update :: proc(dt: f32) -> bool {
-    when !#config(HEADLESS, false) {
-        // if core.get_input_down(core.Input.Escape) do core.exit();
-    }
+    profiler.TIMED_SECTION();
 
     // maybe not in editor?
     // we would have to allow for offline play
@@ -97,7 +95,7 @@ main_render :: proc() {
 
             game_view := wb.get_resource(render_graph, "game view color", wb.Texture);
             wb.im_quad(&g_screen_context, .Pixel, {0,0,0}, {shared.WINDOW_SIZE_X, shared.WINDOW_SIZE_Y, 0}, {1,1,1,1}, game_view);
-
+            
             wb.draw_im_context(&g_world_context, &g_main_camera);
             wb.draw_im_context(&g_screen_context, &g_main_camera);
         });

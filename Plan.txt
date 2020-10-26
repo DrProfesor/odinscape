@@ -6,6 +6,8 @@ v0.0.5 : questing basics
 v0.0.6 : equipment / loot
 v0.0.7 : player leveling, statistics
 
+HM Chair Tracking Number: 191026583898
+
 Tasks
   v0.0.1
   	x save game
@@ -13,24 +15,36 @@ Tasks
   	x find cheap server to run on
   	x server stability
     x idea of a scene
-    - prefabs
-    - headless server
-    - simple editor. Allow placing objects in the scence
-      - drag and drop assets
+    x prefabs
+    x simple editor. Allow placing objects in the scence
+      x drag and drop assets (drag assets from resource inspector into scene)
       x model renderer
-      - model renderer colour
-      - scale gizmo
+      x model renderer colour
+      x scale gizmo
 
 
   v0.0.2
-    - enemy spawning
-    - enemy behaviours
-    - enemy health
-    - enemy attack (animate, damage)
-    - player attack (animate, damage)
-    - player health
+    - core
+      x headless server
+      - shadows
+      - animations
+        - animator entity component
+        - animation node graph
+          - transition between animations (no blending)
+    - editor work:
+      - prefab editor
+      - logger
+    - game work:
+      - particle emitter
+      - enemy spawning
+      - enemy behaviours
+      - enemy health
+      - enemy attack (animate, damage)
+      - player attack (animate, damage)
+      - player health
 
   v0.0.3
+    - entity graph?
     - build a small spawn area. Needs enemy area and "home base"
     - terrain improvements
     - terrain serialization and loading
@@ -54,9 +68,19 @@ Tasks
     - rooting objects to bones
     - adding armour to player characters
 
-
-
-
+v0.1.0 (Pre-Alpha Requirements)
+  - 10 playable quests
+  - tutorial
+  - 15 enemy kinds
+  - leveling
+  - clean combat
+  - character creation
+  - abilities
+    - 10 basic
+    - 5 kool ones (received from quests)
+  - starting zone
+  - city
+  - decent sized exploration zone / place to do quests
 
 
 

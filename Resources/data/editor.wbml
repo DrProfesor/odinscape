@@ -7,4 +7,12 @@
 
     camera_rotation quat 0.000 0.000 0.000 0.000
 
+    open_editor_windows [
+        "Profiler"
+        "Inspector"
+        "Hierarchy"
+        "Resources"
+        "Game View"
+        "Console"
+    ]
 }

@@ -1,0 +1,16 @@
+{
+    shader "simple_rgba"
+
+    depth_test true
+
+    blend_mode Alpha_Blend
+
+    cull_backfaces false
+
+    properties [
+        { name "base_color" value .Vector4 [ 0.099 0.066 0.033 1.000 ] }
+    ]
+
+    textures [
+    ]
+}

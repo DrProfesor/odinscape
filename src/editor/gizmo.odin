@@ -6,6 +6,7 @@ import "shared:wb/basic"
 import "shared:wb/imgui"
 
 import "../shared"
+import "../game"
 
 direction_unary := [3]Vector3{ Vector3{1,0,0}, Vector3{0,1,0}, Vector3{0,0,1}  };
 direction_color := [4]Vector4{ Vector4{1,0,0,1}, Vector4{0,1,0,1}, Vector4{0,0,1,1}, Vector4{1,1,1,1} };
@@ -610,9 +611,10 @@ gizmo_render :: proc(graph: ^wb.Render_Graph, im_context: ^wb.IM_Context) {
                 }
             }
         }
-    }
 
-    // wb.im_quad(im_context, .Unit, {0, 0, 0}, {1, 1, 0}, {1, 1, 1, 1}, &gizmo_color_buffer);
+        // TODO manipulate this
+        // wb.draw_model(wb.g_models["cube_model"], game.g_game_camera.position, {1,1,1}, game.g_game_camera.orientation, wb.g_materials["simple_rgba_mtl"], {1, 0, 0, 1});
+    }
 }
 
 Manipulation_Mode :: enum {

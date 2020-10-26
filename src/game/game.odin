@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:strings"
 import "core:mem"
 import "core:os"
+import "core:log"
 import "core:math"
 import la "core:math/linalg"
 
@@ -11,11 +12,13 @@ import "shared:wb"
 import "shared:wb/basic"
 import "shared:wb/logging"
 import "shared:wb/stb"
+import "shared:wb/profiler"
 
 import "../shared"
 import "../configs"
 import "../net"
 import "../entity"
+import "../util"
 
 g_game_camera: wb.Camera;
 g_cbuffer_lighting: wb.CBuffer;
@@ -34,18 +37,12 @@ init :: proc() {
 		wb.track_asset_folder("resources/creature");
 		wb.track_asset_folder("resources/data");
 		wb.track_asset_folder("resources/fonts");
-		wb.track_asset_folder("resources/models");
 		wb.track_asset_folder("resources/prefabs");
 		wb.track_asset_folder("resources/scenes");
 		wb.track_asset_folder("resources/textures");
+		wb.track_asset_folder("resources/icons");
+		wb.track_asset_folder("resources/equipment");
 
-		// wb.main_camera.is_perspective = true;
-		// wb.main_camera.size = 70;
-		// wb.main_camera.position = math.Vec3{0, 6.09, 4.82};
-		// wb.main_camera.rotation = math.Quat{0,0,0,1};
-
-		// wb.init_particles();
-		// wb.init_terrain(); // we still need terrain collision on the server
 		init_terrain();
 
 		wb.init_camera(&g_game_camera);
@@ -86,7 +83,7 @@ init :: proc() {
 }
 
 update :: proc(dt: f32) {
-	
+	profiler.TIMED_SECTION("game update");
 	if net.is_client {
 		update_login_screen();
 		update_character_select_screen();
@@ -168,19 +165,17 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 	        wb.create_resource(render_graph, "scene shadow map", Cascaded_Shadow_Maps);
 		}, 
 		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			render_context := cast(^shared.Render_Graph_Context)userdata;
+
+			profiler.TIMED_SECTION();
 			shadow_maps: Cascaded_Shadow_Maps;
-			defer {
-				lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
-				submit_sun(lighting, wb.construct_perspective_matrix(wb.to_radians(60), shared.WINDOW_SIZE_X / shared.WINDOW_SIZE_Y, 0.1, 1000), wb.construct_view_matrix({0,100,0}, wb.Quaternion(1)), {-60, -60, 0}, Vector3{1,1,1}, 10);
-				wb.set_resource(render_graph, "scene shadow map", shadow_maps, nil);
-			}
 
 			if len(entity.all_Directional_Light) == 0 do return;
-			
 			sun := entity.all_Directional_Light[0];
 
-			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 10, 20, 30, 1000};
+			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 10};
             for map_idx in 0..<shared.NUM_SHADOW_MAPS {
+            	profiler.TIMED_SECTION();
                 shadow_camera := &sun.cameras[map_idx];
                 shadow_color_buffer := &sun.color_buffers[map_idx];
                 shadow_depth_buffer := &sun.depth_buffers[map_idx];
@@ -196,8 +191,8 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                 };
 
                 // calculate sub-frustum for this cascade
-                cascade_proj := perspective(to_radians(g_game_camera.size), f32(wb.main_window.width) / wb.main_window.height, g_game_camera.near_plane + cascade_distances[map_idx], min(g_game_camera.far_plane, g_game_camera.near_plane + cascade_distances[map_idx+1]), false);
-                cascade_view := wb.construct_view_matrix(g_game_camera.position, g_game_camera.orientation);
+                cascade_proj := perspective(to_radians(render_context.target_camera.size), f32(wb.main_window.width) / wb.main_window.height, render_context.target_camera.near_plane + cascade_distances[map_idx], min(render_context.target_camera.far_plane, render_context.target_camera.near_plane + cascade_distances[map_idx+1]), false);
+                cascade_view := wb.construct_view_matrix(render_context.target_camera.position, render_context.target_camera.orientation);
                 cascade_viewport_to_world := mat4_inverse(mul(cascade_proj, cascade_view));
 
                 transform_point :: proc(matrix: Matrix4, pos: Vector3) -> Vector3 {
@@ -208,8 +203,6 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                     return to_vec3(pos4);
                 }
 
-
-
                 // calculate center point and radius of frustum
                 center_point: Vector3;
                 for _, idx in frustum_corners {
@@ -217,8 +210,6 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                     center_point += frustum_corners[idx];
                 }
                 center_point /= len(frustum_corners);
-
-
 
                 // todo(josh): this radius changes very slightly as the camera rotates around for some reason. this shouldn't be happening and I believe it's causing the flickering
                 // note(josh): @ShadowFlickerHack hacked around the problem by clamping the radius to an int. pretty shitty, should investigate a proper solution
@@ -263,6 +254,16 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 
                 shadow_maps.render_targets[map_idx] = shadow_color_buffer;
             }
+
+            lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
+			submit_sun(lighting, 
+					   quaternion_forward(sun.rotation),
+					   {sun.color.r, sun.color.g, sun.color.b}, 
+					   sun.intensity, 
+					   shadow_maps.matrices,
+					   cascade_distances);
+
+			wb.set_resource(render_graph, "scene shadow map", shadow_maps, nil);
 		});
 
 	// TODO draw bloom
@@ -282,18 +283,15 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
 			render_context := cast(^shared.Render_Graph_Context)userdata;
 
-			lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
-            wb.flush_cbuffer_from_struct(&g_cbuffer_lighting, lighting^);
-            wb.bind_cbuffer(&g_cbuffer_lighting, cast(int)CBuffer_Slot.Lighting);
-
             {
+				lighting := wb.get_resource(render_graph, "scene lighting", CBuffer_Lighting);
+	            wb.flush_cbuffer_from_struct(&g_cbuffer_lighting, lighting^);
+	            wb.bind_cbuffer(&g_cbuffer_lighting, cast(int)CBuffer_Slot.Lighting);
+
 				shadow_maps := wb.get_resource(render_graph, "scene shadow map", Cascaded_Shadow_Maps);
 				if shadow_maps.render_targets[0] != nil {
 		            for render_target, idx in &shadow_maps.render_targets {
 		                wb.bind_texture(render_target, cast(int)Texture_Slot.Shadow_Map1+idx);
-		            }
-		            defer for _, idx in &shadow_maps.render_targets {
-		                wb.bind_texture(nil, cast(int)Texture_Slot.Shadow_Map1+idx);
 		            }
 		        }
 
@@ -313,6 +311,12 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 	                if len(cmd.model.meshes) > 0 {
 	                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color);
 	                }
+	            }
+
+	            if shadow_maps.render_targets[0] != nil {
+	            	for _, idx in &shadow_maps.render_targets {
+		                wb.bind_texture(nil, cast(int)Texture_Slot.Shadow_Map1+idx);
+		            }
 	            }
         	}
 
@@ -349,7 +353,8 @@ CBuffer_Lighting :: struct {
     sun_direction: Vector3,
     sun_color: Vector3,
     sun_intensity: f32,
-    sun_matrix: Matrix4,
+    sun_matrices: [shared.NUM_SHADOW_MAPS]Matrix4,
+    cascade_distances: [shared.NUM_SHADOW_MAPS+1]f32,
     shadow_map_dimensions: Vector2,
 }
 
@@ -364,11 +369,14 @@ submit_point_light :: proc(cbuffer: ^CBuffer_Lighting, position: Vector3, color:
 }
 
 SHADOW_MAP_DIM :: 2048;
-submit_sun :: proc(cbuffer: ^CBuffer_Lighting, proj, view: Matrix4, direction: Vector3, color: Vector3, intensity: f32) { // todo(josh): we won't need position and orientation here when we do cascades
+submit_sun :: proc(cbuffer: ^CBuffer_Lighting, direction: Vector3, color: Vector3, intensity: f32, matrices: [shared.NUM_SHADOW_MAPS]Matrix4, cascade_distances: [shared.NUM_SHADOW_MAPS+1]f32) {
     cbuffer.sun_direction = direction;
     cbuffer.sun_color = color;
     cbuffer.sun_intensity = intensity;
-    cbuffer.sun_matrix = wb.mul(proj, view);
+    cbuffer.sun_matrices = matrices;
+    for d, i in cascade_distances {
+        cbuffer.cascade_distances[i] = d;
+    }
     cbuffer.shadow_map_dimensions = {SHADOW_MAP_DIM, SHADOW_MAP_DIM};
 }
 
@@ -399,11 +407,10 @@ sbprintf  :: fmt.sbprintf;
 sbprintln :: fmt.sbprintln;
 panicf :: fmt.panicf;
 
-
-logln :: logging.logln;
-logf :: logging.logf;
-pretty_print :: logging.pretty_print;
-
+log_info :: util.log_info;
+log_debug :: util.log_debug;
+log_warn :: util.log_warn;
+log_error :: util.log_error;
 
 TAU :: math.TAU;
 PI  :: math.PI;

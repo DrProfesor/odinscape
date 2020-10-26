@@ -18,6 +18,7 @@ main_scene: ^Scene;
 Scene :: struct {
 	id: string,
 	entities: map[int]^Entity,
+	dirty: bool,
 }
 
 load_scene :: proc(scene_id: string, set_main := false) {
@@ -74,6 +75,7 @@ save_scene :: proc(scene_id: string) {
 	if scene_id in entity_files_to_delete {
 		for file in entity_files_to_delete[scene_id] {
 			basic.delete_file(file);
+			delete(file);
 		}
 		clear(&entity_files_to_delete[scene_id]);
 	}
@@ -92,12 +94,25 @@ save_scene :: proc(scene_id: string) {
 
 		data := wbml.serialize(&sec);
 		ok := os.write_entire_file(file_path, transmute([]byte)data);
+	}
 
+	scene.dirty = false;
+}
+
+save_all :: proc() {
+	for scene_id, _ in loaded_scenes {
+		save_scene(scene_id);
 	}
 }
 
 unload_scene :: proc(scene_id: string) {
 
+}
+
+dirty_scene :: proc(scene_id: string = "") {
+	scene_id := scene_id;
+	if scene_id == "" do scene_id = main_scene.id;
+	loaded_scenes[scene_id].dirty = true;
 }
 
 add_entity_to_scene :: proc(e: ^Entity, _scene: string = "") {
@@ -133,7 +148,7 @@ remove_from_scene :: proc(e: ^Entity) {
 		entity_files_to_delete[e.current_scene] = make([dynamic]string, 0, 1);
 	}
 
-	append(&entity_files_to_delete[e.current_scene], fmt.tprintf("%s/%s/%s.e", SCENE_DIR, e.current_scene, e.uuid));
+	append(&entity_files_to_delete[e.current_scene], strings.clone(fmt.tprintf("%s/%s/%s.e", SCENE_DIR, e.current_scene, e.uuid)));
 }
 
 Serializable_Entity_Container :: struct {

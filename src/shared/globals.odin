@@ -5,7 +5,7 @@ import "shared:wb"
 WINDOW_SIZE_X :: 2560;
 WINDOW_SIZE_Y :: 1440;
 
-NUM_SHADOW_MAPS :: 4;
+NUM_SHADOW_MAPS :: 1;
 
 Current_Game_State := Game_State.Initializing;
 

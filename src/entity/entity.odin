@@ -161,4 +161,8 @@ init :: proc() {
 	init_prefabs();
 }
 
-logln :: logging.logln;
+
+log_info :: util.log_info;
+log_debug :: util.log_debug;
+log_warn :: util.log_warn;
+log_error :: util.log_error;

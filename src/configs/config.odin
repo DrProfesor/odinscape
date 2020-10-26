@@ -634,5 +634,3 @@ input_to_nice_name :: proc(input: wb.Input) -> string {
     assert(false, fmt.tprint(input));
     return "";
 }
-
-logln :: logging.logln;

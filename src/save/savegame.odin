@@ -2,8 +2,8 @@ package save
 
 import "core:os"
 import "core:fmt"
+import "core:log"
 
-import log "shared:wb/logging"
 import "shared:wb/wbml"
 
 import "../util"
@@ -30,8 +30,8 @@ load_player_save :: proc(username: string) -> Player_Save {
 		bytes := wbml.serialize(&save);
 	    defer delete(bytes);
 
-	    log.logln("Writing save file to:", file_name);
-	    log.logln(os.write_entire_file(file_name, transmute([]u8)bytes));
+	    log.info("Writing save file to:", file_name);
+	    log.info(os.write_entire_file(file_name, transmute([]u8)bytes));
 	}
 
 	loaded_player_data[username] = save;

@@ -241,6 +241,8 @@ Simple_Model :: struct {
 init_simple_model :: proc(model: ^Simple_Model, is_creation: bool) {
 	if is_creation {
 		model.tint = {1,1,1,1};
+		model.model_id = "cube_model";
+		model.material_id = "default_material";
 	}
 }
 

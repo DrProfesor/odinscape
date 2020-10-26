@@ -10,6 +10,8 @@ import rt "core:runtime"
 import "shared:wb/basic"
 import "shared:wb/logging"
 import "shared:wb/wbml"
+import "shared:wb/profiler"
+
 import "../entity"
 
 handle_replication :: proc(packet: Packet, client_id: int) {
@@ -47,14 +49,15 @@ handle_replication :: proc(packet: Packet, client_id: int) {
 }
 
 update_networked_entities :: proc() {
+    profiler.TIMED_SECTION("net entity update");
     @static replication_cache: map[string]any;
     @static fields_to_send: [dynamic]string;
 
     clear(&fields_to_send);
 
     for entity in &entity.all_entities {
-        if entity.id < 0 do continue;
-        if entity.network_id < 0 do continue;
+        if entity.network_id <= 0 do continue;
+        if entity.id <= 0 do continue;
         
         type_info := type_info_of(typeid_of(type_of(entity)));
         struct_type_info: rt.Type_Info_Struct;

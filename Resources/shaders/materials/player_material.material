@@ -1,8 +1,11 @@
 {
-    shader "simple_textured"
+    shader "lit"
 
     properties [
         { name "base_color"   value .Vector4 [ 1 1 1 1 ] }
+        { name "metallicness" value .f32 1.0 }
+        { name "roughness"    value .f32 0.25 }
+        { name "ambient"      value .f32 0.1 }
     ]
 
     textures [

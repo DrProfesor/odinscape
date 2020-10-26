@@ -5,18 +5,20 @@ import reflect "core:reflect"
 import "core:mem"
 import "core:strings"
 import "core:time"
+import "core:log"
 
 import enet "shared:odin-enet"
 
 import "shared:wb/basic"
 import "shared:wb/logging"
 import "shared:wb/wbml"
+import "shared:wb/profiler"
 import "shared:wb"
+
 import "../save"
 import "../shared"
 import "../entity"
 
-logln :: logging.logln;
 Entity :: entity.Entity;
 
 address: enet.Address;
@@ -80,6 +82,7 @@ init :: proc() {
 }
 
 update :: proc(dt: f32) {
+    profiler.TIMED_SECTION("network update");
     when #config(HEADLESS, false) {
         server_update();
     } else {
@@ -106,7 +109,7 @@ client_init :: proc() {
 
     host = enet.host_create(nil, 1, 2, 0, 0);
     if host == nil {
-        logln("Failed to create socket!");
+        log.error("Failed to create socket!");
         return;
     }
 
@@ -115,11 +118,11 @@ client_init :: proc() {
     enet.address_set_host(&address, cast(^u8)strings.ptr_from_string(host_name));
     address.port = 27010;
 
-    logln("Set Host IP");
+    log.info("Set Host IP");
 
     peer = enet.host_connect(host, &address, 0, 0);
     if peer == nil {
-        logln("Failed to connect to peer!");
+        log.error("Failed to connect to peer!");
         return;
     }
 }
@@ -143,7 +146,8 @@ handle_login_response :: proc(packet: Packet, client_id: int) {
 
 TIMEOUT : f64 : 5;
 
-client_update :: proc() {    
+client_update :: proc() {
+    profiler.TIMED_SECTION("client update");
     for enet.host_service(host, &event, 1) > 0 {
         switch event.event_type {
             case .None: { }
@@ -154,7 +158,6 @@ client_update :: proc() {
                 packet := wbml.deserialize(Packet, transmute([]u8)packet_string, context.allocator, context.allocator);
 
                 packet_typeid := reflect.union_variant_typeid(packet.data);
-                logln(packet_typeid);
                 handler := packet_handlers[packet_typeid];
                 handler.receive(packet, client_id);
             }
@@ -174,7 +177,7 @@ client_update :: proc() {
 }
 
 client_shutdown :: proc() {
-    logln("Client shutdown");
+    log.info("Client shutdown");
     logout_packet := Packet { Logout_Packet {
         client_id
     }};
@@ -210,7 +213,6 @@ handle_create_entity :: proc(packet: Packet, client_id: int) {
 
             is_local := cep.controlling_client == client_id;
 
-            logln("Create player");
             entity.create_player(character_save, is_local);
             is_logged_in = true;
         }
@@ -232,13 +234,13 @@ when #config(HEADLESS, false) {
 
         host= enet.host_create(&address, 32, 4, 0, 0);
         if host == nil {
-            logln("Couldn't create server host!");
+            log.error("Couldn't create server host!");
             return;
         }
 
          player_saves = make(map[int]^save.Player_Save, 100);
 
-        logln("Created server host");
+        log.info("Created server host");
     }
 
     server_update :: proc() {
@@ -255,7 +257,7 @@ when #config(HEADLESS, false) {
                         event.peer,
                     };
 
-                    logln("Peer Connected");
+                    log.info("Peer Connected");
                     append(&connected_clients, new_clone(client));
 
                     con_packet := Packet{
@@ -284,13 +286,12 @@ when #config(HEADLESS, false) {
                     last_packet_recieve[client_id] = now;
 
                     packet_typeid := reflect.union_variant_typeid(packet.data);
-                    logln(packet_typeid);
                     handler := packet_handlers[packet_typeid];
                     handler.receive(packet, client_id);
                 }
 
                 case enet.Event_Type.Disconnect: {
-                    logln("Removing peer");
+                    log.info("Removing peer");
                     client_idx := -1;
                     for client, i in connected_clients {
                         if client.peer == event.peer{
@@ -308,6 +309,7 @@ when #config(HEADLESS, false) {
         {
             now := f64(time.now()._nsec) / f64(time.Second);
             for cid, t in last_packet_recieve {
+                if cid < 0 do continue; // What?
                 if now - t >= TIMEOUT * 2 && t > 0 {
                     client: ^Client = nil;
                     idx := -1;
@@ -318,12 +320,12 @@ when #config(HEADLESS, false) {
                         }
                     }
 
-                    logln("Client timeout");
+                    log.info("Client timeout");
                     // destroy player
                     
                     unordered_remove(&connected_clients, idx);
                     last_packet_recieve[cid] = -1;
-                    logln("Client disconnected");
+                    log.info("Client disconnected");
                 }
             }
         }
@@ -350,7 +352,7 @@ when #config(HEADLESS, false) {
         }
     }
 
-    last_net_id : int = 0;
+    last_net_id : int = 1;
     @(deferred_out=fire_entity_create_packet)
     NETWORK_ENTITY :: proc(entity: ^Entity, controlling_client_id: int) -> ^Create_Entity_Packet {
         entity.network_id = last_net_id;
@@ -424,7 +426,7 @@ when #config(HEADLESS, false) {
             }
         }
 
-        logln("Logging out");
+        log.info("Logging out");
 
         assert(client_idx >= 0);
         unordered_remove(&connected_clients, client_idx);

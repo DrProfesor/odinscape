@@ -6,12 +6,14 @@ import "core:strings"
 import "core:mem"
 import "core:runtime"
 import "core:math"
+import "core:log"
 import la "core:math/linalg"
 
 import "shared:wb"
 import "shared:wb/basic"
 import "shared:wb/imgui"
 import "shared:wb/reflection"
+import "shared:wb/profiler"
 
 import "../configs"
 import "../entity"
@@ -29,10 +31,10 @@ hovered_entity_index: int;
 gizmo_state: Gizmo_State;
 
 init :: proc() {
+    wb.track_asset_folder("resources/editor");
+
     wb.init_camera(&g_editor_camera);
     g_editor_camera.is_perspective = true;
-    g_editor_camera.position = Vector3{0, 0, -15};
-    g_editor_camera.orientation = wb.direction_to_quaternion(wb.norm(-g_editor_camera.position));
 
     entity_id_color_buffer, entity_id_depth_buffer = wb.create_color_and_depth_buffers(wb.main_window.width_int, wb.main_window.height_int, .R32_INT);
 
@@ -56,6 +58,7 @@ init :: proc() {
     wb.register_developer_program("Hierarchy", draw_scene_hierarchy, .Window, nil);
     wb.register_developer_program("Resources", draw_resource_inspector, .Window, nil);
     wb.register_developer_program("Game View", draw_game_view, .Window, nil);
+    wb.register_developer_program("Console",   draw_console, .Window, nil);
 
     for open_prog in configs.editor_config.open_editor_windows {
         for prog in &wb.developer_programs {
@@ -70,6 +73,7 @@ init :: proc() {
 }
 
 update :: proc(dt: f32) {
+    profiler.TIMED_SECTION("editor update");
     gizmo_new_frame();
     
     // Get entity mouse is hovering
@@ -117,6 +121,8 @@ update :: proc(dt: f32) {
                 case Gizmo_Rotate: commit_memory_action(rotate_action);   
                 case Gizmo_Scale:  commit_memory_action(scale_action);
             }
+
+            entity.dirty_scene(); // TODO dirty touched scene
         }
     } 
     else if selected_count > 1 {
@@ -127,16 +133,27 @@ update :: proc(dt: f32) {
         select_entity(hovered_entity_index, !wb.get_input(.Control));
     }
 
-    if wb.get_input_down(.Z, true) && wb.get_input(.Control) {
-        if wb.get_input(.Shift) do redo();
-        else do undo();
+    // Control commands
+    if wb.get_input(.Control) {
+        if wb.get_input_down(.Z, true) {
+            if wb.get_input(.Shift) do redo();
+            else do undo();
+        }
+
+        if wb.get_input_down(.S, true) {
+            entity.save_all();
+            // if wb.get_input(.Shift) do entity.save_all();
+            // else do entity.save_scene(); // TODO get last touched scene
+        }
     }
 
     if wb.get_input_down(.Delete, true) {
         // TODO undo/redo
         for eid in selected_entities {
+            entity.remove_from_scene(entity.get_entity(eid));
             entity.destroy_entity(eid);
         }
+        entity.dirty_scene();
         clear(&selected_entities);
     }
 
@@ -149,7 +166,72 @@ update :: proc(dt: f32) {
     }
 }
 
+render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Context) {
+    wb.add_render_graph_node(render_graph, "entity id texture", ctxt, 
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            wb.read_resource(render_graph, "scene draw list");
+            wb.has_side_effects(render_graph);
+        },
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            render_context := cast(^shared.Render_Graph_Context)userdata;
+
+            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
+
+            pass_desc: wb.Render_Pass;
+            pass_desc.camera = render_context.target_camera;
+            pass_desc.color_buffers[0] = &entity_id_color_buffer;
+            pass_desc.depth_buffer     = &entity_id_depth_buffer;
+            wb.BEGIN_RENDER_PASS(&pass_desc);
+
+            for cmd in draw_commands {
+                e := cast(^entity.Entity)cmd.userdata;
+                id_material := wb.g_materials["entity_id_mtl"]; 
+                wb.set_material_property(id_material, "entity_id", cast(i32)e.id);
+                wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, id_material);
+            }
+
+            wb.ensure_texture_size(&entity_id_buffer_cpu_copy, entity_id_color_buffer.width, entity_id_color_buffer.height);
+            wb.copy_texture(&entity_id_buffer_cpu_copy, &entity_id_color_buffer);
+        });
+
+    wb.add_render_graph_node(render_graph, "gizmo", ctxt,
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            wb.has_side_effects(render_graph);
+        },
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            render_context := cast(^shared.Render_Graph_Context)userdata;
+
+            gizmo_render(render_graph, render_context.editor_im_context);
+        });
+
+    wb.add_render_graph_node(render_graph, "scene view", ctxt,
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            wb.has_side_effects(render_graph);
+            wb.read_resource(render_graph, "game view color");
+        },
+        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+            game_view := wb.get_resource(render_graph, "game view color", wb.Texture);
+            wb.ensure_texture_size(&g_game_view_texture, game_view.width, game_view.height);
+            wb.copy_texture(&g_game_view_texture, game_view);
+        });
+}
+
+shutdown :: proc() {
+    clear(&configs.editor_config.open_editor_windows);
+    for editr in wb.developer_programs {
+        if !editr.is_open do continue;
+        append(&configs.editor_config.open_editor_windows, editr.name);
+    }
+}
+
+
+
+// Editor Windows
+
 draw_inspector :: proc(userdata: rawptr, open: ^bool) {
+
+    edited := false;
+
     // No multi selection for now
     if imgui.begin("Entity Inspector", open) && len(selected_entities) == 1 {
         selected_entity := entity.get_entity(selected_entities[0]);
@@ -179,9 +261,9 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
             imgui.push_item_width(100);
             defer imgui.pop_item_width();
             
-            imgui.input_float("x", &selected_entity.position.x); imgui.same_line();
-            imgui.input_float("y", &selected_entity.position.y); imgui.same_line();
-            imgui.input_float("z", &selected_entity.position.z);
+            edited |= imgui.input_float("x", &selected_entity.position.x); imgui.same_line();
+            edited |= imgui.input_float("y", &selected_entity.position.y); imgui.same_line();
+            edited |= imgui.input_float("z", &selected_entity.position.z);
         }
 
         {
@@ -200,10 +282,10 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
             imgui.push_item_width(100); 
             defer imgui.pop_item_width();
             
-            imgui.input_float("x", &selected_entity.rotation.x); imgui.same_line();
-            imgui.input_float("y", &selected_entity.rotation.y); imgui.same_line();
-            imgui.input_float("z", &selected_entity.rotation.y); imgui.same_line();
-            imgui.input_float("w", &selected_entity.rotation.z);
+            edited |= imgui.input_float("x", &selected_entity.rotation.x); imgui.same_line();
+            edited |= imgui.input_float("y", &selected_entity.rotation.y); imgui.same_line();
+            edited |= imgui.input_float("z", &selected_entity.rotation.y); imgui.same_line();
+            edited |= imgui.input_float("w", &selected_entity.rotation.z);
         }
 
         {
@@ -215,35 +297,37 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
             imgui.push_item_width(100);
             defer imgui.pop_item_width();
             
-            imgui.input_float("x", &selected_entity.scale.x); imgui.same_line();
-            imgui.input_float("y", &selected_entity.scale.y); imgui.same_line();
-            imgui.input_float("z", &selected_entity.scale.z);
+            edited |= imgui.input_float("x", &selected_entity.scale.x); imgui.same_line();
+            edited |= imgui.input_float("y", &selected_entity.scale.y); imgui.same_line();
+            edited |= imgui.input_float("z", &selected_entity.scale.z);
         }
 
-        auto_field_gen :: proc(name: string, ti: ^runtime.Type_Info, data: rawptr, tags: string, is_root := true) {
-            if strings.contains(tags, "hidden") do return;
+        auto_field_gen :: proc(name: string, ti: ^runtime.Type_Info, data: rawptr, tags: string, is_root := true) -> bool {
+            if strings.contains(tags, "hidden") do return false;
 
             if !is_root do imgui.indent();
             imgui.push_id(name);
             defer imgui.pop_id();
 
+            edited := false;
+
             #partial switch kind in ti.variant {
                 case runtime.Type_Info_Integer: {
                     if kind.signed {
                         switch ti.size {
-                            case 8: new_data := cast(i32)(cast(^i64)data)^; imgui.input_int(name, &new_data); (cast(^i64)data)^ = cast(i64)new_data;
-                            case 4: new_data := cast(i32)(cast(^i32)data)^; imgui.input_int(name, &new_data); (cast(^i32)data)^ = cast(i32)new_data;
-                            case 2: new_data := cast(i32)(cast(^i16)data)^; imgui.input_int(name, &new_data); (cast(^i16)data)^ = cast(i16)new_data;
-                            case 1: new_data := cast(i32)(cast(^i8 )data)^; imgui.input_int(name, &new_data); (cast(^i8 )data)^ = cast(i8 )new_data;
+                            case 8: new_data := cast(i32)(cast(^i64)data)^; edited |= imgui.input_int(name, &new_data); (cast(^i64)data)^ = cast(i64)new_data;
+                            case 4: new_data := cast(i32)(cast(^i32)data)^; edited |= imgui.input_int(name, &new_data); (cast(^i32)data)^ = cast(i32)new_data;
+                            case 2: new_data := cast(i32)(cast(^i16)data)^; edited |= imgui.input_int(name, &new_data); (cast(^i16)data)^ = cast(i16)new_data;
+                            case 1: new_data := cast(i32)(cast(^i8 )data)^; edited |= imgui.input_int(name, &new_data); (cast(^i8 )data)^ = cast(i8 )new_data;
                             case: assert(false, tprint(ti.size));
                         }
                     }
                     else {
                         switch ti.size {
-                            case 8: new_data := cast(i32)(cast(^u64)data)^; imgui.input_int(name, &new_data); (cast(^u64)data)^ = cast(u64)new_data;
-                            case 4: new_data := cast(i32)(cast(^u32)data)^; imgui.input_int(name, &new_data); (cast(^u32)data)^ = cast(u32)new_data;
-                            case 2: new_data := cast(i32)(cast(^u16)data)^; imgui.input_int(name, &new_data); (cast(^u16)data)^ = cast(u16)new_data;
-                            case 1: new_data := cast(i32)(cast(^u8 )data)^; imgui.input_int(name, &new_data); (cast(^u8 )data)^ = cast(u8 )new_data;
+                            case 8: new_data := cast(i32)(cast(^u64)data)^; edited |= imgui.input_int(name, &new_data); (cast(^u64)data)^ = cast(u64)new_data;
+                            case 4: new_data := cast(i32)(cast(^u32)data)^; edited |= imgui.input_int(name, &new_data); (cast(^u32)data)^ = cast(u32)new_data;
+                            case 2: new_data := cast(i32)(cast(^u16)data)^; edited |= imgui.input_int(name, &new_data); (cast(^u16)data)^ = cast(u16)new_data;
+                            case 1: new_data := cast(i32)(cast(^u8 )data)^; edited |= imgui.input_int(name, &new_data); (cast(^u8 )data)^ = cast(u8 )new_data;
                             case: assert(false, tprint(ti.size));
                         }
                     }
@@ -284,7 +368,7 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
                         }
 
                         item := current_item_index;
-                        imgui.combo(name, &item, kind.names, cast(i32)min(5, len(kind.names)));
+                        edited |= imgui.combo(name, &item, kind.names, cast(i32)min(5, len(kind.names)));
                         if item != current_item_index {
                             switch kind.base.id {
                                 case u8:        (cast(^u8     )data)^ = cast(u8     )kind.values[item];
@@ -322,38 +406,41 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
                             (cast(^string)data)^ = str; // @Leak
                         }
                     } else {
-                        draw_resource_combo :: proc(name: string, data: rawptr, m: $T/map[string]$E) {
+                        draw_resource_combo :: proc(name: string, data: rawptr, m: $T/map[string]$E) -> bool{
                             selection := (cast(^string)data)^;
-                            if !imgui.begin_combo(name, selection) do return;
+                            if !imgui.begin_combo(name, selection) do return false;
                             defer imgui.end_combo();
 
+                            edited := false;
                             for k, _ in m {
                                 if imgui.selectable(k, selection == k) {
                                     (cast(^string)data)^ = k;
+                                    edited = true;
                                 }
                             }
+                            return edited;
                         }
                         if strings.contains(tags, "model") {
-                            draw_resource_combo(name, data, wb.g_models);
+                            edited |= draw_resource_combo(name, data, wb.g_models);
                         }
 
                         if strings.contains(tags, "material") {
-                            draw_resource_combo(name, data, wb.g_materials);
+                            edited |= draw_resource_combo(name, data, wb.g_materials);
                         }
 
                         if strings.contains(tags, "texture") {
-                            draw_resource_combo(name, data, wb.g_textures);
+                            edited |= draw_resource_combo(name, data, wb.g_textures);
                         }
                     }
                 }
 
                 case runtime.Type_Info_Named: {
-                    auto_field_gen(name, kind.base, data, tags);
+                    edited |= auto_field_gen(name, kind.base, data, tags);
                 }
                 case runtime.Type_Info_Struct: {
                     base_ptr := data;
                     for field, i in kind.names {
-                        auto_field_gen(field, kind.types[i], rawptr(uintptr(base_ptr)+kind.offsets[i]), kind.tags[i], false);
+                        edited |= auto_field_gen(field, kind.types[i], rawptr(uintptr(base_ptr)+kind.offsets[i]), kind.tags[i], false);
                     }
                 }
                 
@@ -370,6 +457,7 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
                         col := mem.slice_ptr(cast(^f32) data, 4);
                         if imgui.color_button(name, imgui.Vec4{col[0], col[1], col[2], col[3]}, .None, imgui.Vec2{75, 20}) {
                             imgui.open_popup("colour_picker");
+                            edited = true;
                         }
                         imgui.same_line();
                         imgui.text(name);
@@ -390,6 +478,7 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
             }
 
             if !is_root do imgui.unindent();
+            return false;
         }
 
         ti := reflection.get_union_type_info(selected_entity.kind);
@@ -402,7 +491,7 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
             case runtime.Type_Info_Struct: {
                 struct_ti = kind;
             }
-            case: logln("Unhandled type: ", kind);
+            case: log_info("Unhandled type: ", kind);
         }
 
         base_ptr := &selected_entity.kind;
@@ -414,6 +503,9 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
         // otherwise generic, and uses tags on fields to modify things
 
     } imgui.end();
+
+    // TODO edited scene
+    if edited do entity.dirty_scene();
 }
 
 DEFAULT_TREE_FLAGS : imgui.Tree_Node_Flags : .OpenOnArrow | .SpanAvailWidth | .OpenOnDoubleClick;
@@ -440,9 +532,11 @@ draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
         }
         if imgui.begin_drag_drop_target() {
             payload := imgui.accept_drag_drop_payload("entity");
-            dropped_eid := (cast(^int)payload.data)^;
-            entity.set_parent(dropped_eid, e.id);
-            imgui.end_drag_drop_target();
+            if payload != nil {
+                dropped_eid := (cast(^int)payload.data)^;
+                entity.set_parent(dropped_eid, e.id);
+                imgui.end_drag_drop_target();
+            }
         }
 
         if !open do return;
@@ -459,7 +553,7 @@ draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
 
     for scene_id, scene in entity.loaded_scenes {
         flags : imgui.Tree_Node_Flags = .OpenOnArrow | .SpanAvailWidth;
-        open := imgui.tree_node_ex(scene_id, flags);
+        open := imgui.tree_node_ex(tprint(scene_id, (scene.dirty ? " *" : "")), flags);
         
         if imgui.begin_popup_context_item("scene context") {
 
@@ -505,12 +599,8 @@ draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
 RESOURCES_DIR :: "resources/";
 selected_resource: string;
 draw_resource_inspector :: proc(userdata: rawptr, open: ^bool) {
+    profiler.TIMED_SECTION();
     open := imgui.begin("Resources", open, DEFAULT_WINDOW_FLAGS);
-
-    if imgui.begin_drag_drop_target() {
-        // payload := imgui.accept_drag_drop_payload("entity");
-        imgui.end_drag_drop_target();
-    }
 
     defer imgui.end();
     if !open do return;
@@ -523,22 +613,26 @@ draw_resource_inspector :: proc(userdata: rawptr, open: ^bool) {
         node_open := imgui.tree_node_ex(path.file_name, flags);
 
         if imgui.begin_drag_drop_source() {
-            // imgui.set_drag_drop_payload("entity", &e.id, size_of(e.id));
-            // imgui.text(e.name);
+            path := path;
+            imgui.set_drag_drop_payload("resource", &path, size_of(path));
+            imgui.text(path.file_name);
             imgui.end_drag_drop_source();
         }
 
         if imgui.begin_drag_drop_target() {
-            // payload := imgui.accept_drag_drop_payload("entity");
+            payload := imgui.accept_drag_drop_payload("entity");
+            if payload != nil {
+                // TODO prefab creation
+            }
             imgui.end_drag_drop_target();
         }
-
-        if !node_open do return;
-        defer imgui.tree_pop();
 
         if imgui.is_item_clicked() {
             selected_resource = path.path;
         }
+
+        if !node_open do return;
+        defer imgui.tree_pop();
 
         if path.is_directory {
             paths := basic.get_all_paths(path.path);
@@ -594,6 +688,50 @@ draw_game_view :: proc(userdata: rawptr, open: ^bool) {
 
     if g_game_view_texture.type != .Invalid {
         imgui.image(cast(imgui.Texture_ID)&g_game_view_texture, {width, height});
+
+        if imgui.begin_drag_drop_target() {
+            payload := imgui.accept_drag_drop_payload("resource");
+            if payload != nil {
+                resource_path := cast(^basic.Path) payload.data;
+                tid: typeid;
+                spawned_entity: ^Entity;
+                switch resource_path.extension {
+                    case "fbx": {
+                        tid = typeid_of(entity.Simple_Model);
+                        
+                        created_entity := entity.create_entity_by_type(tid); 
+                        spawned_entity = entity.add_entity(created_entity, true);
+                        entity.add_entity_to_scene(spawned_entity);
+                        
+                        // TODO try place between camera and object. With max dist away from cam
+                        camera_direction := wb.get_mouse_direction_from_camera(&g_editor_camera, {0.5,0.5});
+                        spawned_entity.position = g_editor_camera.position + camera_direction * 10;
+                    }
+                    case "pfb": {
+                        // TODO
+                    }
+                    case: log.error("Unhandled resource type: ", resource_path.extension);
+                }
+                
+                if spawned_entity != nil {
+                    switch kind in &spawned_entity.kind {
+                        case entity.Simple_Model: {
+                            fname, _ := basic.get_file_name(resource_path.file_name);
+                            // @leak
+                            kind.model_id = strings.clone(fname);
+                            
+                        }
+
+                        case entity.Player_Character: break;
+                        case entity.Directional_Light: break;
+                        case entity.Enemy: break;
+                    }
+                }
+            }
+
+            imgui.end_drag_drop_target();
+        }
+
         p_min, p_max: imgui.Vec2;
         imgui.get_item_rect_min(&p_min); imgui.get_item_rect_max(&p_max);
 
@@ -608,6 +746,51 @@ draw_game_view :: proc(userdata: rawptr, open: ^bool) {
     }
 }
 
+DEBUG_COLOURS := [4]imgui.Vec4 {{52/255.0, 152/255.0, 219/255.0, 1}, {241/255.0, 196/255.0, 15/255.0, 1}, {230/255.0, 126/255.0, 34/255.0, 1}, {231/255.0, 76/255.0, 60/255.0, 1}};
+levels := map[log.Level]bool { log.Level.Debug = true, log.Level.Info = true, log.Level.Warning = true, log.Level.Error = true };
+
+draw_console :: proc(userdata: rawptr, open: ^bool) {
+    using imgui;
+
+    // show_demo_window();
+
+    open := begin("Console", open, DEFAULT_WINDOW_FLAGS);
+    defer end();
+    if !open do return;
+
+    @static search_buffer: [256]byte;
+    input_text("Filter", search_buffer[:]);
+
+    for level, enabled in levels {
+        same_line();
+        debug_icon_texture := wb.g_textures["Help-Circle-Icon.png"];
+        bg_col := get_style_color_vec4(enabled ? .ButtonHovered : .Button);
+        if image_button(user_texture_id=cast(Texture_ID)debug_icon_texture, size={10, 10}, tint_col=DEBUG_COLOURS[(cast(uint)level)/10], bg_col=bg_col^) {
+            levels[level] = !enabled;
+        }
+    }
+
+    footer_height_to_reserve := get_style().item_spacing.y + get_frame_height_with_spacing();
+    begin_child("ScrollRegion", Vec2{0, -footer_height_to_reserve}, false, .HorizontalScrollbar);
+    push_style_var(.ItemSpacing, Vec2{4, 1});
+    for item in util.logs {
+        // TODO filter
+
+        push_style_color(.Text, DEBUG_COLOURS[(cast(uint)item.severity)/10]);
+        defer pop_style_color();
+        text_unformatted(item.message);
+    }
+
+    // if (scroll_to_bottom || (AutoScroll && GetScrollY() >= GetScrollMaxY()))
+    //     SetScrollHereY(1.0f);
+    // scroll_to_bottom = false;
+
+    pop_style_var();
+    end_child();
+
+}
+
+// Modals
 draw_entity_select_modal :: proc(modal: ^Modal, userdata: rawptr) {
 
     @static selected_tid : typeid;
@@ -638,62 +821,6 @@ draw_entity_select_modal :: proc(modal: ^Modal, userdata: rawptr) {
     }
 }
 
-render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Context) {
-    wb.add_render_graph_node(render_graph, "entity id texture", ctxt, 
-        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            wb.read_resource(render_graph, "scene draw list");
-            wb.has_side_effects(render_graph);
-        },
-        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            render_context := cast(^shared.Render_Graph_Context)userdata;
-
-            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
-
-            pass_desc: wb.Render_Pass;
-            pass_desc.camera = render_context.target_camera;
-            pass_desc.color_buffers[0] = &entity_id_color_buffer;
-            pass_desc.depth_buffer     = &entity_id_depth_buffer;
-            wb.BEGIN_RENDER_PASS(&pass_desc);
-
-            for cmd in draw_commands {
-                e := cast(^entity.Entity)cmd.userdata;
-                id_material := wb.g_materials["entity_id_mtl"]; 
-                wb.set_material_property(id_material, "entity_id", cast(i32)e.id);
-                wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, id_material);
-            }
-
-            wb.ensure_texture_size(&entity_id_buffer_cpu_copy, entity_id_color_buffer.width, entity_id_color_buffer.height);
-            wb.copy_texture(&entity_id_buffer_cpu_copy, &entity_id_color_buffer);
-        });
-
-    wb.add_render_graph_node(render_graph, "gizmo", ctxt,
-        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            wb.has_side_effects(render_graph);
-        },
-        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            render_context := cast(^shared.Render_Graph_Context)userdata;
-            gizmo_render(render_graph, render_context.editor_im_context);
-        });
-
-    wb.add_render_graph_node(render_graph, "scene view", ctxt,
-        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            wb.has_side_effects(render_graph);
-            wb.read_resource(render_graph, "game view color");
-        },
-        proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
-            game_view := wb.get_resource(render_graph, "game view color", wb.Texture);
-            wb.ensure_texture_size(&g_game_view_texture, game_view.width, game_view.height);
-            wb.copy_texture(&g_game_view_texture, game_view);
-        });
-}
-
-shutdown :: proc() {
-    clear(&configs.editor_config.open_editor_windows);
-    for editr in wb.developer_programs {
-        if !editr.is_open do continue;
-        append(&configs.editor_config.open_editor_windows, editr.name);
-    }
-}
 
 //
 //
@@ -778,9 +905,10 @@ sbprintf  :: fmt.sbprintf;
 sbprintln :: fmt.sbprintln;
 panicf :: fmt.panicf;
 
-logln :: logging.logln;
-logf :: logging.logf;
-pretty_print :: logging.pretty_print;
+log_info :: util.log_info;
+log_debug :: util.log_debug;
+log_warn :: util.log_warn;
+log_error :: util.log_error;
 
 Vector2 :: wb.Vector2;
 Vector3 :: wb.Vector3;

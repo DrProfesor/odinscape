@@ -30,6 +30,12 @@ cbuffer CBUFFER_CAMERA : register(b0) {
 cbuffer CBUFFER_SPECIFIC : register(b1) {
     row_major matrix model;
     float4 mesh_color;
+    int do_animation;
 };
 
 // note(josh): Material cbuffer is slot b2
+
+#define MAX_BONES 32 // :MaxBones
+cbuffer CBUFFER_ANIMATION : register(b3) {
+    row_major matrix bone_transforms[MAX_BONES];
+};
