@@ -1,11 +1,4 @@
-Vertex_Out VS(
-        // float4 position       : POSITION,
-        // float3 tex_coords  : TEXCOORD,
-        // float4 color     : COLOR,
-        // float3 normal    : NORMAL,
-        // float3 tangent   : TANGENT,
-        // float3 bitangent : BITANGENT) {
-    Vertex_In vertex) {
+Vertex_Out VS(Vertex_In vertex) {
 
     float4 skinned_position = float4(0, 0, 0, 0);
     // todo(josh): normals, tangents, bitangents?

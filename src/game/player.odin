@@ -70,9 +70,10 @@ update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
 }
 
 update_player_character :: proc(player: ^Player_Character, dt: f32) {
-    player_entity := cast(^Entity) player;
-
-    // model, ok := core.try_get_model(player.model.model_id);
+    model, ok := wb.g_models[player.model_id];
+    if ok && model.has_bones {
+        wb.tick_animation(&player.animator.player, model, dt);
+    }
     // if player.model.model_id != player.animator.previous_mesh_id {
     //     wb.init_animation_player(&player.animator.controller.player, model);
     //     player.animator.previous_mesh_id = player.model.model_id;
@@ -80,20 +81,20 @@ update_player_character :: proc(player: ^Player_Character, dt: f32) {
 
     // wb.tick_animation(&player.animator.controller.player, model, dt);
 
-    if wb.length(player.target_position - player_entity.position) > 0.1 {
+    if wb.length(player.target_position - player.position) > 0.1 {
         next_target_position := player.target_position;
         if player.path_idx < len(player.path)-1 {
             next_target_position = player.path[player.path_idx];
-            if wb.length(next_target_position - player_entity.position) < 0.01 {
+            if wb.length(next_target_position - player.position) < 0.01 {
                 player.path_idx += 1;
             }
         }
 
-        height := terrain_get_height_at_position(player_entity.position + {0,2,0}); // add two for player height 
-        p1 := move_towards(Vector3{player_entity.position.x, 0, player_entity.position.z}, Vector3{next_target_position.x, 0, next_target_position.z}, player.base_move_speed * dt);
+        height := terrain_get_height_at_position(player.position + {0,2,0}); // add two for player height 
+        p1 := move_towards(Vector3{player.position.x, 0, player.position.z}, Vector3{next_target_position.x, 0, next_target_position.z}, player.base_move_speed * dt);
 
-        player_entity.position = {p1.x, height, p1.z};
-        player_entity.rotation = wb.degrees_to_quaternion({0, look_y_rot(player_entity.position, next_target_position) - wb.PI / 2, 0});
+        player.position = {p1.x, height, p1.z};
+        player.rotation = wb.degrees_to_quaternion({0, look_y_rot(player.position, next_target_position) - wb.PI / 2, 0});
 
         // player.animator.controller.player.current_animation = "enter";
     } else {

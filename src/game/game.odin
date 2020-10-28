@@ -94,6 +94,8 @@ update :: proc(dt: f32) {
 		return;
 	}
 
+	wb.do_camera_movement(&g_game_camera.position, &g_game_camera.orientation, dt, 5, 10, 1, true);
+
 	update_players(dt);
 	update_terrain();
 
@@ -108,10 +110,12 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 			wb.create_resource(render_graph, "scene lighting", CBuffer_Lighting);
 		}, 
 		proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+			render_context := cast(^shared.Render_Graph_Context)userdata;
+
 			cmds: [dynamic]Draw_Command;
 			lighting: CBuffer_Lighting;
 
-			get_simple_model_renderer_command :: proc(model_renderer: entity.Model_Renderer, entity: ^Entity) -> Draw_Command {
+			get_simple_model_renderer_command :: proc(model_renderer: entity.Model_Renderer, e: ^Entity, animator: ^entity.Animator = nil) -> Draw_Command {
 
 				model : ^wb.Model;
 				if model_renderer.model_id in wb.g_models {
@@ -129,17 +133,18 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 
 				return Draw_Command {
 					model,
-					entity.position,
-					entity.scale,
-					entity.rotation,
+					e.position,
+					e.scale,
+					e.rotation,
 					material,
 					model_renderer.tint,
-					entity
+					e,
+					&animator.player,
 				};
 			}
 
 			for player in entity.all_Player_Character {
-				cmd := get_simple_model_renderer_command(player.model, cast(^Entity)player);
+				cmd := get_simple_model_renderer_command(player.model, cast(^Entity)player, &player.animator);
 				append(&cmds, cmd);
 			}
 
@@ -148,8 +153,21 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 				append(&cmds, cmd);
 			}
 
+			// TODO seperate out editor code!!
+			if render_context.edit_mode {
+			// wb.draw_model(wb.g_models["cube_model"], game.g_game_camera.position, {1,1,1}, game.g_game_camera.orientation, wb.g_materials["simple_rgba_mtl"], {1, 0, 0, 1});
+
+		        for light in entity.all_Directional_Light {
+		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position, {0.5,0.5,0.5}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1}, cast(^Entity)light, nil });
+		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position + quaternion_forward(light.rotation)*2, {0.1,0.1,4}, light.rotation, wb.g_materials["simple_rgba_mtl"], {1,1,0,1}, cast(^Entity)light, nil });
+		        }
+		    }
+
 			wb.set_resource(render_graph, "scene lighting", lighting, nil);
-			wb.set_resource(render_graph, "scene draw list", cmds[:], nil);
+			wb.set_resource(render_graph, "scene draw list", cmds[:], cleanup_draw_list);
+			cleanup_draw_list :: proc(dl: ^[]Draw_Command) {
+				delete(dl^);
+			}
 		}); 
 	// end build draw commands
 
@@ -173,7 +191,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 			if len(entity.all_Directional_Light) == 0 do return;
 			sun := entity.all_Directional_Light[0];
 
-			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 10};
+			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 25, 50, 100};
             for map_idx in 0..<shared.NUM_SHADOW_MAPS {
             	profiler.TIMED_SECTION();
                 shadow_camera := &sun.cameras[map_idx];
@@ -248,7 +266,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                 wb.BIND_MATERIAL(shadow_material);
                 for cmd in draw_commands {
                     if len(cmd.model.meshes) > 0 {
-                        wb.draw_model_no_material(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.color);
+                    	wb.draw_model_no_material(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.color, cast(^wb.Animation_Player)cmd.animator);
                     }
                 }
 
@@ -289,11 +307,12 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 	            wb.bind_cbuffer(&g_cbuffer_lighting, cast(int)CBuffer_Slot.Lighting);
 
 				shadow_maps := wb.get_resource(render_graph, "scene shadow map", Cascaded_Shadow_Maps);
-				if shadow_maps.render_targets[0] != nil {
-		            for render_target, idx in &shadow_maps.render_targets {
-		                wb.bind_texture(render_target, cast(int)Texture_Slot.Shadow_Map1+idx);
-		            }
-		        }
+	            for render_target, idx in &shadow_maps.render_targets {
+	                wb.bind_texture(render_target, cast(int)Texture_Slot.Shadow_Map1+idx+3);
+	            }
+	            defer for _, idx in &shadow_maps.render_targets {
+	                wb.bind_texture(nil, cast(int)Texture_Slot.Shadow_Map1+idx+3);
+	            }
 
 	            pass: wb.Render_Pass;
 	            pass.camera = render_context.target_camera;
@@ -301,22 +320,15 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 	            pass.depth_buffer = &g_depth_buffer;
 	            wb.BEGIN_RENDER_PASS(&pass);
 
-	            // skybox
 	            skybox_mtl := wb.g_materials["skybox_mtl"];
-	            wb.set_material_texture(skybox_mtl, "albedo_map", &g_skybox, .Wrap_Linear);
+	            wb.set_material_texture(skybox_mtl, "skybox_map", &g_skybox, .Wrap_Linear);
 	            wb.draw_model(wb.g_models["cube_model"], render_context.target_camera.position, {1, 1, 1}, Quaternion(1), skybox_mtl);
 
 	            draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
 	            for cmd in draw_commands {
 	                if len(cmd.model.meshes) > 0 {
-	                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color);
+	                    wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.material_override, cmd.color, cast(^wb.Animation_Player)cmd.animator);
 	                }
-	            }
-
-	            if shadow_maps.render_targets[0] != nil {
-	            	for _, idx in &shadow_maps.render_targets {
-		                wb.bind_texture(nil, cast(int)Texture_Slot.Shadow_Map1+idx);
-		            }
 	            }
         	}
 
@@ -354,7 +366,7 @@ CBuffer_Lighting :: struct {
     sun_color: Vector3,
     sun_intensity: f32,
     sun_matrices: [shared.NUM_SHADOW_MAPS]Matrix4,
-    cascade_distances: [shared.NUM_SHADOW_MAPS+1]f32,
+    cascade_distances: Vector4, // These are being passed in wrong!!!!! 0, 1000, 0, 0
     shadow_map_dimensions: Vector2,
 }
 
@@ -374,9 +386,7 @@ submit_sun :: proc(cbuffer: ^CBuffer_Lighting, direction: Vector3, color: Vector
     cbuffer.sun_color = color;
     cbuffer.sun_intensity = intensity;
     cbuffer.sun_matrices = matrices;
-    for d, i in cascade_distances {
-        cbuffer.cascade_distances[i] = d;
-    }
+    cbuffer.cascade_distances = {cascade_distances[0], cascade_distances[1], cascade_distances[2], cascade_distances[3]};
     cbuffer.shadow_map_dimensions = {SHADOW_MAP_DIM, SHADOW_MAP_DIM};
 }
 

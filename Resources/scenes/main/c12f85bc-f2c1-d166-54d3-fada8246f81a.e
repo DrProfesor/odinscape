@@ -14,11 +14,11 @@
         name "New Entity (3)"
         position [
             1.215
-            -0.131
+            7.329
             -1.097
         ]
 
-        rotation quat 0.019 0.071 -0.962 0.261
+        rotation quat 0.146 -0.033 -0.720 0.678
 
         scale [
             1.000

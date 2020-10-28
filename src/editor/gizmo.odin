@@ -611,9 +611,6 @@ gizmo_render :: proc(graph: ^wb.Render_Graph, im_context: ^wb.IM_Context) {
                 }
             }
         }
-
-        // TODO manipulate this
-        // wb.draw_model(wb.g_models["cube_model"], game.g_game_camera.position, {1,1,1}, game.g_game_camera.orientation, wb.g_materials["simple_rgba_mtl"], {1, 0, 0, 1});
     }
 }
 

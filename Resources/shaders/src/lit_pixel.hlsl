@@ -1,5 +1,5 @@
 #define MAX_LIGHTS 16 // :MaxLights
-#define NUM_SHADOW_MAPS 1 // :NumShadowMaps
+#define NUM_SHADOW_MAPS 3 // :NumShadowMaps
 cbuffer CBUFFER_LIGHTING : register(b4) {
     float4 point_light_positions[MAX_LIGHTS];
     float4 point_light_colors[MAX_LIGHTS];
@@ -9,7 +9,7 @@ cbuffer CBUFFER_LIGHTING : register(b4) {
     float3 sun_color;
     float  sun_intensity;
     row_major matrix sun_matrices[NUM_SHADOW_MAPS];
-    float cascade_distances[NUM_SHADOW_MAPS+1];
+    float4 cascade_distances;
     float2 shadow_map_dimensions;
 };
 
@@ -170,13 +170,16 @@ float4 PS(Vertex_Out vertex) : SV_TARGET {
 
     float3 sun_radiance = calculate_light(albedo.xyz, metallicness, roughness, N, V, -sun_direction, sun_color * sun_intensity, 1);
 
-    float dist = length(camera_position - vertex.world_pos);
+    float dist = distance(camera_position, vertex.world_pos);
     float shadow = 1.0;
-    if (dist > cascade_distances[0]) { shadow = 1.0 - calculate_shadow(shadow_map0, sun_matrices[0], vertex.world_pos, N); }
-    // else if (dist > cascade_distances[1]) { shadow = 1.0 - calculate_shadow(shadow_map1, sun_matrices[1], vertex.world_pos, N); }
-    // else if (dist > cascade_distances[2]) { shadow = 1.0 - calculate_shadow(shadow_map2, sun_matrices[2], vertex.world_pos, N); }
-    // else if (dist > cascade_distances[3]) { shadow = 1.0 - calculate_shadow(shadow_map3, sun_matrices[3], vertex.world_pos, N); }
+         if (dist > cascade_distances.z) { shadow = 1; }
+    else if (dist > cascade_distances.y) { shadow = 1.0 - calculate_shadow(shadow_map1, sun_matrices[1], vertex.world_pos, N); }
+    else if (dist > cascade_distances.x) { shadow = 1.0 - calculate_shadow(shadow_map0, sun_matrices[0], vertex.world_pos, N); }
     color += sun_radiance * shadow;
+
+    //      if (dist > cascade_distances.z) { color += float3(0.2, 0, 0); }
+    // else if (dist > cascade_distances.y) { color += float3(0, 0.2, 0); }
+    // else if (dist > cascade_distances.x) { color += float3(0, 0, 0.2); }
 
     float3 reflected_direction = normalize(reflect(-V, N));
     float3 skybox_color = skybox_map.Sample(main_texture_sampler, reflected_direction).xyz;

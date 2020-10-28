@@ -147,6 +147,15 @@ update :: proc(dt: f32) {
         }
     }
 
+    if imgui.is_mouse_double_clicked(.Left) && (g_hierarchy_window_hovered || g_game_view_window_hovered) {
+        if len(selected_entities) > 0 {
+            target := entity.get_entity(selected_entities[0]);
+            assert(target != nil);
+            dir := norm(target.position - g_editor_camera.position);
+            g_editor_camera.position = target.position - dir * 5; // TODO actually frame the entity
+        }
+    }
+
     if wb.get_input_down(.Delete, true) {
         // TODO undo/redo
         for eid in selected_entities {
@@ -184,7 +193,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             wb.BEGIN_RENDER_PASS(&pass_desc);
 
             for cmd in draw_commands {
-                e := cast(^entity.Entity)cmd.userdata;
+                e := cast(^entity.Entity)cmd.entity;
                 id_material := wb.g_materials["entity_id_mtl"]; 
                 wb.set_material_property(id_material, "entity_id", cast(i32)e.id);
                 wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, id_material);
@@ -511,6 +520,7 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
 DEFAULT_TREE_FLAGS : imgui.Tree_Node_Flags : .OpenOnArrow | .SpanAvailWidth | .OpenOnDoubleClick;
 DEFAULT_WINDOW_FLAGS : imgui.Window_Flags = .NoCollapse;
 
+g_hierarchy_window_hovered := false;
 draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
     open := imgui.begin("Hierarchy", open, DEFAULT_WINDOW_FLAGS);
     defer imgui.end();
@@ -594,6 +604,8 @@ draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
         }
         imgui.tree_pop();
     }
+
+    g_hierarchy_window_hovered = imgui.is_window_hovered();
 }
 
 RESOURCES_DIR :: "resources/";
@@ -654,6 +666,7 @@ g_game_view_texture: wb.Texture;
 g_can_move_game_view: bool;
 g_clicked_outside_scene: bool;
 g_game_view_mouse_pos: Vector2;
+g_game_view_window_hovered := false;
 
 draw_game_view :: proc(userdata: rawptr, open: ^bool) {
     flags := DEFAULT_WINDOW_FLAGS | .NoTitleBar;
@@ -744,6 +757,8 @@ draw_game_view :: proc(userdata: rawptr, open: ^bool) {
 
         imgui.draw_list_add_image(imgui.get_window_draw_list(), cast(imgui.Texture_ID)&gizmo_color_buffer, p_min, p_max);
     }
+
+    g_game_view_window_hovered = imgui.is_window_hovered();
 }
 
 DEBUG_COLOURS := [4]imgui.Vec4 {{52/255.0, 152/255.0, 219/255.0, 1}, {241/255.0, 196/255.0, 15/255.0, 1}, {230/255.0, 126/255.0, 34/255.0, 1}, {231/255.0, 76/255.0, 60/255.0, 1}};
@@ -958,3 +973,10 @@ to_vec2 :: basic.to_vec2;
 to_vec3 :: basic.to_vec3;
 to_vec4 :: basic.to_vec4;
 pretty_location :: basic.pretty_location;
+
+quaternion_right   :: wb.quaternion_right;
+quaternion_up      :: wb.quaternion_up;
+quaternion_forward :: wb.quaternion_forward;
+quaternion_left    :: wb.quaternion_left;
+quaternion_down    :: wb.quaternion_down;
+quaternion_back    :: wb.quaternion_back;

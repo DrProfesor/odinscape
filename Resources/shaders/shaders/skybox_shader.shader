@@ -6,6 +6,6 @@
     ]
 
     textures [
-        { name "albedo_map" type Cubemap }
+        { name "skybox_map" type Cubemap }
     ]
 }

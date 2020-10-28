@@ -11,13 +11,12 @@
     ]
 
     textures [
-        { name "shadow_map0" type Texture2D }
-        { name "shadow_map1" type Texture2D }
-        { name "shadow_map2" type Texture2D }
-        { name "shadow_map3" type Texture2D }
-
         { name "albedo_map" type Texture2D }
         { name "normal_map" type Texture2D }
         { name "skybox_map" type Cubemap   }
+
+        { name "shadow_map0" type Texture2D }
+        { name "shadow_map1" type Texture2D }
+        { name "shadow_map2" type Texture2D }
     ]
 }

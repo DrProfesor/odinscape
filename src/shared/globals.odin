@@ -5,7 +5,7 @@ import "shared:wb"
 WINDOW_SIZE_X :: 2560;
 WINDOW_SIZE_Y :: 1440;
 
-NUM_SHADOW_MAPS :: 1;
+NUM_SHADOW_MAPS :: 3;
 
 Current_Game_State := Game_State.Initializing;
 
@@ -22,6 +22,7 @@ Render_Graph_Context :: struct {
     screen_im_context: ^wb.IM_Context,
     world_im_context: ^wb.IM_Context,
     editor_im_context: ^wb.IM_Context,
+    edit_mode: bool,
 }
 
 Draw_Command :: struct {
@@ -31,7 +32,8 @@ Draw_Command :: struct {
     orientation:       Quaternion,
     material_override: ^wb.Material,
     color:             Vector4,
-    userdata:          rawptr,
+    entity:            rawptr,
+    animator:          rawptr,
 }
 
 Vector2 :: wb.Vector2;

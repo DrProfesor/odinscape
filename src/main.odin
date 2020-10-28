@@ -77,6 +77,7 @@ main_render :: proc() {
     render_context.screen_im_context = &g_screen_context;
     render_context.world_im_context = &g_world_context;
     render_context.editor_im_context = &g_editor_context;
+    render_context.edit_mode = wb.developer_menu_open;
 
     game.render(&render_graph, &render_context);
     if wb.developer_menu_open do editor.render(&render_graph, &render_context);
@@ -123,3 +124,9 @@ main :: proc() {
    
     main_end();
 }
+
+
+log_info :: util.log_info;
+log_debug :: util.log_debug;
+log_warn :: util.log_warn;
+log_error :: util.log_error;

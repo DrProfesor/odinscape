@@ -26,16 +26,16 @@ Tasks
   v0.0.2
     - core
       x headless server
-      - shadows
+      x shadows
       - animations
         - animator entity component
         - animation node graph
           - transition between animations (no blending)
+      - physics raycasting
     - editor work:
       - prefab editor
       - logger
     - game work:
-      - particle emitter
       - enemy spawning
       - enemy behaviours
       - enemy health
@@ -44,12 +44,14 @@ Tasks
       - player health
 
   v0.0.3
-    - entity graph?
+    - killing the walk monster
     - build a small spawn area. Needs enemy area and "home base"
-    - terrain improvements
-    - terrain serialization and loading
+    - shader compilation tool
+    - terrain
 
   v0.0.4
+    - particle emitter
+    - entity graph
     - abilites:
       - simple "fireball type"
       - magic missile

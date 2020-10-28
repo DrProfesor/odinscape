@@ -105,9 +105,7 @@ Model_Renderer :: struct {
 }
 
 Animator :: struct {
-	// controller: wb.Animation_Controller,
-    previous_mesh_id: string,
-    open_animator_window: bool,
+	using player: wb.Animation_Player,
 }
 
 
@@ -164,8 +162,11 @@ create_player :: proc(character: ^save.Character_Save, is_local: bool) -> ^Playe
     pc.model.tint = {1, 1, 1, 1};
 
 	// Animator
-	// model, ok := wb.try_get_model(pc.model.model_id);
- 	// wb.init_animation_player(&pc.animator.controller.player, model);
+	model, ok := wb.g_models[pc.model.model_id];
+	if model.has_bones {
+	 	wb.init_animation_player(&pc.animator.player, model);
+	 	wb.play_animation(&pc.animator.player, "idle");
+	 }
 
 	// Stats
 	for stat in character.stats {
