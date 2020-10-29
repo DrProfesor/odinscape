@@ -101,9 +101,9 @@ float calculate_shadow(Texture2D shadow_map_texture, row_major matrix sun_matrix
 
     float2 texel_size = 1.0 / shadow_map_dimensions.x;
     float shadow = 0;
-#if 1
+#if 0
     shadow = shadow_map_texture.Sample(main_texture_sampler, proj_coords.xy).r + bias < proj_coords.z ? 1.0 : 0.0;
-#elif 0
+#elif 1
     shadow += shadow_map_texture.Sample(main_texture_sampler, proj_coords.xy + float2(-1, -1) * texel_size).r + bias < proj_coords.z ? 1.0 : 0.0;
     shadow += shadow_map_texture.Sample(main_texture_sampler, proj_coords.xy + float2( 0, -1) * texel_size).r + bias < proj_coords.z ? 1.0 : 0.0;
     shadow += shadow_map_texture.Sample(main_texture_sampler, proj_coords.xy + float2( 1, -1) * texel_size).r + bias < proj_coords.z ? 1.0 : 0.0;
@@ -172,7 +172,8 @@ float4 PS(Vertex_Out vertex) : SV_TARGET {
 
     float dist = distance(camera_position, vertex.world_pos);
     float shadow = 1.0;
-         if (dist > cascade_distances.z) { shadow = 1; }
+         if (dist > cascade_distances.w) { shadow = 1.0; } // TODO(jake): this is all f'ed up rn. why is it only finding 2 shadow maps?!?
+    else if (dist > cascade_distances.z) { shadow = 1.0; } //  - calculate_shadow(shadow_map2, sun_matrices[2], vertex.world_pos, N)
     else if (dist > cascade_distances.y) { shadow = 1.0 - calculate_shadow(shadow_map1, sun_matrices[1], vertex.world_pos, N); }
     else if (dist > cascade_distances.x) { shadow = 1.0 - calculate_shadow(shadow_map0, sun_matrices[0], vertex.world_pos, N); }
     color += sun_radiance * shadow;

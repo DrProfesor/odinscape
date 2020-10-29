@@ -15,7 +15,8 @@ AStar_Node :: struct {
 }
 
 is_valid :: proc(pos: Vector3) -> bool {
-    return overlap_point(pos) <= 0;
+    return true;
+    // return overlap_point(pos) <= 0;
 }
 
 a_star :: proc(_start, _goal: Vector3, step_size: f32) -> []Vector3 {

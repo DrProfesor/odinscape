@@ -1,7 +1,6 @@
 package editor
 
 import "shared:wb"
-import coll "shared:wb/collision"
 import "shared:wb/basic"
 import "shared:wb/imgui"
 
@@ -103,7 +102,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
                     center_on_screen := wb.world_to_unit(camera, origin);
                     tip_on_screen := wb.world_to_unit(camera, origin + rotated_direction(rotation^, direction_unary[i]) * size);
 
-                    p := coll.closest_point_on_line(to_vec3(unit_mouse_pos), center_on_screen, tip_on_screen);
+                    p := wb.closest_point_on_line(to_vec3(unit_mouse_pos), center_on_screen, tip_on_screen);
                     dist := length(p - to_vec3(unit_mouse_pos));
                     if dist < size * 0.005 && dist < current_closest {
                         current_closest = dist;
@@ -124,7 +123,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
                     dir_y  := rotated_direction(rotation^, direction_unary[(i+2) %3]) * size;
 
                     quad_center := origin + (dir_y + dir_x) * TRANSLATE_PLANE_OFFSET;
-                    intersect_point, ok := coll.plane_intersect(quad_center, normal, g_editor_camera.position, mouse_direction);
+                    ok, intersect_point := wb.plane_intersect(quad_center, normal, g_editor_camera.position, mouse_direction);
                     if length(intersect_point - quad_center) < (TRANSLATE_PLANE_SIZE * size) { // todo(josh): for the planes we are just doing a circle check right now. kinda dumb but it's easy :)
                         hovered_type = Move_Type.MOVE_YZ + Move_Type(i);
                         if wb.get_global_input_down(.Mouse_Left, true) {
@@ -208,7 +207,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
             closest_index := -1;
             for i in 0..2 {
                 dir := rotated_direction(rotation^, direction_unary[i]);
-                intersect_point, ok := coll.plane_intersect(position^, dir, g_editor_camera.position, mouse_direction);
+                ok, intersect_point := wb.plane_intersect(position^, dir, g_editor_camera.position, mouse_direction);
                 if ok {
                     dist_from_position := length(position^ - intersect_point);
                     // todo(josh): I don't think we should need a `size*NUM` here. `size` should be the radius of the rotation gizmo I think?
@@ -261,7 +260,7 @@ gizmo_manipulate :: proc(position: ^Vector3, scale: ^Vector3, rotation: ^Quatern
                     center_on_screen := wb.world_to_unit(camera, origin);
                     tip_on_screen := wb.world_to_unit(camera, origin + rotated_direction(rotation^, direction_unary[i]) * size);
 
-                    p := coll.closest_point_on_line(to_vec3(unit_mouse_pos), center_on_screen, tip_on_screen);
+                    p := wb.closest_point_on_line(to_vec3(unit_mouse_pos), center_on_screen, tip_on_screen);
                     dist := length(p - to_vec3(unit_mouse_pos));
                     if dist < size * 0.005 && dist < current_closest {
                         current_closest = dist;

@@ -191,7 +191,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 			if len(entity.all_Directional_Light) == 0 do return;
 			sun := entity.all_Directional_Light[0];
 
-			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 25, 50, 100};
+			cascade_distances := [shared.NUM_SHADOW_MAPS+1]f32{0, 15, 50, 250};
             for map_idx in 0..<shared.NUM_SHADOW_MAPS {
             	profiler.TIMED_SECTION();
                 shadow_camera := &sun.cameras[map_idx];
@@ -247,10 +247,10 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                 center_point = transform_point(mat4_inverse(scale_matrix), center_point_texel_space);
 
                 // position the shadow camera looking at that point
-                shadow_camera.position = center_point - light_direction * radius;
+                shadow_camera.position = center_point - light_direction * radius * 4;
                 shadow_camera.orientation = light_rotation;
                 shadow_camera.size = radius;
-                shadow_camera.far_plane = radius * 2;
+                shadow_camera.far_plane = radius * 8;
 
                 shadow_pass_desc: wb.Render_Pass;
                 shadow_pass_desc.camera = shadow_camera;

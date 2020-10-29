@@ -5,60 +5,37 @@ import "core:runtime"
 
 import "shared:wb/basic"
 import "shared:wb/logging"
-import "shared:wb/collision"
 import "shared:wb"
 
-DEBUG :: true;
+import "../entity"
+import "../shared"
 
-RaycastHit :: struct {
+update_physics :: proc(dt: f32) {
+    for collider in &shared.g_collision_scene.colliders {
+        if collider.userdata == nil do continue;
 
+        entity := cast(^entity.Entity) collider.userdata;
+        wb.update_collider(collider, entity.position, entity.scale, collider.info, entity);
+    }
 }
 
-// init_collider :: proc(using col : ^Collider) {
-//     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-//     col.internal_collider = wb_col.add_collider_to_scene(&collision_scene, entity_transform.position, {1,1,1}, { {}, box }, transmute(rawptr) e);
-// }
-
-// update_collider :: proc(using col : ^Collider, dt : f32) {
-//     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-//     wb_col.update_collider(internal_collider, entity_transform.position, {1,1,1}, { {}, box }, transmute(rawptr) e);
-// }
-
-// render_collider :: proc(using col : ^Collider) {
-//     if !DEBUG do return;
-
-//     entity_transform, ok := wb_ecs.get_component(e, wb_ecs.Transform);
-//     wb.draw_debug_box(entity_transform.position, col.box.size, types.COLOR_GREEN);
-// }
-
-overlap_point :: proc(point: Vector3, hits: ^[dynamic]RaycastHit = nil) -> int {
-    // clear(&internal_hits);
-
-    // wb_col.overlap_point(&collision_scene, point, &internal_hits);
-
-    // if hits != nil {
-    //     for internal_hit in internal_hits {
-    //         append(hits, RaycastHit{ wb_ecs.Entity(transmute(int)internal_hit.userdata), internal_hit.point0, internal_hit.point1  });
-    //     }
-    // }
-
-    // return len(internal_hits);
-
-    return 0;
+Raycast_Hit :: struct {
+    hit_pos: Vector3,
+    entity: ^entity.Entity,
 }
 
-raycast :: proc(start, direction : Vector3, hits : ^[dynamic]RaycastHit = nil) -> int {
-    // clear(&internal_hits);
+wb_hits: [dynamic]wb.Hit_Info;
 
-    // wb_col.linecast(&collision_scene, start, direction, &internal_hits);
+raycast :: proc(origin, direction: Vector3, hits: ^[dynamic]Raycast_Hit = nil) -> int {
+    wb.linecast(&shared.g_collision_scene, origin, direction, &wb_hits);
 
-    // if hits != nil {
-    //     for internal_hit in internal_hits {
-    //         append(hits, RaycastHit{ wb_ecs.Entity(transmute(int)internal_hit.userdata), internal_hit.point0, internal_hit.point1  });
-    //     }
-    // }
 
-    // return len(internal_hits);
+    if hits != nil do for wb_hit in wb_hits {
+        append(hits, Raycast_Hit{
+            wb_hit.point0,
+            cast(^entity.Entity) wb_hit.collider.userdata
+        });
+    }
 
-    return 0;
+    return len(wb_hits);
 }

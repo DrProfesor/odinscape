@@ -17,6 +17,5 @@
 
         { name "shadow_map0" type Texture2D }
         { name "shadow_map1" type Texture2D }
-        { name "shadow_map2" type Texture2D }
     ]
 }

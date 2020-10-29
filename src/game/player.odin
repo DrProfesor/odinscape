@@ -30,22 +30,20 @@ update_players :: proc(dt: f32) {
 }
 
 update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
-    // update player input
-    player_entity := cast(^Entity) player;
 
     if wb.get_input_down(configs.key_config.interact) {
-        // mouse_world := wb.get_mouse_world_position(wb.main_camera, wb.main_window.mouse_position_unit);
-        // mouse_direction := wb.get_mouse_direction_from_camera(wb.main_camera, wb.main_window.mouse_position_unit);
+        mouse_world := wb.get_mouse_world_position(&g_game_camera, wb.main_window.mouse_position_unit);
+        mouse_direction := wb.get_mouse_direction_from_camera(&g_game_camera, wb.main_window.mouse_position_unit);
 
         player.target_entity = 0;
 
-        @static hits: [dynamic]physics.RaycastHit;
-        // hit_count := physics.raycast(mouse_world, mouse_direction, &hits);
-        hit_count := 0;
-        if hit_count > 0 {
+        @static hits: [dynamic]physics.Raycast_Hit;
+        hit_count := physics.raycast(mouse_world, mouse_direction, &hits);
+        // hit_count := 0;
+        // if hit_count > 0 {
             // first_hit := hits[0];
             // TODO right clicked an entity
-        } else {
+        // } else {
             // pos, hit := terrain_get_raycasted_position(mouse_world, mouse_direction);
             // if hit {
             //     player.target_position = pos;
@@ -53,7 +51,7 @@ update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
             //     player.path_idx = 1;
             //     // net.send_new_player_position()
             // }
-        }
+        // }
     }
 
     // if      plat.get_input(configs.key_config.spell_1) do cast_spell(player, 1);
@@ -63,9 +61,9 @@ update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
     // else if plat.get_input(configs.key_config.spell_5) do cast_spell(player, 5);
 
     // if !wb.debug_window_open {
-        g_game_camera.position = player_entity.position + Vector3{0, 0, -15};
-        // TODO camera rotation?
-        g_game_camera.orientation = wb.direction_to_quaternion(wb.norm(player_entity.position - g_game_camera.position));
+        // g_game_camera.position = player_entity.position + Vector3{0, 0, -15};
+        // // TODO camera rotation?
+        // g_game_camera.orientation = wb.direction_to_quaternion(wb.norm(player_entity.position - g_game_camera.position));
     // }
 }
 

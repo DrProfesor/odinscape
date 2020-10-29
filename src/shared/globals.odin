@@ -9,6 +9,8 @@ NUM_SHADOW_MAPS :: 3;
 
 Current_Game_State := Game_State.Initializing;
 
+g_collision_scene: wb.Collision_Scene;
+
 Game_State :: enum {
     Initializing,
     

@@ -27,11 +27,11 @@ Tasks
     - core
       x headless server
       x shadows
+      - physics raycasting
       - animations
-        - animator entity component
+        x animator entity component
         - animation node graph
           - transition between animations (no blending)
-      - physics raycasting
     - editor work:
       - prefab editor
       - logger

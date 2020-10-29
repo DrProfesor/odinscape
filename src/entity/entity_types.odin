@@ -13,7 +13,41 @@ import "../configs"
 //   		  Entity Components            //
 /////////////////////////////////////////////
 
-// Stats
+// Core //
+
+Model_Renderer :: struct {
+	model_id:    string `model`,
+    material_id: string `material`,
+    tint:    wb.Vector4 `colour`,
+}
+
+Animator :: struct {
+	using player: wb.Animation_Player,
+}
+
+Collider :: struct {
+	kind: union {
+		Box_Collider,
+		Sphere_Collider,
+		Mesh_Collider,
+	}
+}
+
+Box_Collider:: struct {
+	height, width: f32,
+}
+Sphere_Collider :: struct {
+	radius: f32,
+}
+Mesh_Collider :: struct {
+	model_renderer: ^Model_Renderer,
+}
+
+
+
+
+// Game Logic //
+
 Stat_Holder :: struct {
 	stats : map[string]Stat
 }
@@ -23,14 +57,10 @@ Stat :: struct {
     level : int,
 }
 
-
-// Combatants
 Combatant :: struct {
 	current_health: f32,
 }
 
-
-// Spells
 all_spell_configs: map[string]^Spell_Config_Data;
 on_config_load :: proc() {
 	temp := configs.get_all_config_values("Spells", Spell_Config_Data);
@@ -97,16 +127,7 @@ AOE_Spell :: struct {
 }
 
 
-// Renderers
-Model_Renderer :: struct {
-	model_id:    string `model`,
-    material_id: string `material`,
-    tint:    wb.Vector4 `colour`,
-}
 
-Animator :: struct {
-	using player: wb.Animation_Player,
-}
 
 
 
@@ -236,6 +257,8 @@ Simple_Model :: struct {
 	using base: ^Entity `wbml_noserialize`,
 
 	using model: Model_Renderer,
+
+	is_raycast_target: bool,
 }
 
 @entity_init 
@@ -244,6 +267,11 @@ init_simple_model :: proc(model: ^Simple_Model, is_creation: bool) {
 		model.tint = {1,1,1,1};
 		model.model_id = "cube_model";
 		model.material_id = "default_material";
+		model.is_raycast_target = true; // TODO toggle in editor
+	}
+
+	if model.is_raycast_target {
+		wb.add_collider_to_scene(&shared.g_collision_scene, model.position, model.scale, { {}, wb.Collision_Model{model.model_id} });
 	}
 }
 

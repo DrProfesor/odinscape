@@ -10,8 +10,8 @@
                     1.000
                     1.000
                 ]
-
             }
+            is_raycast_target true
         }
 
         name "New Entity (2)"
