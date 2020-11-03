@@ -34,6 +34,7 @@ Draw_Command :: struct {
     orientation:       Quaternion,
     material_override: ^wb.Material,
     color:             Vector4,
+    draws_shadow:      bool,
     entity:            rawptr,
     animator:          rawptr,
 }

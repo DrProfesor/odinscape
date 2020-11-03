@@ -193,6 +193,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             wb.BEGIN_RENDER_PASS(&pass_desc);
 
             for cmd in draw_commands {
+                if cmd.entity == nil do continue;
                 e := cast(^entity.Entity)cmd.entity;
                 id_material := wb.g_materials["entity_id_mtl"]; 
                 wb.set_material_property(id_material, "entity_id", cast(i32)e.id);
@@ -249,14 +250,19 @@ draw_inspector :: proc(userdata: rawptr, open: ^bool) {
         // TODO I hate imgui input text
         bprint(selected_entity.name_buffer[:], selected_entity.name);
         selected_entity.name_buffer[len(selected_entity.name)] = 0;
-        imgui.input_text("", selected_entity.name_buffer[:]);
+        edited |= imgui.input_text("", selected_entity.name_buffer[:]);
         selected_entity.name = cast(string)cast(cstring)&selected_entity.name_buffer[0];
 
         // Enabled
         imgui.same_line();
         imgui.checkbox("Enabled", &selected_entity.active);
 
-        // Maybe tags? 
+        // Tags
+        // TODO I hate imgui input text
+        bprint(selected_entity.tags_buffer[:], selected_entity.tags);
+        selected_entity.tags_buffer[len(selected_entity.tags)] = 0;
+        edited |= imgui.input_text("Tags:", selected_entity.tags_buffer[:]);
+        selected_entity.tags = cast(string)cast(cstring)&selected_entity.tags_buffer[0];        
 
         // Transform info
         imgui.separator();

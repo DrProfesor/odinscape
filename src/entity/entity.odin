@@ -26,6 +26,9 @@ Entity :: struct {
 	name: string,
 	name_buffer: [256]byte `wbml_noserialize`,
 
+	tags: string,
+	tags_buffer: [256]byte `wbml_noserialize`,
+
 	id: int `wbml_noserialize`,
 	network_id: int `wbml_noserialize`, // -1 for non networked
 	controlling_client: int `wbml_noserialize`,

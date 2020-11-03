@@ -19,6 +19,7 @@ import "../configs"
 import "../net"
 import "../entity"
 import "../util"
+import "../physics"
 
 g_game_camera: wb.Camera;
 g_cbuffer_lighting: wb.CBuffer;
@@ -138,6 +139,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 					e.rotation,
 					material,
 					model_renderer.tint,
+					true,
 					e,
 					&animator.player,
 				};
@@ -153,20 +155,43 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 				append(&cmds, cmd);
 			}
 
+			add_node_command :: proc(node: ^physics.R_Tree_Node, cmds: ^[dynamic]Draw_Command, col: Vector4) {
+				assert(node != nil);
+				if len(node.node_tris) > 0 {
+					node_center := (node.bounding_min+node.bounding_max)/2;
+					append(cmds, Draw_Command{ wb.g_models["cube_model"], node_center, node.bounding_max-node.bounding_min, Quaternion(1), wb.g_materials["simple_rgba_mtl"], col, false, nil, nil });
+				} else {
+					for c, i in node.children {
+						col : Vector4;
+						if i == 0 do col = {1,0,0,0.25};
+						if i == 1 do col = {0,1,0,0.25};
+						if i == 2 do col = {0,0,1,0.25};
+						if i == 3 do col = {1,0,1,0.25};
+						if i == 4 do col = {1,1,0,0.25};
+						if i == 5 do col = {0,1,1,0.25};
+						if i == 6 do col = {1,0.55,0,0.25};
+						if i == 7 do col = {0.5,0,1,0.25};
+						add_node_command(c, cmds, col);
+					}
+				}
+			}
+			tree := physics.generate_rtree(Vector3{}, 100);
+			add_node_command(tree.root_node, &cmds, {1,1,1,0.25});
+
 			// TODO seperate out editor code!!
 			if render_context.edit_mode {
 			// wb.draw_model(wb.g_models["cube_model"], game.g_game_camera.position, {1,1,1}, game.g_game_camera.orientation, wb.g_materials["simple_rgba_mtl"], {1, 0, 0, 1});
 
 		        for light in entity.all_Directional_Light {
-		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position, {0.5,0.5,0.5}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1}, cast(^Entity)light, nil });
-		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position + quaternion_forward(light.rotation)*2, {0.1,0.1,4}, light.rotation, wb.g_materials["simple_rgba_mtl"], {1,1,0,1}, cast(^Entity)light, nil });
+		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position, {0.5,0.5,0.5}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1}, false, cast(^Entity)light, nil });
+		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position + quaternion_forward(light.rotation)*2, {0.1,0.1,4}, light.rotation, wb.g_materials["simple_rgba_mtl"], {1,1,0,1}, false, cast(^Entity)light, nil });
 		        }
 		    }
 
 			wb.set_resource(render_graph, "scene lighting", lighting, nil);
 			wb.set_resource(render_graph, "scene draw list", cmds[:], cleanup_draw_list);
 			cleanup_draw_list :: proc(dl: ^[]Draw_Command) {
-				delete(dl^);
+				// free(dl);
 			}
 		}); 
 	// end build draw commands
@@ -265,6 +290,7 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                 draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
                 wb.BIND_MATERIAL(shadow_material);
                 for cmd in draw_commands {
+                	if !cmd.draws_shadow do continue;
                     if len(cmd.model.meshes) > 0 {
                     	wb.draw_model_no_material(cmd.model, cmd.position, cmd.scale, cmd.orientation, cmd.color, cast(^wb.Animation_Player)cmd.animator);
                     }

@@ -30,11 +30,12 @@ main_init :: proc() {
 main_update :: proc(dt: f32) -> bool {
     profiler.TIMED_SECTION();
 
-    // maybe not in editor?
-    // we would have to allow for offline play
     net.update(dt);
-    if !wb.developer_menu_open do game.update(dt);
-    if  wb.developer_menu_open do editor.update(dt);
+    // if !wb.developer_menu_open do game.update(dt);
+    // if  wb.developer_menu_open do editor.update(dt);
+
+    game.update(dt);
+    editor.update(dt);
 
     return true;
 }

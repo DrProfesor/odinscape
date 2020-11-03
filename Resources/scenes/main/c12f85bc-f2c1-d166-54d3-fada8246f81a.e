@@ -12,6 +12,7 @@
         }
 
         name "New Entity (3)"
+        tags ""
         position [
             1.215
             7.329

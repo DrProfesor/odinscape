@@ -39,18 +39,23 @@ update_local_player_character :: proc(player: ^Player_Character, dt: f32) {
 
         @static hits: [dynamic]physics.Raycast_Hit;
         hit_count := physics.raycast(mouse_world, mouse_direction, &hits);
-        // hit_count := 0;
-        // if hit_count > 0 {
-            // first_hit := hits[0];
-            // TODO right clicked an entity
-        // } else {
-            // pos, hit := terrain_get_raycasted_position(mouse_world, mouse_direction);
-            // if hit {
-            //     player.target_position = pos;
-            //     player.path = physics.smooth_a_star(player_entity.position, pos, 0.5);
-            //     player.path_idx = 1;
-            //     // net.send_new_player_position()
-            // }
+        if hit_count > 0 {
+            first_hit := hits[0];
+            // TODO is it ground or targetable
+            player.target_position = first_hit.hit_pos;
+            player.path = physics.smooth_a_star(player.position, first_hit.hit_pos, 1);
+            player.path_idx = 1;
+            // net.send_new_player_position()
+        } 
+        // TODO terrain raycasting
+        // else {
+        //     pos, hit := terrain_get_raycasted_position(mouse_world, mouse_direction);
+        //     if hit {
+        //         player.target_position = pos;
+        //         player.path = physics.smooth_a_star(player_entity.position, pos, 0.5);
+        //         player.path_idx = 1;
+        //         // net.send_new_player_position()
+        //     }
         // }
     }
 

@@ -25,25 +25,6 @@ Animator :: struct {
 	using player: wb.Animation_Player,
 }
 
-Collider :: struct {
-	kind: union {
-		Box_Collider,
-		Sphere_Collider,
-		Mesh_Collider,
-	}
-}
-
-Box_Collider:: struct {
-	height, width: f32,
-}
-Sphere_Collider :: struct {
-	radius: f32,
-}
-Mesh_Collider :: struct {
-	model_renderer: ^Model_Renderer,
-}
-
-
 
 
 // Game Logic //
@@ -271,7 +252,7 @@ init_simple_model :: proc(model: ^Simple_Model, is_creation: bool) {
 	}
 
 	if model.is_raycast_target {
-		wb.add_collider_to_scene(&shared.g_collision_scene, model.position, model.scale, { {}, wb.Collision_Model{model.model_id} });
+		wb.add_collider_to_scene(&shared.g_collision_scene, model.position, model.scale, { {}, wb.Collision_Model{model.model_id} }, cast(^Entity)model);
 	}
 }
 

@@ -83,6 +83,7 @@ save_scene :: proc(scene_id: string) {
 	if !basic.is_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id)) do
 		basic.create_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id));
 
+	// TODO save only changed entities
 	for eid, entity in scene.entities {
 		file_path := fmt.tprintf("%s/%s/%s.e", SCENE_DIR, scene_id, entity.uuid);
 
@@ -94,6 +95,7 @@ save_scene :: proc(scene_id: string) {
 
 		data := wbml.serialize(&sec);
 		ok := os.write_entire_file(file_path, transmute([]byte)data);
+		assert(ok, file_path);
 	}
 
 	scene.dirty = false;
