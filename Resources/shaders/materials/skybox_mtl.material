@@ -1,7 +1,7 @@
 {
     shader "skybox_shader"
 
-    cull_backfaces false
+    rasterizer_mode Solid_No_Cull
 
     properties [
     ]

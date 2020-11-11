@@ -50,7 +50,7 @@ main_render :: proc() {
     
     @static graphics_memory: []byte;
     if graphics_memory == nil {
-        graphics_memory = make([]byte, mem.megabytes(10));
+        graphics_memory = make([]byte, mem.megabytes(50));
 
         wb.init_camera(&g_main_camera);
         g_main_camera.is_perspective = true;

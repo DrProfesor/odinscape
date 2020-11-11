@@ -78,6 +78,7 @@ init :: proc() {
 
 	configs.add_config_load_listener(entity.on_config_load);
 
+	physics.init();
 	init_players();
 
 	entity.load_scene("main", true);
@@ -97,6 +98,7 @@ update :: proc(dt: f32) {
 
 	wb.do_camera_movement(&g_game_camera.position, &g_game_camera.orientation, dt, 5, 10, 1, true);
 
+	physics.update(dt);
 	update_players(dt);
 	update_terrain();
 
@@ -155,32 +157,9 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
 				append(&cmds, cmd);
 			}
 
-			add_node_command :: proc(node: ^physics.R_Tree_Node, cmds: ^[dynamic]Draw_Command, col: Vector4) {
-				assert(node != nil);
-				if len(node.node_tris) > 0 {
-					node_center := (node.bounding_min+node.bounding_max)/2;
-					append(cmds, Draw_Command{ wb.g_models["cube_model"], node_center, node.bounding_max-node.bounding_min, Quaternion(1), wb.g_materials["simple_rgba_mtl"], col, false, nil, nil });
-				} else {
-					for c, i in node.children {
-						col : Vector4;
-						if i == 0 do col = {1,0,0,0.25};
-						if i == 1 do col = {0,1,0,0.25};
-						if i == 2 do col = {0,0,1,0.25};
-						if i == 3 do col = {1,0,1,0.25};
-						if i == 4 do col = {1,1,0,0.25};
-						if i == 5 do col = {0,1,1,0.25};
-						if i == 6 do col = {1,0.55,0,0.25};
-						if i == 7 do col = {0.5,0,1,0.25};
-						add_node_command(c, cmds, col);
-					}
-				}
-			}
-			tree := physics.generate_rtree(Vector3{}, 100);
-			add_node_command(tree.root_node, &cmds, {1,1,1,0.25});
-
 			// TODO seperate out editor code!!
 			if render_context.edit_mode {
-			// wb.draw_model(wb.g_models["cube_model"], game.g_game_camera.position, {1,1,1}, game.g_game_camera.orientation, wb.g_materials["simple_rgba_mtl"], {1, 0, 0, 1});
+				// wb.draw_model(wb.g_models["cube_model"], game.g_game_camera.position, {1,1,1}, game.g_game_camera.orientation, wb.g_materials["simple_rgba_mtl"], {1, 0, 0, 1});
 
 		        for light in entity.all_Directional_Light {
 		            append(&cmds, Draw_Command{ wb.g_models["cube_model"], light.position, {0.5,0.5,0.5}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1}, false, cast(^Entity)light, nil });

@@ -100,7 +100,7 @@ update_networked_entities :: proc() {
             replication_cache[key] = any{ copy_data, field_type_info.id };
 
             // send data
-            sb: strings.Builder;
+            sb:= strings.make_builder();
             wbml.serialize_with_type_info(key, ptr, field_type_info, &sb, 0);
             append(&fields_to_send, strings.to_string(sb));
         }

@@ -14,7 +14,11 @@ import "../entity"
 import "../util"
 import "../shared"
 
-update_physics :: proc(dt: f32) {
+init :: proc() {
+    init_pathing();
+}
+
+update :: proc(dt: f32) {
     for collider in &shared.g_collision_scene.colliders {
         if collider.userdata == nil do continue;
 
@@ -28,6 +32,8 @@ update_physics :: proc(dt: f32) {
 
         wb.update_collider(collider, e.position, e.scale, collider.info, e);
     }
+
+    update_pathing(dt);
 }
 
 Raycast_Hit :: struct {
@@ -67,7 +73,18 @@ point_walkable :: proc(point: Vector3, radius: f32, leg_buffer: f32 = 0.5) -> bo
     return false;
 }
 
+entity_has_collision :: proc(e: ^entity.Entity) -> bool {
+    #partial switch kind in e.kind {
+        case entity.Simple_Model: {
+            return kind.is_raycast_target;
+        }
+        case: return false;
+    }
+}
 
+
+Quaternion :: wb.Quaternion;
+Vector2 :: wb.Vector2;
 Vector3 :: wb.Vector3;
 Vector4 :: wb.Vector4;
 

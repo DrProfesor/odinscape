@@ -27,7 +27,8 @@ Tasks
     - core
       x headless server
       x shadows
-      - physics raycasting
+      x physics raycasting
+      - pathing
       - animations
         x animator entity component
         - animation node graph
@@ -44,7 +45,7 @@ Tasks
       - player health
 
   v0.0.3
-    - killing the walk monster
+    - transparent walls when it is between player and camera
     - build a small spawn area. Needs enemy area and "home base"
     - shader compilation tool
     - terrain

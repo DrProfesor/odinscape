@@ -1,6 +1,9 @@
 package game
 
+import "core:fmt"
+
 import "shared:wb/imgui"
+
 import "../shared"
 import "../net"
 
@@ -17,6 +20,18 @@ update_login_screen :: proc() {
 	    username_buf[len(username_buf)-1] = 0;
 	    
 	    if imgui.button("Login") {
+	    	login_packet := net.Packet{
+	        	net.Login_Packet {
+		            net.client_id,
+		            username_buf, // TODO password
+		        }
+		    };
+
+		    net.send_packet(&login_packet);
+	    }
+
+	    if imgui.button("Doc") {
+	    	fmt.bprint(username_buf[:], "Doc");
 	    	login_packet := net.Packet{
 	        	net.Login_Packet {
 		            net.client_id,

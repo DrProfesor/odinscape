@@ -2,6 +2,7 @@ package physics
 
 import "core:fmt"
 import "core:runtime"
+import "core:math"
 import la "core:math/linalg"
 
 import "shared:wb"
@@ -9,6 +10,14 @@ import "shared:wb/profiler"
 
 import "../shared"
 import "../entity"
+
+init_pathing :: proc() {
+
+}
+
+update_pathing :: proc(dt: f32) {
+    
+}
 
 Tri :: struct {
     verts: [3]Vector3,
@@ -30,10 +39,10 @@ RTree_Node :: struct {
 
 // TODO(jake): right out of my ass, find a better number
 MAX_ENTRIES_IN_NODE :: 100;
-generate_rtree :: proc(center: Vector3, search_radius: f32) -> RTree {
-    
-    tree: RTree;
-    using tree;
+generate_rtree :: proc(center: Vector3, search_radius: f32) {
+    profiler.TIMED_SECTION();
+
+    using tree: RTree;
 
     node_pool[node_count] = RTree_Node{ center-search_radius, center+search_radius, {}, {}, nil };
     node_count += 1;
@@ -194,23 +203,64 @@ generate_rtree :: proc(center: Vector3, search_radius: f32) -> RTree {
             case: panic(fmt.tprint(kind));
         }
     }
-    return tree;
 }
 
-raycast_rtree :: proc(tree: ^RTree, origin, direction: Vector3) {
-
+RTree_Hit :: struct {
+    pos: Vector3,
+    tri: [3]Vector3,
+    id: int,
 }
 
+raycast_rtree :: proc{raycast_rtree_single, raycast_rtree_multi};
 
-calculate_nav_mesh :: proc() {
-    max_step_height :: 0.25;
-    max_slop_angle  :: 45;
-    agent_height    :: 2;
-    walkable_seed   :: Vector3{0,0,0};
+raycast_rtree_single :: proc(tree: ^RTree, origin, direction: Vector3) -> (bool, RTree_Hit) {
+    assert(tree != nil);
 
-    
+    profiler.TIMED_SECTION();
+    _recurse :: proc(node: ^RTree_Node, origin, direction: Vector3) -> (bool, RTree_Hit) {
+        assert(node != nil);
+
+        if len(node.children) > 0 {
+            for child in node.children {
+                hit, info := _recurse(child, origin, direction);
+                if hit do return hit, info;
+            }
+            return false, {};
+        } 
+
+        // Check bounding box
+        hit, _ := wb.cast_line_box(origin, direction, node.bounding_min, node.bounding_max);
+        if !hit do return false, {};
+
+        // Iterate tris
+        for tri in node.node_tris {
+            hit, whre := wb.cast_line_triangle(origin, direction, tri.verts[0], tri.verts[1], tri.verts[2]);
+            if hit do return true, RTree_Hit{whre, tri.verts, tri.id};
+        }
+
+        return false, {};
+    }
+
+    return _recurse(tree.root_node, origin, direction);
 }
 
+raycast_rtree_multi :: proc(tree: ^RTree, origin, direction: Vector3, hits: ^[dynamic]RTree_Hit, max_hits := 10) -> int {
+    origin := origin;
+
+    clear(hits);
+
+    for _ in 0..<max_hits {
+        hit, info := raycast_rtree(tree, origin, direction);
+
+        if !hit do return len(hits);
+
+        origin = info.pos + direction * math.F32_EPSILON;
+
+        append(hits, info);
+    }
+
+    return len(hits);
+}
 
 AStar_Node :: struct {
     position: Vector3,
@@ -219,7 +269,8 @@ AStar_Node :: struct {
 }
 
 is_valid :: proc(pos: Vector3) -> bool {
-    return point_walkable(pos, 1);
+    // hit, _ := raycast_rtree(&tree, pos, Vector3{0, -1, 0});
+    return false;
 }
 
 a_star :: proc(_start, _goal: Vector3, step_size: f32) -> []Vector3 {

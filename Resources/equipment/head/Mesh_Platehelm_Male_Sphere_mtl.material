@@ -5,7 +5,7 @@
 
     blend_mode Alpha_Blend
 
-    cull_backfaces false
+    rasterizer_mode Solid_No_Cull
 
     properties [
         { name "base_color" value .Vector4 [ 0.255 0.255 0.255 1.000 ] }

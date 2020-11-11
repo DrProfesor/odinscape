@@ -80,8 +80,9 @@ save_scene :: proc(scene_id: string) {
 		clear(&entity_files_to_delete[scene_id]);
 	}
 
-	if !basic.is_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id)) do
+	if !basic.is_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id)) {
 		basic.create_directory(fmt.tprintf("%s/%s", SCENE_DIR, scene_id));
+	}
 
 	// TODO save only changed entities
 	for eid, entity in scene.entities {
@@ -95,7 +96,7 @@ save_scene :: proc(scene_id: string) {
 
 		data := wbml.serialize(&sec);
 		ok := os.write_entire_file(file_path, transmute([]byte)data);
-		assert(ok, file_path);
+		if !ok do log_info("Failed to save: ", file_path);
 	}
 
 	scene.dirty = false;

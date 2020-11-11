@@ -1,0 +1,13 @@
+{
+    shader "voxelization"
+
+    blend_mode Bit_Or_Blend
+    depth_test false
+    rasterizer_mode No_Clip
+
+    properties [
+    ]
+
+    textures [
+    ]
+}

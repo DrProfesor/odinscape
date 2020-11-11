@@ -19,12 +19,28 @@ import "../configs"
 import "../entity"
 import "../shared"
 import "../util"
+import "../physics"
 
 g_editor_camera: wb.Camera;
+
+g_voxelizer_camera: wb.Camera;
+g_voxelizer_texture: wb.Texture;
+g_voxelizer_read_texture: wb.Texture;
+
+SLICEMAP_SIZE :: 64;
+SLICEMAP_DEPTH :: 64;
+MAX_WALK_ANGLE :: 45;
+PLAYER_HEIGHT :: 1;
+PLAYER_STEP_HEIGHT :: 0.5;
+
+g_current_slicemap: [SLICEMAP_SIZE][SLICEMAP_SIZE]u128;
 
 entity_id_color_buffer: wb.Texture;
 entity_id_depth_buffer: wb.Texture;
 entity_id_buffer_cpu_copy: wb.Texture;
+
+debug_color_buffer: wb.Texture;
+debug_depth_buffer: wb.Texture;
 
 hovered_entity_index: int;
 
@@ -36,7 +52,23 @@ init :: proc() {
     wb.init_camera(&g_editor_camera);
     g_editor_camera.is_perspective = true;
 
+    wb.init_camera(&g_voxelizer_camera);
+    voxelizer_tex_desc := wb.Texture_Description {
+        type = .Texture2D,
+        width = SLICEMAP_SIZE,
+        height = SLICEMAP_SIZE,
+        format = .R32G32B32A32_UINT,
+        render_target = true,
+    };
+    g_voxelizer_texture = wb.create_texture(voxelizer_tex_desc);
+    voxelizer_read_desc := voxelizer_tex_desc;
+    voxelizer_read_desc.render_target = false;
+    voxelizer_read_desc.is_cpu_read_target = true;
+    g_voxelizer_read_texture = wb.create_texture(voxelizer_read_desc);
+
     entity_id_color_buffer, entity_id_depth_buffer = wb.create_color_and_depth_buffers(wb.main_window.width_int, wb.main_window.height_int, .R32_INT);
+
+    debug_color_buffer, debug_depth_buffer = wb.create_color_and_depth_buffers(wb.main_window.width_int, wb.main_window.height_int, .R8G8B8A8_UINT);
 
     eid_texture_desc := entity_id_color_buffer.description;
     eid_texture_desc.render_target = false;
@@ -59,6 +91,7 @@ init :: proc() {
     wb.register_developer_program("Resources", draw_resource_inspector, .Window, nil);
     wb.register_developer_program("Game View", draw_game_view, .Window, nil);
     wb.register_developer_program("Console",   draw_console, .Window, nil);
+    wb.register_developer_program("Pathing",   draw_pathing, .Window, nil);
 
     for open_prog in configs.editor_config.open_editor_windows {
         for prog in &wb.developer_programs {
@@ -167,8 +200,9 @@ update :: proc(dt: f32) {
     }
 
     for modal in &modals {
-        if modal.is_open && !imgui.is_popup_open(modal.name) do
+        if modal.is_open && !imgui.is_popup_open(modal.name) {
             imgui.open_popup(modal.name);
+        }
         if !imgui.begin_popup_modal(modal.name, &modal.is_open) do return;
         defer imgui.end_popup();
         modal.procedure(&modal, modal.userdata);
@@ -197,12 +231,152 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
                 e := cast(^entity.Entity)cmd.entity;
                 id_material := wb.g_materials["entity_id_mtl"]; 
                 wb.set_material_property(id_material, "entity_id", cast(i32)e.id);
-                wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, id_material);
+                wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, id_material, {1,1,1,1}, cast(^wb.Animation_Player)cmd.animator);
             }
 
             wb.ensure_texture_size(&entity_id_buffer_cpu_copy, entity_id_color_buffer.width, entity_id_color_buffer.height);
             wb.copy_texture(&entity_id_buffer_cpu_copy, &entity_id_color_buffer);
         });
+
+    if should_regen_nav_mesh 
+    {
+        wb.add_render_graph_node(render_graph, "scene voxelizer", ctxt, 
+            proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+                wb.has_side_effects(render_graph);
+                wb.read_resource(render_graph, "scene draw list");
+            },
+            proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+                render_context := cast(^shared.Render_Graph_Context)userdata;
+
+                // Coarse voxalization
+                {
+
+                    voxelizer_material := wb.g_materials["voxelizer"];
+                    wb.set_material_property(voxelizer_material, "depth", cast(i32)SLICEMAP_DEPTH);
+                    wb.set_material_property(voxelizer_material, "max_angle", to_radians(MAX_WALK_ANGLE));
+
+                    g_voxelizer_camera.position = Vector3{0,1,0} * (SLICEMAP_DEPTH/2);
+                    g_voxelizer_camera.orientation = la.quaternion_from_euler_angle_x(-1.57);
+                    g_voxelizer_camera.size = SLICEMAP_SIZE / 4; // controls how detailed
+
+                    pass_desc: wb.Render_Pass;
+                    pass_desc.camera = &g_voxelizer_camera;
+                    pass_desc.color_buffers[0] = &g_voxelizer_texture;
+                    pass_desc.dont_resize_render_targets_to_screen = true;
+                    wb.BEGIN_RENDER_PASS(&pass_desc);
+
+                    draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
+                    for cmd in draw_commands {
+                        if cmd.entity == nil do continue;
+                        e := cast(^entity.Entity)cmd.entity;
+
+                        if !physics.entity_has_collision(e) do continue;
+
+                        wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, voxelizer_material, {1,1,1,1}, cast(^wb.Animation_Player)cmd.animator);
+                    }
+
+                    wb.ensure_texture_size(&g_voxelizer_read_texture, g_voxelizer_texture.width, g_voxelizer_texture.height);
+                    wb.copy_texture(&g_voxelizer_read_texture, &g_voxelizer_texture);
+
+                    p_pixels := wb.get_texture_pixels(&g_voxelizer_read_texture);
+                    defer wb.return_texture_pixels(&g_voxelizer_read_texture, p_pixels);
+                    pi_pixels := transmute([]u128)p_pixels;
+                    for j in 0..<len(p_pixels)/16 {
+                        z := j%SLICEMAP_SIZE;
+                        x := j/SLICEMAP_SIZE;
+                        g_current_slicemap[x][z] = pi_pixels[j];
+                    }
+                }
+
+                
+
+                // Layer extraction
+                
+                {
+                    pass: wb.Render_Pass;
+                    pass.camera = &g_editor_camera;
+                    pass.color_buffers[0] = &debug_color_buffer;
+                    pass.depth_buffer = &debug_depth_buffer;
+                    wb.BEGIN_RENDER_PASS(&pass);
+
+                    colours : []Vector4 = { {1,0,0,0.5}, {0,1,0,0.5}, {0,0,1,0.5}, {1,0,1,0.5}, {1,1,0,0.5} };
+                    first := true;
+                    cell_pos : Vector3;
+
+                    cells: map[u64]int;
+                    defer delete(cells);
+                    current_layer_id := 0;
+                    
+                    last_y := 0;
+
+                    for y in 0..<128 {
+                        bit := cast(u128)1 << cast(u128)y;
+                        for zs, z in g_current_slicemap {
+                            for column, x in zs {
+                                if column & bit == 0 do continue;
+
+                                // cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, SLICEMAP_DEPTH - f32(y), f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {2,2,2};
+
+                                left_lid,  lok := cells[get_cell_id(x-1,y,z)];
+                                if lok do current_layer_id = max(current_layer_id, left_lid);
+
+                                right_lid, rok := cells[get_cell_id(x+1,y,z)];
+                                if rok do current_layer_id = max(current_layer_id, right_lid);
+
+                                fwd_lid,   fok := cells[get_cell_id(x,y,z+1)];
+                                if fok do current_layer_id = max(current_layer_id, fwd_lid);
+
+                                bckwd_lid, bok := cells[get_cell_id(x,y,z-1)];
+                                if bok do current_layer_id = max(current_layer_id, bckwd_lid);
+
+                                if !lok && !rok && !fok && !bok {
+                                    if y > 0 do for yi := y-1; yi >= 0; yi -= 1 {
+                                        lid, ok := cells[get_cell_id(x,yi,z)];
+                                        if !ok do continue;
+                                        current_layer_id = lid + 1;
+                                        break;
+                                    }
+                                }
+                                if abs(last_y-y) > 1 {
+                                    current_layer_id += 1;
+                                }
+
+                                last_y = y;
+                                cells[get_cell_id(x,y,z)] = current_layer_id;
+
+
+                                col := colours[current_layer_id];
+                                if first do col = {1,0,0,1};
+                                first = false;
+
+                                cell_pos = (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH, f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {2,2,2};
+                                wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.45,0.45,0.45}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], col);
+                            }
+                        }
+                    }
+                    wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.45,0.45,0.45}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,0,1,1});
+                }
+
+                // Layer refinement
+                
+
+            });
+        // should_regen_nav_mesh = false;
+    }
+
+    get_cell_id :: proc(x,y,z: int) -> u64 {
+        return transmute(u64) (((transmute(u64)x) << 48) | ((transmute(u64)y) << 32) | ((transmute(u64)z) << 16));
+    }
+
+    // wb.add_render_graph_node(render_graph, "debug", ctxt,
+    //     proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+    //         wb.has_side_effects(render_graph);
+    //     },
+    //     proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
+    //         render_context := cast(^shared.Render_Graph_Context)userdata;
+
+            
+    //     });
 
     wb.add_render_graph_node(render_graph, "gizmo", ctxt,
         proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
@@ -573,11 +747,13 @@ draw_scene_hierarchy :: proc(userdata: rawptr, open: ^bool) {
         
         if imgui.begin_popup_context_item("scene context") {
 
-            if imgui.menu_item("Save") do
+            if imgui.menu_item("Save") {
                 entity.save_scene(scene_id);
+            }
 
-            if imgui.menu_item("Add Entity") do
+            if imgui.menu_item("Add Entity") {
                 open_modal("Select Entity");
+            }
 
             imgui.end_popup();
         }
@@ -762,6 +938,8 @@ draw_game_view :: proc(userdata: rawptr, open: ^bool) {
         g_game_view_mouse_pos.y = (wb_pixel_pos.y - (shared.WINDOW_SIZE_Y - p_max.y) + p_min.y + 15) * y_scale;
 
         imgui.draw_list_add_image(imgui.get_window_draw_list(), cast(imgui.Texture_ID)&gizmo_color_buffer, p_min, p_max);
+
+        imgui.draw_list_add_image(imgui.get_window_draw_list(), cast(imgui.Texture_ID)&debug_color_buffer, p_min, p_max);
     }
 
     g_game_view_window_hovered = imgui.is_window_hovered();
@@ -808,6 +986,20 @@ draw_console :: proc(userdata: rawptr, open: ^bool) {
 
     pop_style_var();
     end_child();
+
+}
+
+should_regen_nav_mesh := false;
+draw_pathing :: proc(userdata: rawptr, open: ^bool) {
+    using imgui;
+
+    open := begin("Pathing", open, DEFAULT_WINDOW_FLAGS);
+    defer end();
+    if !open do return;
+
+    if button("Re-Gen") {
+        should_regen_nav_mesh = true;
+    }
 
 }
 

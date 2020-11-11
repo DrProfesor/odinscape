@@ -45,34 +45,39 @@ combo_filter :: proc(label: string, selection: ^string, hints: []string, state: 
     	logging.logln(frame_bb);
     	logging.logln(id);
     	logging.logln(window.draw_list);
-    	if flags & .NoPreview != .NoPreview do
+    	if flags & .NoPreview != .NoPreview {
     		draw_list_add_rect_filled(window.draw_list, frame_bb.min, imgui.Vec2{value_x2, frame_bb.max.y}, frame_col, style.frame_rounding, (flags & .NoArrowButton) == .NoArrowButton ? .All : .Left);
+        }
     }
     logging.logln("");
     if flags & .NoArrowButton != .NoArrowButton {
 		bg_col := get_color_u32((popup_open || hovered) ? imgui.Col.ButtonHovered : imgui.Col.Button);
         text_col := get_color_u32(imgui.Col.Text);
         draw_list_add_rect_filled(window.draw_list, imgui.Vec2{value_x2, frame_bb.min.y}, frame_bb.max, bg_col, style.frame_rounding, (w <= arrow_size) ? .All : .Right);
-        if (value_x2 + arrow_size - style.frame_padding.x <= frame_bb.max.x) do
+        if (value_x2 + arrow_size - style.frame_padding.x <= frame_bb.max.x) {
             imgui.render_arrow(window.draw_list, imgui.Vec2{value_x2 + style.frame_padding.y, frame_bb.min.y + style.frame_padding.y}, text_col, .Down, 1.0);
+        }
     }
     logging.logln("");
     if !popup_open {
 		imgui.render_frame_border(frame_bb.min, frame_bb.max, style.frame_rounding);
-        if selection^ != "" && flags & .NoPreview != .NoPreview do
+        if selection^ != "" && flags & .NoPreview != .NoPreview {
             imgui.render_text_clipped(Vec2{frame_bb.min.x + style.frame_padding.x, frame_bb.min.y + style.frame_padding.y}, imgui.Vec2{value_x2, frame_bb.max.y}, selection^, "", nil, Vec2{0.0,0.0});
+        }
 
         if (pressed || g.nav_activate_id == id || should_open) && !popup_open{
-            if window.dc.nav_layer_current == .Main do
+            if window.dc.nav_layer_current == .Main {
                 window.nav_last_ids[0] = id;
+            }
             open_popup_ex(id);
             popup_open = true;
             just_opened = true;
         }
     }
     logging.logln("");
-    if label_size.x > 0 do
+    if label_size.x > 0 {
     	render_text(Vec2{frame_bb.max.x + style.item_inner_spacing.x, frame_bb.min.y + style.frame_padding.y}, label);
+    }
 
     if !popup_open do return false;
     logging.logln("");
@@ -91,8 +96,9 @@ combo_filter :: proc(label: string, selection: ^string, hints: []string, state: 
     if popup_window != nil && popup_window.was_active
     {
         size_expected : Vec2; calc_window_expected_size(&size_expected, popup_window);
-        if flags & .PopupAlignLeft == .PopupAlignLeft do
+        if flags & .PopupAlignLeft == .PopupAlignLeft {
             popup_window.auto_pos_last_direction = .Left;
+        }
         r_outer : Rect; get_window_allowed_extent_rect(&r_outer, popup_window);
         rect_bl : Vec2; rect_get_bl(&rect_bl, &frame_bb);
         pos : Vec2; find_best_window_pos_for_popup_ex(&pos, rect_bl, size_expected, &popup_window.auto_pos_last_direction, r_outer, frame_bb, .ComboBox);

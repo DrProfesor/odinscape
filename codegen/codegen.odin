@@ -53,13 +53,13 @@ main :: proc() {
         }
 	}
 
-	storage_builder: strings.Builder;
-    add_switch_builder: strings.Builder;
-    destroy_switch_builder: strings.Builder;
-    type_builder: strings.Builder;
-    create_switch: strings.Builder;
-    union_builder: strings.Builder;
-    init_builder: strings.Builder;
+	storage_builder := strings.make_builder_none();
+    add_switch_builder := strings.make_builder_none();
+    destroy_switch_builder := strings.make_builder_none();
+    type_builder := strings.make_builder_none();
+    create_switch := strings.make_builder_none();
+    union_builder := strings.make_builder_none();
+    init_builder := strings.make_builder_none();
 
     sbprint :: proc(builder: ^strings.Builder, args: ..any) {
         fmt.sbprint(buf=builder, args=args, sep="");
