@@ -11,13 +11,7 @@ import "shared:wb/profiler"
 import "../shared"
 import "../entity"
 
-init_pathing :: proc() {
-
-}
-
-update_pathing :: proc(dt: f32) {
-    
-}
+g_rtree: RTree;
 
 Tri :: struct {
     verts: [3]Vector3,
@@ -42,11 +36,11 @@ MAX_ENTRIES_IN_NODE :: 100;
 generate_rtree :: proc(center: Vector3, search_radius: f32) {
     profiler.TIMED_SECTION();
 
-    using tree: RTree;
+    using g_rtree;
 
     node_pool[node_count] = RTree_Node{ center-search_radius, center+search_radius, {}, {}, nil };
     node_count += 1;
-    tree.root_node = &node_pool[0]; 
+    root_node = &node_pool[0]; 
 
     bounding_contains_triangle :: proc(min, max: Vector3, tri: Tri) -> (bool, Vector3) {
         tri_center := (tri.verts[0] + tri.verts[1] + tri.verts[2])/3;
@@ -174,18 +168,18 @@ generate_rtree :: proc(center: Vector3, search_radius: f32) {
                 vert6 := Vector3{vert1.x, vert0.y, vert1.z};
                 vert7 := Vector3{vert1.x, vert1.y, vert0.z};
 
-                insert_triangle(&tree, &node_pool[0 ], Tri{{ vert0, vert7, vert4 }, entity.id});
-                insert_triangle(&tree, &node_pool[1 ], Tri{{ vert0, vert3, vert7 }, entity.id});
-                insert_triangle(&tree, &node_pool[2 ], Tri{{ vert5, vert1, vert3 }, entity.id});
-                insert_triangle(&tree, &node_pool[3 ], Tri{{ vert3, vert1, vert7 }, entity.id});
-                insert_triangle(&tree, &node_pool[4 ], Tri{{ vert7, vert1, vert4 }, entity.id});
-                insert_triangle(&tree, &node_pool[5 ], Tri{{ vert4, vert1, vert6 }, entity.id});
-                insert_triangle(&tree, &node_pool[6 ], Tri{{ vert5, vert3, vert2 }, entity.id});
-                insert_triangle(&tree, &node_pool[7 ], Tri{{ vert2, vert3, vert0 }, entity.id});
-                insert_triangle(&tree, &node_pool[8 ], Tri{{ vert0, vert4, vert2 }, entity.id});
-                insert_triangle(&tree, &node_pool[9 ], Tri{{ vert2, vert4, vert6 }, entity.id});
-                insert_triangle(&tree, &node_pool[10], Tri{{ vert1, vert5, vert2 }, entity.id});
-                insert_triangle(&tree, &node_pool[11], Tri{{ vert6, vert1, vert2 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[0 ], Tri{{ vert0, vert7, vert4 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[1 ], Tri{{ vert0, vert3, vert7 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[2 ], Tri{{ vert5, vert1, vert3 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[3 ], Tri{{ vert3, vert1, vert7 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[4 ], Tri{{ vert7, vert1, vert4 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[5 ], Tri{{ vert4, vert1, vert6 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[6 ], Tri{{ vert5, vert3, vert2 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[7 ], Tri{{ vert2, vert3, vert0 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[8 ], Tri{{ vert0, vert4, vert2 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[9 ], Tri{{ vert2, vert4, vert6 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[10], Tri{{ vert1, vert5, vert2 }, entity.id});
+                insert_triangle(&g_rtree, &node_pool[11], Tri{{ vert6, vert1, vert2 }, entity.id});
                 node_count += 12;
             }
             case wb.Collision_Model: {
@@ -196,7 +190,7 @@ generate_rtree :: proc(center: Vector3, search_radius: f32) {
                         _t1 := mul(mm, Vector4{tri[0].x, tri[0].y, tri[0].z, 1});
                         _t2 := mul(mm, Vector4{tri[1].x, tri[1].y, tri[1].z, 1});
                         _t3 := mul(mm, Vector4{tri[2].x, tri[2].y, tri[2].z, 1});
-                        insert_triangle(&tree, &node_pool[0], Tri{{{_t1.x, _t1.y, _t1.z}, {_t2.x, _t2.y, _t2.z}, {_t3.x, _t3.y, _t3.z}}, entity.id});
+                        insert_triangle(&g_rtree, &node_pool[0], Tri{{{_t1.x, _t1.y, _t1.z}, {_t2.x, _t2.y, _t2.z}, {_t3.x, _t3.y, _t3.z}}, entity.id});
                     }
                 }
             }

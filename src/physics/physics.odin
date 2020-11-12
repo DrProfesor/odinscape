@@ -15,7 +15,6 @@ import "../util"
 import "../shared"
 
 init :: proc() {
-    init_pathing();
 }
 
 update :: proc(dt: f32) {
@@ -32,8 +31,6 @@ update :: proc(dt: f32) {
 
         wb.update_collider(collider, e.position, e.scale, collider.info, e);
     }
-
-    update_pathing(dt);
 }
 
 Raycast_Hit :: struct {
