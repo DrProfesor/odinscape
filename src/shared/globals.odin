@@ -39,6 +39,20 @@ Draw_Command :: struct {
     animator:          rawptr,
 }
 
+Texture_Slot :: enum {
+    Shadow_Map1 = len(wb.Builtin_Texture),
+    Shadow_Map2,
+    Shadow_Map3,
+    Shadow_Map4,
+}
+
+CBuffer_Slot :: enum {
+    Lighting = len(wb.Builtin_CBuffer),
+}
+
+Vector3i :: distinct [3]i32;
+Vector4i :: distinct [4]i32;
+
 Vector2 :: wb.Vector2;
 Vector3 :: wb.Vector3;
 Vector4 :: wb.Vector4;

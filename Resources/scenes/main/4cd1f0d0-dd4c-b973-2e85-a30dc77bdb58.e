@@ -18,17 +18,17 @@
         name "New Entity (2)"
         tags "ground"
         position [
-            -4.274
-            -6.282
+            -0.788
+            -6.599
             -3.970
         ]
 
         rotation quat -0.001 0.000 0.000 1.000
 
         scale [
-            22.584
-            1.455
-            16.180
+            11.593
+            1.537
+            11.828
         ]
 
         current_scene "main"

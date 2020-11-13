@@ -5,6 +5,7 @@
 	properties [
 		{ name "depth" type Int }
 		{ name "max_angle" type Float}
+		{ name "direction" type Int }
 	]
 
 	textures [

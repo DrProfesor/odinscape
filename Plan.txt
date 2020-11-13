@@ -45,6 +45,7 @@ Tasks
       - player health
 
   v0.0.3
+    - debug rendering (unity gizmos)
     - transparent walls when it is between player and camera
     - build a small spawn area. Needs enemy area and "home base"
     - shader compilation tool

@@ -349,18 +349,6 @@ shutdown :: proc() {
 	
 }
 
-
-Texture_Slot :: enum {
-    Shadow_Map1 = len(wb.Builtin_Texture),
-    Shadow_Map2,
-    Shadow_Map3,
-    Shadow_Map4,
-}
-
-CBuffer_Slot :: enum {
-    Lighting = len(wb.Builtin_CBuffer),
-}
-
 MAX_LIGHTS :: 16;
 CBuffer_Lighting :: struct {
     point_light_positions:   [MAX_LIGHTS]Vector4,
@@ -402,6 +390,9 @@ Spell_Caster :: entity.Spell_Caster;
 Spell :: entity.Spell;
 Spell_Type :: entity.Spell_Type;
 Spell_Config_Data :: entity.Spell_Config_Data;
+
+Texture_Slot :: shared.Texture_Slot;
+CBuffer_Slot :: shared.CBuffer_Slot;
 
 Draw_Command :: shared.Draw_Command;
 

@@ -1,13 +1,30 @@
 struct Pixel_Out {
 	uint4 positive : SV_Target0;
-	// float4 negative : SV_Target1;
+	uint4 negative : SV_Target1;
 };
 
 Pixel_Out PS(Vertex_Out vertex) {
-	float near = camera_position.y;
-	float far = camera_position.y - depth;
+	float near;
+	float far;
+	float dist;
 
-	float percent_between = (vertex.world_pos.y - near) / (far - near);
+	if (direction == 0) {
+		near = camera_position.y;
+		far = camera_position.y - depth;
+		dist = vertex.world_pos.y;
+	}
+	if (direction == 1) {
+		near = camera_position.x;
+		far = camera_position.x - depth;
+		dist = vertex.world_pos.x;
+	}
+	if (direction == 2) {
+		near = camera_position.z;
+		far = camera_position.z - depth;
+		dist = vertex.world_pos.z;
+	}
+
+	float percent_between = (dist - near) / (far - near);
 	int cell = (int) (128.0 * (1-percent_between));
 
 	uint4 val = uint4(0,0,0,0);
@@ -19,13 +36,16 @@ Pixel_Out PS(Vertex_Out vertex) {
 	}
 
 	Pixel_Out ret;
-	ret.positive = float4(0,0,0,0);
-	if (cos(max_angle) < dot(vertex.normal, float3(0,1,0))) {
+	ret.positive = uint4(0,0,0,0);
+	ret.negative = uint4(0,0,0,0);
+	float theta = cos(max_angle);
+	float dt = dot(vertex.normal, float3(0,1,0));
+	if (theta < dt) {
 		ret.positive = val;
 	} 
-	// else {
-	// 	ret.negative = val;
-	// }
+	else {
+		ret.negative = val;
+	}
 
     return ret;
 }

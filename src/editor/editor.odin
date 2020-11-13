@@ -24,16 +24,25 @@ import "../physics"
 g_editor_camera: wb.Camera;
 
 g_voxelizer_camera: wb.Camera;
-g_voxelizer_texture: wb.Texture;
-g_voxelizer_read_texture: wb.Texture;
+g_positive_voxelizer_texture: wb.Texture;
+g_negative_voxelizer_texture: wb.Texture;
+g_positive_voxelizer_read_texture: wb.Texture;
+g_negative_voxelizer_read_texture: wb.Texture;
 
-SLICEMAP_SIZE :: 64;
-SLICEMAP_DEPTH :: 64;
+g_cutting_shape_texture: wb.Texture;
+g_cutting_shape_read_texture: wb.Texture;
+
+SLICEMAP_BIT_DEPTH :: 128;
+DETAIL_MULTIPLIER :: 2;
+SLICEMAP_SIZE :: 128;
+SLICEMAP_DEPTH :: 128;
 MAX_WALK_ANGLE :: 45;
 PLAYER_HEIGHT :: 1;
 PLAYER_STEP_HEIGHT :: 0.5;
 
 g_current_slicemap: [SLICEMAP_SIZE][SLICEMAP_SIZE]u128;
+g_current_negative_slicemap: [SLICEMAP_SIZE][SLICEMAP_SIZE]u128;
+g_cutting_shape_data: [SLICEMAP_SIZE][SLICEMAP_SIZE]Vector4i;
 
 entity_id_color_buffer: wb.Texture;
 entity_id_depth_buffer: wb.Texture;
@@ -52,6 +61,7 @@ init :: proc() {
     wb.init_camera(&g_editor_camera);
     g_editor_camera.is_perspective = true;
 
+
     wb.init_camera(&g_voxelizer_camera);
     voxelizer_tex_desc := wb.Texture_Description {
         type = .Texture2D,
@@ -60,11 +70,25 @@ init :: proc() {
         format = .R32G32B32A32_UINT,
         render_target = true,
     };
-    g_voxelizer_texture = wb.create_texture(voxelizer_tex_desc);
+    g_positive_voxelizer_texture = wb.create_texture(voxelizer_tex_desc);
+    g_negative_voxelizer_texture = wb.create_texture(voxelizer_tex_desc);
+
+    cs_tex_desc := wb.Texture_Description {
+        type = .Texture2D,
+        width = SLICEMAP_SIZE,
+        height = SLICEMAP_SIZE,
+        format = .R32_INT,
+        render_target = true,
+    };
+    g_cutting_shape_texture = wb.create_texture(cs_tex_desc);
+
     voxelizer_read_desc := voxelizer_tex_desc;
     voxelizer_read_desc.render_target = false;
     voxelizer_read_desc.is_cpu_read_target = true;
-    g_voxelizer_read_texture = wb.create_texture(voxelizer_read_desc);
+    g_positive_voxelizer_read_texture = wb.create_texture(voxelizer_read_desc);
+    g_negative_voxelizer_read_texture = wb.create_texture(voxelizer_read_desc);
+    g_cutting_shape_read_texture = wb.create_texture(voxelizer_read_desc);
+
 
     entity_id_color_buffer, entity_id_depth_buffer = wb.create_color_and_depth_buffers(wb.main_window.width_int, wb.main_window.height_int, .R32_INT);
 
@@ -247,125 +271,248 @@ render :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Contex
             },
             proc(render_graph: ^wb.Render_Graph, userdata: rawptr) {
                 render_context := cast(^shared.Render_Graph_Context)userdata;
+                draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
 
                 // Coarse voxalization
                 {
-
                     voxelizer_material := wb.g_materials["voxelizer"];
-                    wb.set_material_property(voxelizer_material, "depth", cast(i32)SLICEMAP_DEPTH);
                     wb.set_material_property(voxelizer_material, "max_angle", to_radians(MAX_WALK_ANGLE));
 
-                    g_voxelizer_camera.position = Vector3{0,1,0} * (SLICEMAP_DEPTH/2);
-                    g_voxelizer_camera.orientation = la.quaternion_from_euler_angle_x(-1.57);
-                    g_voxelizer_camera.size = SLICEMAP_SIZE / 4; // controls how detailed
+                    directions := [3]Vector3{{0,1,0}, {1,0,0}, {0,0,1}};
+                    rotations := [3]Quaternion{la.quaternion_from_euler_angle_x(-1.57), la.quaternion_from_euler_angle_y(-1.57), la.quaternion_from_euler_angle_y(3.14)};
 
-                    pass_desc: wb.Render_Pass;
-                    pass_desc.camera = &g_voxelizer_camera;
-                    pass_desc.color_buffers[0] = &g_voxelizer_texture;
-                    pass_desc.dont_resize_render_targets_to_screen = true;
-                    wb.BEGIN_RENDER_PASS(&pass_desc);
+                    for direction, i in directions {
+                        wb.set_material_property(voxelizer_material, "direction", cast(i32)i);
+                        g_voxelizer_camera.position = direction * (SLICEMAP_DEPTH/2/DETAIL_MULTIPLIER);
+                        g_voxelizer_camera.orientation = rotations[i];
+                        g_voxelizer_camera.size = SLICEMAP_SIZE / (2*DETAIL_MULTIPLIER); // controls how detailed
+                        wb.set_material_property(voxelizer_material, "depth", cast(i32)SLICEMAP_DEPTH/DETAIL_MULTIPLIER);
 
-                    draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
-                    for cmd in draw_commands {
-                        if cmd.entity == nil do continue;
-                        e := cast(^entity.Entity)cmd.entity;
+                        pass_desc: wb.Render_Pass;
+                        pass_desc.camera = &g_voxelizer_camera;
+                        pass_desc.color_buffers[0] = &g_positive_voxelizer_texture;
+                        pass_desc.color_buffers[1] = &g_negative_voxelizer_texture;
+                        pass_desc.dont_resize_render_targets_to_screen = true;
+                        wb.BEGIN_RENDER_PASS(&pass_desc);
 
-                        if !physics.entity_has_collision(e) do continue;
+                        for cmd in draw_commands {
+                            if cmd.entity == nil do continue;
+                            e := cast(^entity.Entity)cmd.entity;
+                            if !physics.entity_has_collision(e) do continue;
+                            wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, voxelizer_material, {1,1,1,1});
+                        }
 
-                        wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, voxelizer_material, {1,1,1,1}, cast(^wb.Animation_Player)cmd.animator);
-                    }
+                        wb.ensure_texture_size(&g_positive_voxelizer_read_texture, g_positive_voxelizer_texture.width, g_positive_voxelizer_texture.height);
+                        wb.copy_texture(&g_positive_voxelizer_read_texture, &g_positive_voxelizer_texture);
+                        p_pixels := wb.get_texture_pixels(&g_positive_voxelizer_read_texture);
+                        defer wb.return_texture_pixels(&g_positive_voxelizer_read_texture, p_pixels);
 
-                    wb.ensure_texture_size(&g_voxelizer_read_texture, g_voxelizer_texture.width, g_voxelizer_texture.height);
-                    wb.copy_texture(&g_voxelizer_read_texture, &g_voxelizer_texture);
+                        wb.ensure_texture_size(&g_negative_voxelizer_read_texture, g_negative_voxelizer_texture.width, g_negative_voxelizer_texture.height);
+                        wb.copy_texture(&g_negative_voxelizer_read_texture, &g_negative_voxelizer_texture);
+                        n_pixels := wb.get_texture_pixels(&g_negative_voxelizer_read_texture);
+                        defer wb.return_texture_pixels(&g_negative_voxelizer_read_texture, n_pixels);
 
-                    p_pixels := wb.get_texture_pixels(&g_voxelizer_read_texture);
-                    defer wb.return_texture_pixels(&g_voxelizer_read_texture, p_pixels);
-                    pi_pixels := transmute([]u128)p_pixels;
-                    for j in 0..<len(p_pixels)/16 {
-                        z := j%SLICEMAP_SIZE;
-                        x := j/SLICEMAP_SIZE;
-                        g_current_slicemap[x][z] = pi_pixels[j];
+                        pi_pixels := transmute([]u128)p_pixels;
+                        ni_pixels := transmute([]u128)n_pixels;
+                        for j in 0..<len(p_pixels)/16 {
+                            if i == 0 {
+                                z := j%SLICEMAP_SIZE;
+                                x := j/SLICEMAP_SIZE;
+                                g_current_slicemap[x][z] = pi_pixels[j];
+                                g_current_negative_slicemap[x][z] = ni_pixels[j];
+                            }
+                            if i == 1 {
+                                z := j%SLICEMAP_SIZE;
+                                y := j/SLICEMAP_SIZE;
+                                yb := u128(1) << u128(SLICEMAP_BIT_DEPTH-1-y);
+                                for x in 0..<SLICEMAP_BIT_DEPTH {
+                                    if ni_pixels[j] & (u128(1) << u128(x)) != 0 {
+                                        g_current_negative_slicemap[z][x] |= yb;
+                                    }
+                                }
+                            }
+                            if i == 2 {
+                                x := SLICEMAP_SIZE - j%SLICEMAP_SIZE;
+                                y := j/SLICEMAP_SIZE;
+                                yb := u128(1) << u128(SLICEMAP_BIT_DEPTH-1-y);
+                                for z in 0..<SLICEMAP_BIT_DEPTH {
+                                    if ni_pixels[j] & (u128(1) << u128(z)) != 0 {
+                                        g_current_negative_slicemap[z][x] |= yb;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
                 
 
                 // Layer extraction
-                
+                Layer :: struct {
+                    cells: [dynamic]u64
+                };
+                layers: [128]Layer;
                 {
-                    pass: wb.Render_Pass;
-                    pass.camera = &g_editor_camera;
-                    pass.color_buffers[0] = &debug_color_buffer;
-                    pass.depth_buffer = &debug_depth_buffer;
-                    wb.BEGIN_RENDER_PASS(&pass);
-
-                    colours : []Vector4 = { {1,0,0,0.5}, {0,1,0,0.5}, {0,0,1,0.5}, {1,0,1,0.5}, {1,1,0,0.5} };
-                    first := true;
-                    cell_pos : Vector3;
-
                     cells: map[u64]int;
                     defer delete(cells);
                     current_layer_id := 0;
-                    
                     last_y := 0;
 
                     for y in 0..<128 {
                         bit := cast(u128)1 << cast(u128)y;
                         for zs, z in g_current_slicemap {
                             for column, x in zs {
+                                negative_column := g_current_negative_slicemap[z][x];
+                                if negative_column & bit != 0 do continue;
                                 if column & bit == 0 do continue;
 
-                                // cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, SLICEMAP_DEPTH - f32(y), f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {2,2,2};
+                                // generate layer id
+                                @static orthogonal_cells := [4]Vector3{{-1,0,0}, {1,0,0}, {0,0,1}, {0,0,-1}};
+                                any_ok := false;
+                                for yi in -1..1 {
+                                    y := y+yi;
+                                    for oc in orthogonal_cells {
+                                        lid,  ok := cells[get_cell_id(x+int(oc.x),y,z+int(oc.z))];
+                                        if ok do current_layer_id = max(current_layer_id, lid);
+                                        any_ok |= ok;
+                                    }
+                                }
 
-                                left_lid,  lok := cells[get_cell_id(x-1,y,z)];
-                                if lok do current_layer_id = max(current_layer_id, left_lid);
-
-                                right_lid, rok := cells[get_cell_id(x+1,y,z)];
-                                if rok do current_layer_id = max(current_layer_id, right_lid);
-
-                                fwd_lid,   fok := cells[get_cell_id(x,y,z+1)];
-                                if fok do current_layer_id = max(current_layer_id, fwd_lid);
-
-                                bckwd_lid, bok := cells[get_cell_id(x,y,z-1)];
-                                if bok do current_layer_id = max(current_layer_id, bckwd_lid);
-
-                                if !lok && !rok && !fok && !bok {
+                                if !any_ok {
                                     if y > 0 do for yi := y-1; yi >= 0; yi -= 1 {
                                         lid, ok := cells[get_cell_id(x,yi,z)];
                                         if !ok do continue;
-                                        current_layer_id = lid + 1;
+                                        current_layer_id = max(current_layer_id, lid + 1);
                                         break;
                                     }
                                 }
+
                                 if abs(last_y-y) > 1 {
                                     current_layer_id += 1;
                                 }
 
+                                cid := get_cell_id(x,y,z);
+                                cells[cid] = current_layer_id;
+                                append(&layers[current_layer_id].cells, cid);
                                 last_y = y;
-                                cells[get_cell_id(x,y,z)] = current_layer_id;
 
+                                // cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH/2, f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / DETAIL_MULTIPLIER;
 
-                                col := colours[current_layer_id];
-                                if first do col = {1,0,0,1};
-                                first = false;
+                                // check adjacent cells
+                                for yi in -1..1 {
+                                    y := y+yi;
+                                    for oc in orthogonal_cells {
+                                        cid := get_cell_id(x+int(oc.x), y, z+int(oc.z));
+                                        lid, ok := cells[cid];
+                                        if !ok {
+                                            occupied_below := false;
+                                            for yj := y-1; yj >= 0; yj -= 1 {
+                                                lid, ok := cells[get_cell_id(x,yj,z)];
+                                                if !ok do continue;
+                                                occupied_below = true;
+                                                break;
+                                            }
 
-                                cell_pos = (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH, f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {2,2,2};
-                                wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.45,0.45,0.45}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], col);
+                                            if !occupied_below {
+                                                cells[cid] = current_layer_id;
+                                                append(&layers[current_layer_id].cells, cid);
+                                            }
+                                        } else {
+                                            if lid != current_layer_id { // merge layers
+                                                any_in_same_column := false;
+                                                for c1 in layers[lid].cells {
+                                                    for c2 in layers[current_layer_id].cells {
+                                                        if cast(u16)c1 == cast(u16)c2 {
+                                                            any_in_same_column = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
+                                                if !any_in_same_column {
+                                                    li_min := min(lid, current_layer_id);
+                                                    li_max := max(lid, current_layer_id);
+
+                                                    for c in layers[li_max].cells {
+                                                        append(&layers[li_min].cells, c);
+                                                    }
+                                                    clear(&layers[li_max].cells);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
-                    wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.45,0.45,0.45}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,0,1,1});
+                }
+
+                get_cell_id :: proc(x,y,z: int) -> u64 {
+                    return transmute(u64) (((cast(u64)i16(x)) << 48) | ((cast(u64)i16(z)) << 32) | ((cast(u64)i16(y)) << 16));
                 }
 
                 // Layer refinement
-                
+                {
+                    // TODO? Contour expansion
+                    // expand accessible voxels around obstacles
+                    // how??
 
+                    // Cutting shape
+                    // Depth map extraction
+                    for layer in layers {
+                        if len(layer.cells) == 0 do continue;
+
+                        log_info("");
+                        for cell, i in layer.cells {
+                            x := i32(i16(cell >> 48));
+                            z := i32(i16(cell >> 32));
+                            y := i32(i16(cell >> 16));
+                            // cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH/2, f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / DETAIL_MULTIPLIER;
+                            g_cutting_shape_data[x][z] = Vector4i{1, x, y, z };
+                        }
+
+                        cutting_shape_texture := wb.create_texture(wb.Texture_Description{type = .Texture2D, width = SLICEMAP_DEPTH, height = SLICEMAP_DEPTH, format = .R32G32B32A32_UINT, color_data = cast(^byte)&g_cutting_shape_data[0][0]});
+                        defer wb.destroy_texture(cutting_shape_texture);
+
+                        wb.bind_texture(&cutting_shape_texture, 0);
+                        defer wb.bind_texture(nil, 0);
+
+                        g_voxelizer_camera.position = {0,1,0} * (SLICEMAP_DEPTH/2/DETAIL_MULTIPLIER);
+                        g_voxelizer_camera.orientation = la.quaternion_from_euler_angle_x(-1.57);
+                        g_voxelizer_camera.size = 60;
+
+                        depthmap_extractor := wb.g_materials["voxel_depthmap_extractor_mat"];
+
+                        pass_desc: wb.Render_Pass;
+                        pass_desc.camera = &g_voxelizer_camera;
+                        pass_desc.color_buffers[0] = &g_cutting_shape_texture;
+                        pass_desc.dont_resize_render_targets_to_screen = true;
+                        wb.BEGIN_RENDER_PASS(&pass_desc);
+
+                        for cmd in draw_commands {
+                            if cmd.entity == nil do continue;
+                            e := cast(^entity.Entity)cmd.entity;
+                            if !physics.entity_has_collision(e) do continue;
+                            wb.draw_model(cmd.model, cmd.position, cmd.scale, cmd.orientation, depthmap_extractor, {1,1,1,1});
+                        }
+
+                        wb.ensure_texture_size(&g_cutting_shape_read_texture, g_cutting_shape_texture.width, g_cutting_shape_texture.height);
+                        wb.copy_texture(&g_cutting_shape_read_texture, &g_cutting_shape_texture);
+                        pixels := wb.get_texture_pixels(&g_cutting_shape_read_texture);
+                        defer wb.return_texture_pixels(&g_cutting_shape_read_texture, pixels);
+                    }
+
+                    // Obstacle detection and polygond reconstruction
+                }
+
+                // Nav Mesh Generation
+                {
+                    // Convexity relaxation
+
+                    // Merging layers
+                }
             });
         // should_regen_nav_mesh = false;
-    }
-
-    get_cell_id :: proc(x,y,z: int) -> u64 {
-        return transmute(u64) (((transmute(u64)x) << 48) | ((transmute(u64)y) << 32) | ((transmute(u64)z) << 16));
     }
 
     // wb.add_render_graph_node(render_graph, "debug", ctxt,
@@ -1097,9 +1244,17 @@ close_modal :: proc(name: string) {
 }
 
 
+Entity :: entity.Entity;
+Player_Character :: entity.Player_Character;
+Spell_Caster :: entity.Spell_Caster;
+Spell :: entity.Spell;
+Spell_Type :: entity.Spell_Type;
+Spell_Config_Data :: entity.Spell_Config_Data;
+
+Texture_Slot :: shared.Texture_Slot;
+CBuffer_Slot :: shared.CBuffer_Slot;
 
 Draw_Command :: shared.Draw_Command;
-Entity :: entity.Entity;
 
 tprint   :: fmt.tprint;
 tprintf  :: fmt.tprintf;
@@ -1123,14 +1278,17 @@ log_debug :: util.log_debug;
 log_warn :: util.log_warn;
 log_error :: util.log_error;
 
-Vector2 :: wb.Vector2;
-Vector3 :: wb.Vector3;
-Vector4 :: wb.Vector4;
-Quaternion :: wb.Quaternion;
-Matrix4 :: wb.Matrix4;
-
 TAU :: math.TAU;
 PI  :: math.PI;
+
+Vector3i :: shared.Vector3i;
+Vector4i :: shared.Vector4i;
+
+Vector2 :: la.Vector2;
+Vector3 :: la.Vector3;
+Vector4 :: la.Vector4;
+Matrix4 :: la.Matrix4;
+Quaternion :: la.Quaternion;
 
 pow                :: math.pow;
 to_radians         :: math.to_radians_f32;
@@ -1167,10 +1325,16 @@ lerp               :: math.lerp;
 quat_mul_vec3      :: la.quaternion_mul_vector3;
 mod                :: math.mod;
 
-to_vec2 :: basic.to_vec2;
-to_vec3 :: basic.to_vec3;
-to_vec4 :: basic.to_vec4;
-pretty_location :: basic.pretty_location;
+
+quat_look_at            :: wb.quat_look_at;
+degrees_to_quaternion   :: wb.degrees_to_quaternion;
+direction_to_quaternion :: wb.direction_to_quaternion;
+quaternion_to_euler     :: wb.quaternion_to_euler;
+
+move_towards :: wb.move_towards;
+
+sbwrite :: wb.sbwrite;
+twrite  :: wb.twrite;
 
 quaternion_right   :: wb.quaternion_right;
 quaternion_up      :: wb.quaternion_up;
@@ -1178,3 +1342,13 @@ quaternion_forward :: wb.quaternion_forward;
 quaternion_left    :: wb.quaternion_left;
 quaternion_down    :: wb.quaternion_down;
 quaternion_back    :: wb.quaternion_back;
+
+round_to_f32 :: wb.round_to_f32;
+round_to_f64 :: wb.round_to_f64;
+round        :: wb.round;
+
+
+to_vec2 :: basic.to_vec2;
+to_vec3 :: basic.to_vec3;
+to_vec4 :: basic.to_vec4;
+pretty_location :: basic.pretty_location;
