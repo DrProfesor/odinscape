@@ -26,9 +26,9 @@
         rotation quat -0.001 0.000 0.000 1.000
 
         scale [
-            11.593
+            8.903
             1.537
-            11.828
+            5.498
         ]
 
         current_scene "main"

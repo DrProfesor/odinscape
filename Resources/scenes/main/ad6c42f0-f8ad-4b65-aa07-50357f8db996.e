@@ -18,17 +18,17 @@
         name "New Entity (5)"
         tags ""
         position [
-            0.076
-            -3.286
-            -3.463
+            -0.194
+            -5.116
+            -3.380
         ]
 
-        rotation quat 0.941 0.000 0.000 -0.338
+        rotation quat 0.951 0.000 0.000 -0.310
 
         scale [
-            8.587
-            0.283
-            2.142
+            2.331
+            0.222
+            1.840
         ]
 
         current_scene "main"

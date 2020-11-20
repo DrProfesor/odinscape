@@ -1,6 +1,7 @@
 {
     shader "voxel_depthmap_extractor"
 
+    blend_mode No_Alpha_Blend
     depth_test false
     rasterizer_mode Solid_No_Cull
 

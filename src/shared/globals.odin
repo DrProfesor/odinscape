@@ -50,8 +50,8 @@ CBuffer_Slot :: enum {
     Lighting = len(wb.Builtin_CBuffer),
 }
 
-Vector3i :: distinct [3]i32;
-Vector4i :: distinct [4]i32;
+Vector3i :: distinct [3]u32;
+Vector4i :: distinct [4]u32;
 
 Vector2 :: wb.Vector2;
 Vector3 :: wb.Vector3;
