@@ -837,9 +837,18 @@ draw_console :: proc(userdata: rawptr, open: ^bool) {
 
 }
 
+Pathing_Debug_State :: enum {
+    None,
+    Layers,
+    Layer_Construction,
+    Vertices,
+    Vertex_Construction,
+    Layer_Objects,
+}
+
 should_regen_nav_mesh := false;
-debug_layers := false;
-debug_layer_building := false;
+pathing_debug_state: Pathing_Debug_State;
+layer_to_debug : i32 = 0;
 draw_pathing :: proc(userdata: rawptr, open: ^bool) {
     using imgui;
 
@@ -847,20 +856,17 @@ draw_pathing :: proc(userdata: rawptr, open: ^bool) {
     defer end();
     if !open do return;
 
-    if button("Re-Gen") {
+    if button(should_regen_nav_mesh ? "Turn Off" : "Turn On") {
         should_regen_nav_mesh = !should_regen_nav_mesh;
     }
 
-    if checkbox("Debug Layers", &debug_layers) {
-        if debug_layers {
-            debug_layer_building = false;
-        }
-    }
-    if checkbox("Debug Layer Construction", &debug_layer_building) {
-        if debug_layer_building {
-             debug_layers = false;
-        }
-    }
+    wb.imgui_struct_ti("Debug State", &pathing_debug_state, type_info_of(Pathing_Debug_State));
+
+    input_int("Layer To Debug", &layer_to_debug);
+
+    input_float("MAX_WALK_ANGLE", &MAX_WALK_ANGLE);
+    input_float("PLAYER_HEIGHT", &PLAYER_HEIGHT);
+    input_float("PLAYER_STEP_HEIGHT", &PLAYER_STEP_HEIGHT);
 }
 
 // Modals
@@ -877,7 +883,7 @@ draw_entity_select_modal :: proc(modal: ^Modal, userdata: rawptr) {
     }
     imgui.list_box_footer();
 
-    if imgui.button("Create") {
+    if imgui.button("Create") && selected_tid != nil {
         created_entity := entity.create_entity_by_type(selected_tid);
         camera_direction := wb.get_mouse_direction_from_camera(&g_editor_camera, {0.5,0.5});
         // TODO maybe entity creation window to set certain parameters?

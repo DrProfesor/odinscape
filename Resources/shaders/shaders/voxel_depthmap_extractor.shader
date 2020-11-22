@@ -9,6 +9,6 @@
 	]
 
 	textures [
-		{ name "cutting_shape" type Texture2D tex_prim_type "uint4" }
+		{ name "cutting_shape" type Texture2D tex_prim_type "float4" }
 	]
 }
