@@ -39,6 +39,7 @@ g_current_floorplan: [SLICEMAP_SIZE][SLICEMAP_SIZE]u8;
 
 colours : []Vector4 = { {1,0,0,0.5}, {1,0.5,0.1,0.5}, {0,1,0,0.5}, {0.1,1,0.5,0.5}, {0,1,1,0.5}, {0,0.5,1,0.5}, {0.2,0,1,0.5}, {0.6,0,1,0.5}, {1,0,1,0.5} };
 orthogonal_cells := [4]Vector3{{-1,0,0}, {1,0,0}, {0,0,1}, {0,0,-1}};
+adjacent_cells := [8]Vector3{{-1,0,0}, {-1, 0, 1}, {0,0,1}, {1,0,1}, {1,0,0}, {1, 0, -1}, {0,0,-1}, {-1, 0, -1}};
 
 Layer :: struct { 
 	floor_plan: [dynamic]Floor_Vertex,
@@ -46,11 +47,13 @@ Layer :: struct {
 	cells: [dynamic]u64,  
 }
 Layer_Object :: struct {
+	unordered_verts: [dynamic]Floor_Vertex,
 	ordered_verts: [dynamic]Floor_Vertex,
 }
 Floor_Vertex :: struct {
 	position: Vector3,
 	is_obstacle: bool,
+	cell_x, cell_z: int,
 }
 layers: [128]Layer;
 init_navmesh :: proc() {
@@ -87,7 +90,8 @@ init_navmesh :: proc() {
 Gen_State :: enum {
 	Coarse_Voxalization,
 	Layer_Extraction,
-	Layer_Refinement
+	Layer_Refinement,
+	Mesh_Generation,
 }
 
 update_navmesh :: proc() {
@@ -371,7 +375,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        pass_desc: wb.Render_Pass;
 	                        pass_desc.camera = &g_voxelizer_camera;
 	                        pass_desc.color_buffers[0] = &g_cutting_shape_texture;
-	                        pass_desc.clear_color = {-1000,0,0,0};
+	                        pass_desc.clear_color = {-1000,-1000,-1000,0};
 	                        // pass_desc.depth_buffer = &g_cutting_shape_texture_depth;
 	                        pass_desc.dont_resize_render_targets_to_screen = true;
 	                        wb.BEGIN_RENDER_PASS(&pass_desc);
@@ -407,48 +411,34 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        max := len(pixels)/16;
 	                        for i in 0..<max {
 	                            depth_val := _pixels[i].y;
-	                            if depth_val <= -999 do continue; // min value set from above this is empty space for this layer
+	                            if depth_val <= -999 do continue; // min value set from above, this is empty space for this layer
 	                            x := i%SLICEMAP_SIZE;
 	                        	z := i/SLICEMAP_SIZE;
 	                        	
 	                        	pos := Vector3{_pixels[i].x,_pixels[i].y,_pixels[i].z};
-	                        	if g_current_floorplan[x][z] != 0 {
-		                        	wb.draw_model(wb.g_models["cube_model"], pos, {0.8,0.8,0.8}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], g_current_floorplan[x][z] == 1 ? Vector4{0,1,0,1} : Vector4{0,0,1,1});
-		                        }
 	                        	
-	                        	// if g_current_floorplan[x][z] != 0 do continue; // already an obstacle
-
-	                            for oc in orthogonal_cells {
+	                            for oc in adjacent_cells {
 	                            	nx := x + int(oc.x);
 	                            	nz := z + int(oc.z);
 	                            	neighbour_idx := nx + nz*SLICEMAP_SIZE;
-	                            	if neighbour_idx >= max do continue;
-	                            	if neighbour_idx <  0   do continue;
+	                            	if nx >= SLICEMAP_SIZE && nz >= SLICEMAP_SIZE && nx < 0 && nz < 0 do continue;
+
 	                            	// this might not be right
 	                            	// if we start on an obstacle then it may be a bit weird
 	                            	neighbour_pos := Vector3{_pixels[neighbour_idx].x,_pixels[neighbour_idx].y,_pixels[neighbour_idx].z};
 	                            	neighbour_depth_val := neighbour_pos.y;
-	                            	is_obstacle := abs(depth_val - neighbour_depth_val) > PLAYER_STEP_HEIGHT;
 	                            	is_void := neighbour_depth_val <= -999;
+	                            	is_obstacle := abs(depth_val - neighbour_depth_val) > PLAYER_STEP_HEIGHT;
 
-	                            	colour := Vector4{0.5,0.5,0.5,1};
-	                            	if nx < SLICEMAP_SIZE && nz < SLICEMAP_SIZE && nx >= 0 && nz >= 0 {
-		                            	if is_void {
-		                            		g_current_floorplan[nx][nz] = 1;
-		                            		append(&layer.floor_plan, Floor_Vertex{neighbour_pos, false});
-		                            		colour = {1,0,0,1};
-		                            		if pathing_debug_state == .Vertex_Construction {
-					                            wb.draw_model(wb.g_models["cube_model"], (pos + neighbour_pos) / 2, {0.1,0.1,0.1}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
-					                        }
-		                            	} else if is_obstacle {
-		                            		g_current_floorplan[nx][nz] = 2;
-		                            		append(&layer.floor_plan, Floor_Vertex{neighbour_pos, true});
-		                            		colour = {0,1,0,1};
-		                            		if pathing_debug_state == .Vertex_Construction {
-					                            wb.draw_model(wb.g_models["cube_model"], (pos + neighbour_pos) / 2, {0.1,0.1,0.1}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
-					                        }
-		                            	}
-		                            }
+	                            	if is_void {
+	                            		g_current_floorplan[nx][nz] = 1;
+	                            		append(&layer.floor_plan, Floor_Vertex{pos, false, nx, nz});
+	                            		break;
+	                            	} else if is_obstacle {
+	                            		g_current_floorplan[nx][nz] = 2;
+	                            		append(&layer.floor_plan, Floor_Vertex{pos, true, nx, nz});
+	                            		break;
+	                            	}
 	                            }
 	                        }
 
@@ -465,46 +455,76 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         pass.depth_buffer = &debug_depth_buffer;
                         wb.BEGIN_RENDER_PASS(&pass);
                         for layer, i in layers {
-                        	for vert in layer.floor_plan {
-                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], i>=len(colours) ? {0.5,0,0,0.5} : colours[i]);
+                        	for vert, j in layer.floor_plan {
+                        		a := f32(j)/f32(len(layer.floor_plan));
+                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], vert.is_obstacle ? {1,0,0,a} : {1,1,1,a});
                         	}
                         }
                     }
-                    current_gen_state = .Coarse_Voxalization;
+                    current_gen_state = .Mesh_Generation;
                     return;
                 }
 
                 // Nav Mesh Generation
-                {
+                if current_gen_state == .Mesh_Generation {
                 	// Object classification
-                	object_distance_threshold := 1 / DETAIL_MULTIPLIER; // size of cell
                 	for layer, layer_id in &layers {
-                		// apply gift wrapping algorithm 
-                		current_layer_object: Layer_Object;
-                		processing_vert: ^Floor_Vertex = &layer.floor_plan[0];
-                		processing_vert_idx := 0;
+                		if len(layer.floor_plan) == 0 do continue;
+
                 		processed: [dynamic]int;
-                    	for processing_vert != nil {
-                    		log_info("");
-                    		connected := false;
-                    		for vert, i in &layer.floor_plan {
-                    			if &vert == processing_vert do continue;
-                    			if distance(vert.position, processing_vert.position) > 1.1 do continue;
-                    			if slice.contains(processed[:], i) do continue;
+                		defer delete(processed);
 
-                    			processing_vert = &vert;
-                    			connected = true;
-                    			append(&processed, processing_vert_idx);
-                    			append(&current_layer_object.ordered_verts, processing_vert^);
-                    		}
+                		_recurse_to_next_vert :: proc(current_vert: ^Floor_Vertex, processed: ^[dynamic]int, object: ^Layer_Object, floor_plan: ^[dynamic]Floor_Vertex) {
+                			object_distance_threshold := f32(1) / (DETAIL_MULTIPLIER/2) + 0.01; // size of cell
+                			for vert, i in floor_plan {
+                				if slice.contains(processed[:], i) do continue;
+                				if distance(vert.position, current_vert.position) > object_distance_threshold do continue;
 
-                    		if !connected {
-                    			append(&layer.objects, current_layer_object);
-                    			clear(&current_layer_object.ordered_verts);
-                    		}
-                    	}
+                				append(&object.unordered_verts, vert);
+                				append(processed, i);
+                				_recurse_to_next_vert(&vert, processed, object, floor_plan);
+                			}
+                		}
 
-                    	append(&layer.objects, current_layer_object);
+                		// classify vertices into objects
+                		for vert, i in &layer.floor_plan {
+                			if slice.contains(processed[:], i) do continue;
+
+                			obj: Layer_Object;
+                			append(&obj.unordered_verts, vert);
+                			append(&processed, i);
+                			_recurse_to_next_vert(&vert, &processed, &obj, &layer.floor_plan);
+                			append(&layer.objects, obj);
+                		}
+
+                		// order the objects vertices
+                		for obj in &layer.objects {
+                			stack: [dynamic]Floor_Vertex;
+
+                			prev_vert := obj.unordered_verts[0];
+                			append(&obj.ordered_verts, prev_vert);
+                			unordered_remove(&obj.unordered_verts, 0);
+
+                			for len(obj.unordered_verts) > 0 {
+                				closest_idx := 0;
+                				closest_vert: Floor_Vertex;
+                				for vert, i in obj.unordered_verts {
+                					if i == 0 {
+                						closest_vert = vert;
+                						continue;
+                					}
+
+                					if distance(vert.position, prev_vert.position) < distance(closest_vert.position, prev_vert.position) {
+                						closest_vert = vert;
+                						closest_idx = i;
+                					}
+                				}
+
+                				append(&obj.ordered_verts, closest_vert);
+	                			prev_vert = closest_vert;
+	                			unordered_remove(&obj.unordered_verts, closest_idx);
+                			}
+                		}
 
                     	if cast(int) layer_to_debug == layer_id && pathing_debug_state == .Layer_Objects {
                     		pass: wb.Render_Pass;
@@ -514,19 +534,73 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        wb.BEGIN_RENDER_PASS(&pass);
 
 	                        for obj, i in layer.objects {
-	                        	for vert in obj.ordered_verts {
-	                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], i>=len(colours) ? {0.5,0,0,0.5} : colours[i]);
+	                        	for vert, j in obj.ordered_verts {
+	                        		colour := i>=len(colours) ? Vector4{1,0,0,0.3} : colours[i];
+	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.ordered_verts)) + 0.1};
+	                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
 	                        	}
 	                        }
                     	}
 
-                    	// apply Ramer–Douglas–Peucker algorithm to decimate unnecessary vertices
+                    	// decimate unused vertices
+                    	{
+                    		for obj in &layer.objects {
+                    			to_remove: [dynamic]int;
+                    			defer delete(to_remove);
+                    			
+                    			current_vert := obj.ordered_verts[0];
+                    			prev_dir: Vector3;
+                    			prev_set := false;
+                    			for vert, i in obj.ordered_verts {
+                    				if i == 0 do continue;
+                    				if !prev_set {
+                    					prev_dir = norm(vert.position - current_vert.position);
+                    					prev_set = true;
+                    					continue;
+                    				}
+
+                    				cur_dir := norm(vert.position - current_vert.position);
+                    				d := dot(prev_dir, cur_dir);
+
+                    				if d < 0.99999 { // different enough
+                    					current_vert = vert;
+                    					prev_set = false;
+                    				} else {
+                    					append(&to_remove, i-1);
+                    				}
+                    			}
+
+                    			clear(&obj.unordered_verts);
+                    			for vert, i in obj.ordered_verts {
+                    				if slice.contains(to_remove[:], i) do continue;
+                    				append(&obj.unordered_verts, vert);
+                    			}
+                    		}
+                    	}
+
+                    	if cast(int) layer_to_debug == layer_id && pathing_debug_state == .Layer_Objects_Decimated {
+                    		pass: wb.Render_Pass;
+	                        pass.camera = &g_editor_camera;
+	                        pass.color_buffers[0] = &debug_color_buffer;
+	                        pass.depth_buffer = &debug_depth_buffer;
+	                        wb.BEGIN_RENDER_PASS(&pass);
+	                        
+	                        for obj, i in layer.objects {
+	                        	for vert, j in obj.unordered_verts {
+	                        		colour := i>=len(colours) ? Vector4{1,0,0,0.3} : colours[i];
+	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.unordered_verts)) + 0.1};
+	                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
+	                        	}
+	                        }
+                    	}
                     }
 
 
                     // Convexity relaxation
 
                     // Merging layers
+                    current_gen_state = .Coarse_Voxalization;
+                    return;
                 }
             });
         // should_regen_nav_mesh = false;

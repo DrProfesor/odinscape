@@ -844,6 +844,7 @@ Pathing_Debug_State :: enum {
     Vertices,
     Vertex_Construction,
     Layer_Objects,
+    Layer_Objects_Decimated,
 }
 
 should_regen_nav_mesh := false;
@@ -865,8 +866,8 @@ draw_pathing :: proc(userdata: rawptr, open: ^bool) {
     input_int("Layer To Debug", &layer_to_debug);
 
     input_float("MAX_WALK_ANGLE", &MAX_WALK_ANGLE);
-    input_float("PLAYER_HEIGHT", &PLAYER_HEIGHT);
-    input_float("PLAYER_STEP_HEIGHT", &PLAYER_STEP_HEIGHT);
+    slider_float("PLAYER_HEIGHT", &PLAYER_HEIGHT, 0.1, 10);
+    slider_float("PLAYER_STEP_HEIGHT", &PLAYER_STEP_HEIGHT, 0.2, 0.5);
 }
 
 // Modals
