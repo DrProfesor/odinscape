@@ -45,6 +45,8 @@ Tasks
       - player health
 
   v0.0.3
+    - renderer setup
+    - pcss shadows / look into other kinds of shadow mapping techniques
     - debug rendering (unity gizmos)
     - transparent walls when it is between player and camera
     - build a small spawn area. Needs enemy area and "home base"

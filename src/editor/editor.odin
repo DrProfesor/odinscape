@@ -845,6 +845,7 @@ Pathing_Debug_State :: enum {
     Vertex_Construction,
     Layer_Objects,
     Layer_Objects_Decimated,
+    Portal_Creation,
 }
 
 should_regen_nav_mesh := false;
@@ -868,6 +869,7 @@ draw_pathing :: proc(userdata: rawptr, open: ^bool) {
     input_float("MAX_WALK_ANGLE", &MAX_WALK_ANGLE);
     slider_float("PLAYER_HEIGHT", &PLAYER_HEIGHT, 0.1, 10);
     slider_float("PLAYER_STEP_HEIGHT", &PLAYER_STEP_HEIGHT, 0.2, 0.5);
+    checkbox("Single Frame", &single_frame);
 }
 
 // Modals

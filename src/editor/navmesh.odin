@@ -47,8 +47,9 @@ Layer :: struct {
 	cells: [dynamic]u64,  
 }
 Layer_Object :: struct {
-	unordered_verts: [dynamic]Floor_Vertex,
+	verts: [dynamic]Floor_Vertex,
 	ordered_verts: [dynamic]Floor_Vertex,
+	is_obstacle: bool,
 }
 Floor_Vertex :: struct {
 	position: Vector3,
@@ -91,6 +92,7 @@ Gen_State :: enum {
 	Coarse_Voxalization,
 	Layer_Extraction,
 	Layer_Refinement,
+	Object_Classification,
 	Mesh_Generation,
 }
 
@@ -98,6 +100,7 @@ update_navmesh :: proc() {
 }
 
 current_gen_state: Gen_State;
+single_frame := false;
 render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Graph_Context) {
 	if should_regen_nav_mesh {
         wb.add_render_graph_node(render_graph, "scene voxelizer", ctxt, 
@@ -110,8 +113,8 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 draw_commands := wb.get_resource(render_graph, "scene draw list", []Draw_Command);
 
                 // Coarse voxalization
-                if current_gen_state == .Coarse_Voxalization {
-					directions := [3]Vector3{{0,1,0}, {1,0,0}, {0,0,-1}};
+                if single_frame || current_gen_state == .Coarse_Voxalization {
+					directions := [3]Vector3{{0,1,0}, {1,0,0}, {0,0,1}};
                     rotations := [3]Quaternion{la.quaternion_from_euler_angle_x(1.57), la.quaternion_from_euler_angle_y(1.57), Quaternion(1)};
 
                     voxelizer_material := wb.g_materials["voxelizer"];
@@ -152,10 +155,10 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         ni_pixels := transmute([]u128)n_pixels;
                         for j in 0..<len(p_pixels)/16 {
                             if i == 0 {
-                                z := j%SLICEMAP_SIZE;
-                                x := j/SLICEMAP_SIZE;
-                                g_current_slicemap[x][z] = pi_pixels[j];
-                                g_current_negative_slicemap[x][z] = ni_pixels[j];
+                                x := j%SLICEMAP_SIZE;
+                                z := j/SLICEMAP_SIZE;
+                                g_current_slicemap[z][x] = pi_pixels[j];
+                                g_current_negative_slicemap[z][x] = ni_pixels[j];
                             }
                             if i == 1 {
                                 z := j%SLICEMAP_SIZE;
@@ -168,12 +171,12 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 }
                             }
                             if i == 2 {
-                                x := SLICEMAP_SIZE - j%SLICEMAP_SIZE;
+                                x := j%SLICEMAP_SIZE;
                                 y := j/SLICEMAP_SIZE;
                                 yb := u128(1) << u128(SLICEMAP_DEPTH-1-y);
                                 for z in 0..<SLICEMAP_DEPTH {
                                     if ni_pixels[j] & (u128(1) << u128(z)) != 0 {
-                                        g_current_negative_slicemap[z][x] |= yb;
+                                        g_current_negative_slicemap[SLICEMAP_SIZE-1-z][x] |= yb;
                                     }
                                 }
                             }
@@ -181,13 +184,13 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     }
 
                     current_gen_state = .Layer_Extraction;
-                    return;
+                    if !single_frame do return;
                 }
 
                 
 
                 // Layer extraction
-                if current_gen_state == .Layer_Extraction {
+                if single_frame || current_gen_state == .Layer_Extraction {
                 	layers = {};
                     cells: map[u64]int;
                     defer delete(cells);
@@ -224,7 +227,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 can_fit := true;
                                 for yi := y+1; yi <= y+int(PLAYER_HEIGHT); yi += 1 {
                                 	height_check_bit := cast(u128)1 << cast(u128)yi;
-                                	if g_current_negative_slicemap[z][x] & height_check_bit != 0 ||
+                                	if /*g_current_negative_slicemap[z][x] & height_check_bit != 0 || */
                                 	   g_current_slicemap[z][x] & height_check_bit != 0 {
                                 	       can_fit = false;
                                 	       break;
@@ -308,7 +311,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     if pathing_debug_state == .Layer_Construction do wb.end_render_pass(&pass);
 
                     current_gen_state = .Layer_Refinement;
-                    return;
+                    if !single_frame do return;
                 }
 
                 get_cell_id :: proc(x,y,z: int) -> u64 {
@@ -316,7 +319,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 }
 
                 // Layer refinement
-                if current_gen_state == .Layer_Refinement {
+                if single_frame || current_gen_state == .Layer_Refinement {
                     // TODO? Contour expansion
                     // expand accessible voxels around obstacles
                     // how??
@@ -334,15 +337,28 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 x := u32(i16(cell >> 48));
                                 z := u32(i16(cell >> 32));
                                 y := u32(i16(cell >> 16));
+                                bit := cast(u128)1 << cast(u128)y;
+	                            is_obstacle := g_current_negative_slicemap[z][x] & bit != 0;
+
+	                            for yi := y+1; yi <= y+u32(PLAYER_HEIGHT); yi += 1 {
+	                            	height_check_bit := cast(u128)1 << cast(u128)yi;
+                                	if g_current_negative_slicemap[z][x] & height_check_bit != 0 ||
+                                	   g_current_slicemap[z][x] & height_check_bit != 0 {
+                                		is_obstacle = true;
+                                	}
+	                            }
+
                                 cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH/2, SLICEMAP_SIZE-f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {DETAIL_MULTIPLIER,DETAIL_MULTIPLIER,DETAIL_MULTIPLIER};
-                                wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], l>=len(colours) ? {0.3,0,0,0.5} : colours[l]);
+                                wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], is_obstacle ? Vector4{1,0,0,0.5} : Vector4{0,1,0,0.5});
                             }
                             l+=1;
                         }
                     }
 
-                    for layer, layer_id in &layers {
+                    layer_id := 0;
+                    for layer in &layers {
                         if len(layer.cells) == 0 do continue;
+                        defer layer_id += 1;
 
                         // Create the layers cutting shape
                         {
@@ -351,10 +367,22 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                            x := u32(i16(cell >> 48));
 	                            z := u32(i16(cell >> 32));
 	                            y := u32(i16(cell >> 16));
+
+	                            bit := cast(u128)1 << cast(u128)y;
+	                            is_obstacle := g_current_negative_slicemap[z][x] & bit != 0;
+
+	                            for yi := y+1; yi <= y+u32(PLAYER_HEIGHT); yi += 1 {
+	                            	height_check_bit := cast(u128)1 << cast(u128)yi;
+                                	if g_current_negative_slicemap[z][x] & height_check_bit != 0 ||
+                                	   g_current_slicemap[z][x] & height_check_bit != 0 {
+                                		is_obstacle = true;
+                                	}
+	                            }
+	                            
 	                            cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH/2, SLICEMAP_SIZE-f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {DETAIL_MULTIPLIER,DETAIL_MULTIPLIER,DETAIL_MULTIPLIER};
 
 	                            j := x + (z * SLICEMAP_SIZE);
-	                            g_cutting_shape_data[j] = Vector4{1,cell_pos.x,cell_pos.y,cell_pos.z};
+	                            g_cutting_shape_data[j] = Vector4{is_obstacle ? 2 : 1,cell_pos.x,cell_pos.y,cell_pos.z};
 	                        }
 
 	                        // TODO(jake): Move to wb call
@@ -421,15 +449,16 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                            	nx := x + int(oc.x);
 	                            	nz := z + int(oc.z);
 	                            	neighbour_idx := nx + nz*SLICEMAP_SIZE;
-	                            	if nx >= SLICEMAP_SIZE && nz >= SLICEMAP_SIZE && nx < 0 && nz < 0 do continue;
+	                            	if nx >= SLICEMAP_SIZE|| nz >= SLICEMAP_SIZE|| nx < 0|| nz < 0 do continue;
 
 	                            	// this might not be right
 	                            	// if we start on an obstacle then it may be a bit weird
-	                            	neighbour_pos := Vector3{_pixels[neighbour_idx].x,_pixels[neighbour_idx].y,_pixels[neighbour_idx].z};
+	                            	neighbour_pos := Vector3{_pixels[neighbour_idx].x ,_pixels[neighbour_idx].y ,_pixels[neighbour_idx].z};
 	                            	neighbour_depth_val := neighbour_pos.y;
 	                            	is_void := neighbour_depth_val <= -999;
 	                            	is_obstacle := abs(depth_val - neighbour_depth_val) > PLAYER_STEP_HEIGHT;
 
+	                            	//round_to_int(_pixels[neighbour_idx].w) == 2
 	                            	if is_void {
 	                            		g_current_floorplan[nx][nz] = 1;
 	                            		append(&layer.floor_plan, Floor_Vertex{pos, false, nx, nz});
@@ -438,7 +467,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                            		g_current_floorplan[nx][nz] = 2;
 	                            		append(&layer.floor_plan, Floor_Vertex{pos, true, nx, nz});
 	                            		break;
-	                            	}
+	                            	} 
 	                            }
 	                        }
 
@@ -461,15 +490,16 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         	}
                         }
                     }
-                    current_gen_state = .Mesh_Generation;
-                    return;
+                    current_gen_state = .Object_Classification;
+                    if !single_frame do return;
                 }
 
-                // Nav Mesh Generation
-                if current_gen_state == .Mesh_Generation {
-                	// Object classification
-                	for layer, layer_id in &layers {
-                		if len(layer.floor_plan) == 0 do continue;
+                // Object classification
+                if single_frame || current_gen_state == .Object_Classification {
+                	layer_id := 0;
+                    for layer in &layers {
+                        if len(layer.cells) == 0 do continue;
+                        defer layer_id += 1;
 
                 		processed: [dynamic]int;
                 		defer delete(processed);
@@ -480,7 +510,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 				if slice.contains(processed[:], i) do continue;
                 				if distance(vert.position, current_vert.position) > object_distance_threshold do continue;
 
-                				append(&object.unordered_verts, vert);
+                				append(&object.verts, vert);
                 				append(processed, i);
                 				_recurse_to_next_vert(&vert, processed, object, floor_plan);
                 			}
@@ -491,7 +521,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 			if slice.contains(processed[:], i) do continue;
 
                 			obj: Layer_Object;
-                			append(&obj.unordered_verts, vert);
+                			append(&obj.verts, vert);
                 			append(&processed, i);
                 			_recurse_to_next_vert(&vert, &processed, &obj, &layer.floor_plan);
                 			append(&layer.objects, obj);
@@ -501,14 +531,14 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 		for obj in &layer.objects {
                 			stack: [dynamic]Floor_Vertex;
 
-                			prev_vert := obj.unordered_verts[0];
+                			prev_vert := obj.verts[0];
                 			append(&obj.ordered_verts, prev_vert);
-                			unordered_remove(&obj.unordered_verts, 0);
+                			unordered_remove(&obj.verts, 0);
 
-                			for len(obj.unordered_verts) > 0 {
+                			for len(obj.verts) > 0 {
                 				closest_idx := 0;
                 				closest_vert: Floor_Vertex;
-                				for vert, i in obj.unordered_verts {
+                				for vert, i in obj.verts {
                 					if i == 0 {
                 						closest_vert = vert;
                 						continue;
@@ -522,7 +552,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 
                 				append(&obj.ordered_verts, closest_vert);
 	                			prev_vert = closest_vert;
-	                			unordered_remove(&obj.unordered_verts, closest_idx);
+	                			unordered_remove(&obj.verts, closest_idx);
                 			}
                 		}
 
@@ -570,10 +600,11 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     				}
                     			}
 
-                    			clear(&obj.unordered_verts);
+                    			clear(&obj.verts);
                     			for vert, i in obj.ordered_verts {
                     				if slice.contains(to_remove[:], i) do continue;
-                    				append(&obj.unordered_verts, vert);
+                    				append(&obj.verts, vert);
+                    				if vert.is_obstacle do obj.is_obstacle = true;
                     			}
                     		}
                     	}
@@ -586,21 +617,231 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        wb.BEGIN_RENDER_PASS(&pass);
 	                        
 	                        for obj, i in layer.objects {
-	                        	for vert, j in obj.unordered_verts {
+	                        	for vert, j in obj.verts {
 	                        		colour := i>=len(colours) ? Vector4{1,0,0,0.3} : colours[i];
-	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.unordered_verts)) + 0.1};
+	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.verts)) + 0.1};
 	                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
 	                        	}
 	                        }
                     	}
                     }
+                    current_gen_state = .Mesh_Generation;
+                    if !single_frame do return;
+                }
 
+                if single_frame || current_gen_state == .Mesh_Generation {
+                	// Nav Mesh Generation
+                	layer_id := 0;
+                    for layer in &layers {
+                        if len(layer.cells) == 0 do continue;
+                        defer layer_id += 1;
 
-                    // Convexity relaxation
+                        Notch_Vertex :: struct {
+                        	position: Vector3,
+                        	vm1, vm2: Vector3,
+                        };
 
-                    // Merging layers
-                    current_gen_state = .Coarse_Voxalization;
-                    return;
+                        notch_vertices: [dynamic]Notch_Vertex;
+                        defer delete(notch_vertices);
+
+                        layer_verts: [dynamic]Floor_Vertex;
+                        defer delete(layer_verts);
+	                    for obj in &layer.objects {
+	                    	if !obj.is_obstacle {
+	                    		for i := len(obj.verts)-1; i>=0; i-=1 {
+	                        		append(&layer_verts, obj.verts[i]);
+	                        	}
+	                        	
+	                        } else {
+	                        	for v0, j in obj.verts do append(&layer_verts, v0);
+	                        }
+                        }
+
+                        {
+                    		pass: wb.Render_Pass;
+                    		if layer_id == cast(int)layer_to_debug {
+		                        pass.camera = &g_editor_camera;
+		                        pass.color_buffers[0] = &debug_color_buffer;
+		                        pass.depth_buffer = &debug_depth_buffer;
+		                        wb.begin_render_pass(&pass);
+		                    }
+	                     
+	                        for v0, j in layer_verts {
+                        		v1 := layer_verts[(j+1) % len(layer_verts)];
+                        		v2 := layer_verts[(j+2) % len(layer_verts)];
+
+                        		a := ((v0.position.x * v1.position.x) / (v0.position.y * v1.position.y)) * ((v1.position.x * v2.position.x) / (v1.position.y * v2.position.y)) * 0.5;
+
+                        		if a > 0 {
+                        			append(&notch_vertices, Notch_Vertex{v1.position, v0.position, v2.position});
+
+                        			colour := len(notch_vertices)-1>=len(colours) ? Vector4{0.5,0,0,0.5} : colours[len(notch_vertices)-1];
+	                        		wb.draw_model(wb.g_models["cube_model"], v1.position, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
+	                        		wb.im_line(render_context.editor_im_context, .World, v1.position, v0.position, colour);
+	                        		wb.im_line(render_context.editor_im_context, .World, v2.position, v0.position, colour);
+	                        		wb.im_line(render_context.editor_im_context, .World, v1.position, v2.position, colour);
+	                        	}
+	                        }
+
+	                        if layer_id == cast(int)layer_to_debug {
+	                        	wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
+	                        	wb.end_render_pass(&pass);
+	                        }
+	                    }
+
+                        Near_Point :: struct {
+                        	point: Vector3,
+                        	distance: f32,
+                        };
+
+                        Portal :: struct {
+                        	p0, p1: Vector3,
+                        };
+                        portals: [dynamic]Portal;
+
+                        for nv in notch_vertices {
+
+                        	// AOI (Are of Interest) stuff
+                			d1 := norm(nv.position - nv.vm1);
+                			d2 := norm(nv.position - nv.vm2);
+                			p1 := d1 * 1000; p2 := d2 * 1000;
+
+                        	nearest_point := Near_Point{ {}, 1000000000 };
+                        	for vert, i in layer_verts {
+                    			if distance(vert.position, nv.position) <= 0.001 do continue;
+
+                    			// get vert, skip if not in aoi
+                    			{
+                        			if point_in_triangle({vert.position.x, vert.position.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
+                        				dist := distance(vert.position, nv.position);
+                        				if dist < nearest_point.distance {
+			                    			nearest_point.distance = dist;
+			                    			nearest_point.point = vert.position;
+			                    		}
+		                    		}
+		                    	}
+
+                    			// get edge, skip if not in aoi
+                    			{
+                    				edge0 := vert.position;
+                        			edge1 := layer_verts[(i+1) % len(layer_verts)].position;
+                        			// project nv.position onto line(edge0 and edge1)
+                        			ap := nv.position - edge0;
+                        			ab := edge1 - edge0;
+                        			edge_projection := edge0 + dot(ap, ab) / dot(ab, ab) * ab;
+                        			// does point fall in aoi?
+                        			if !point_in_triangle({edge_projection.x, edge_projection.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
+                        				// dist to edge0
+                        				edge0_dist := distance(edge0, nv.position);
+                        				
+                        				// dist to edge1
+                        				edge1_dist := distance(edge1, nv.position);
+                        				
+                        				// dist to qr (project line vm1 onto edge)
+                        				_qr, hitr := get_line_intersection(v3_to_v2(edge0), v3_to_v2(edge1), v3_to_v2(nv.position), v3_to_v2(nv.vm1));
+                        				qr := Vector3{_qr.x, edge0.y, _qr.y}; // TODO figure out y
+                        				qr_dist := distance(qr, nv.position);
+                        				if !hitr do qr_dist = 10000000;
+                        				
+                        				// dist to ql (project line vm2 onto edge)
+                        				_ql, hitl := get_line_intersection(v3_to_v2(edge0), v3_to_v2(edge1), v3_to_v2(nv.position), v3_to_v2(nv.vm2));
+                        				ql := Vector3{_ql.x, edge0.y, _ql.y};
+                        				ql_dist := distance(ql, nv.position);
+                        				if !hitl do ql_dist = 10000000;
+
+                        				if is_smallest(edge0_dist, edge1_dist, qr_dist, ql_dist) {
+                        					dist := distance(edge0, nv.position);
+	                        				if dist < nearest_point.distance {
+	                        					nearest_point.distance = dist;
+	                        					nearest_point.point = edge0;
+	                        				}
+                        				} else if is_smallest(edge1_dist, edge0_dist, qr_dist, ql_dist) {
+                        					dist := distance(edge1, nv.position);
+	                        				if dist < nearest_point.distance {
+	                        					nearest_point.distance = dist;
+	                        					nearest_point.point = edge1;
+	                        				}
+                        				} else if is_smallest(qr_dist, edge0_dist, edge1_dist, ql_dist) {
+                        					dist := distance(qr, nv.position);
+	                        				if dist < nearest_point.distance {
+	                        					nearest_point.distance = dist;
+	                        					nearest_point.point = qr;
+	                        				}
+                        				} else if is_smallest(ql_dist, edge0_dist, edge1_dist, qr_dist) {
+                        					dist := distance(ql, nv.position);
+	                        				if dist < nearest_point.distance {
+	                        					nearest_point.distance = dist;
+	                        					nearest_point.point = ql;
+	                        				}
+                        				} else {
+                        					panic("This should not happen");
+                        				}              				
+                        				
+                        				// take smallest distance ^^^^
+                        			} else {
+                        				dist := distance(edge_projection, nv.position);
+                        				if dist < nearest_point.distance {
+                        					nearest_point.distance = dist;
+                        					nearest_point.point = edge_projection;
+                        				}
+                        			}
+                        		}
+                        	}
+
+                        	// get nearest portal
+                        	closest_portal: Portal;
+                        	closest_portal_dist: f32 = 1000000000;
+                        	for portal in portals {
+                        		ap := nv.position - portal.p0;
+                    			ab := portal.p0 - portal.p1;
+                    			portal_projection := portal.p0 + dot(ap, ab) / dot(ab, ab) * ab;
+                    			dist := distance(nv.position, portal_projection);
+                    			if dist < closest_portal_dist {
+                    				closest_portal = portal;
+                    				closest_portal_dist = dist;
+                    			}
+                        	}
+
+                        	if nearest_point.distance < closest_portal_dist {
+                        		append(&portals, Portal{ nearest_point.point, nv.position });
+                    		} else {
+                    			// TODO merge portals
+                    			if point_in_triangle({closest_portal.p0.x, closest_portal.p0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
+                    				append(&portals, Portal{ closest_portal.p0, nv.position });
+                        		} else if point_in_triangle({closest_portal.p1.x, closest_portal.p1.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
+                        			append(&portals, Portal{ closest_portal.p1, nv.position });
+                        		} else {
+                        			append(&portals, Portal{ closest_portal.p0, nv.position });
+                        			append(&portals, Portal{ closest_portal.p1, nv.position });
+                        		}
+                    		}
+                        }
+
+                     //    if cast(int) layer_to_debug == layer_id && pathing_debug_state == .Portal_Creation {
+                    	// 	pass: wb.Render_Pass;
+	                    //     pass.camera = &g_editor_camera;
+	                    //     pass.color_buffers[0] = &debug_color_buffer;
+	                    //     pass.depth_buffer = &debug_depth_buffer;
+	                    //     wb.BEGIN_RENDER_PASS(&pass);
+	                        
+	                    //     for portal in portals {
+                     //    		colour := Vector4{0,1,0,0.5};
+                     //    		// wb.im_line(render_context.editor_im_context, .World, portal.p0, portal.p1, colour);
+                     //    		rot := la.quaternion_between_two_vector3(portal.p0, portal.p1);
+                     //    		dist := min(0.1, distance(portal.p0, portal.p1));
+                     //    		wb.draw_model(wb.g_models["cube_model"], (portal.p0 + portal.p1) / 2, {0.05, 0.05, dist}, rot, wb.g_materials["simple_rgba_mtl"], colour);
+	                    //     }
+
+	                    //     wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
+                    	// }
+                	}
+
+	                // Convexity relaxation
+
+	                // Merging layers
+
+                	current_gen_state = .Coarse_Voxalization;
+                	if !single_frame do return;
                 }
             });
         // should_regen_nav_mesh = false;
@@ -619,4 +860,50 @@ sqr_distance :: inline proc(x, y: $T/[$N]$E) -> E {
         sum += diff[i] * diff[i];
     }
     return sum;
+}
+
+round_to_int :: proc(a: f32) -> int {
+	return cast(int) (a + 0.5);
+}
+
+sign :: proc(p1, p2, p3: Vector2) -> f32 {
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+}
+
+point_in_triangle :: proc(pt, v1, v2, v3: Vector2) -> bool {
+    d1, d2, d3: f32;
+    has_neg, has_pos: bool;
+
+    d1 = sign(pt, v1, v2);
+    d2 = sign(pt, v2, v3);
+    d3 = sign(pt, v3, v1);
+
+    has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+    return !(has_neg && has_pos);
+}
+
+get_line_intersection :: proc(p0, p1, p2, p3: Vector2) -> (Vector2, bool) {
+	s1 := p1 - p0;
+	s2 := p3 - p2;
+	s := (-s1.y * (p0.x - p2.x) + s1.x * (p0.y - p2.y)) / (-s2.x * s1.y + s1.x * s2.y);
+	t := (-s2.x * (p0.y - p2.y) + s2.y * (p0.x - p2.x)) / (-s2.x * s1.y + s1.x * s2.y);
+
+	if s >= 0 && s <= 1 && t >= 0 && t <= 1 {
+		return { p0.x + (t*s1.x), p0.y + (t*s1.y) }, true;
+	}
+
+	return {}, false;
+}
+
+v3_to_v2 :: proc(v3: Vector3) -> Vector2 {
+	return Vector2{v3.x, v3.z};
+}
+
+is_smallest :: proc(v1: f32, vals: ..f32) -> bool {
+	for v in vals {
+		if v < v1 do return false;
+	}
+	return true;
 }

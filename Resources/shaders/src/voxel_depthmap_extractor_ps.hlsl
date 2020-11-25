@@ -4,8 +4,13 @@ float4 PS(Vertex_Out vertex) : SV_TARGET {
 	// int z = (int) vertex.world_pos.z*2 - 0.5 + SLICEMAP_SIZE/2;
 	
 	float4 pixel = cutting_shape.Load(int3(vertex.position.xy, 0));
+
 	if (pixel.x == 0) {
 		discard;
+	}
+
+	if (pixel.x == 2) {
+		return float4(vertex.world_pos.xyz, 2);
 	}
 
 	// float3 o = float3((float)pixel.y-slicemap_size/2, (float)pixel.z-slicemap_size/2, (float)pixel.w-slicemap_size/2);
@@ -28,5 +33,5 @@ float4 PS(Vertex_Out vertex) : SV_TARGET {
 		discard;
 	} 
 
-	return float4(vertex.world_pos.xyz, 0);
+	return float4(vertex.world_pos.xyz, 1);
 }
