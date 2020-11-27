@@ -35,7 +35,6 @@ PLAYER_STEP_HEIGHT : f32 = 0.3;
 g_current_slicemap: [SLICEMAP_SIZE][SLICEMAP_SIZE]u128;
 g_current_negative_slicemap: [SLICEMAP_SIZE][SLICEMAP_SIZE]u128;
 g_cutting_shape_data: [SLICEMAP_SIZE*SLICEMAP_SIZE]Vector4;
-g_current_floorplan: [SLICEMAP_SIZE][SLICEMAP_SIZE]u8;
 
 colours : []Vector4 = { {1,0,0,0.5}, {1,0.5,0.1,0.5}, {0,1,0,0.5}, {0.1,1,0.5,0.5}, {0,1,1,0.5}, {0,0.5,1,0.5}, {0.2,0,1,0.5}, {0.6,0,1,0.5}, {1,0,1,0.5} };
 orthogonal_cells := [4]Vector3{{-1,0,0}, {1,0,0}, {0,0,1}, {0,0,-1}};
@@ -52,7 +51,7 @@ Layer_Object :: struct {
 	is_obstacle: bool,
 }
 Floor_Vertex :: struct {
-	position: Vector3,
+	using position: Vector3,
 	is_obstacle: bool,
 	cell_x, cell_z: int,
 }
@@ -227,11 +226,12 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 can_fit := true;
                                 for yi := y+1; yi <= y+int(PLAYER_HEIGHT); yi += 1 {
                                 	height_check_bit := cast(u128)1 << cast(u128)yi;
-                                	if /*g_current_negative_slicemap[z][x] & height_check_bit != 0 || */
-                                	   g_current_slicemap[z][x] & height_check_bit != 0 {
-                                	       can_fit = false;
-                                	       break;
-                                	   }
+                                	if g_current_slicemap[z][x] & height_check_bit != 0 || 
+                                	   g_current_negative_slicemap[z][x] & height_check_bit != 0
+                                	{
+                            	       can_fit = false;
+                            	       break;
+                            	    }
                                 }
 
                                 if !can_fit do continue;
@@ -348,8 +348,10 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 	}
 	                            }
 
+	                            // colour := is_obstacle ? Vector4{1,0,0,0.5} : Vector4{0,1,0,0.5};
+	                            colour := l >= len(colours) ? Vector4{0.5,0,0,0.5} : colours[l];
                                 cell_pos := (Vector3{f32(x)-SLICEMAP_SIZE/2, f32(y) - SLICEMAP_DEPTH/2, SLICEMAP_SIZE-f32(z)-SLICEMAP_SIZE/2} + {0.5,-0.5,0.5}) / {DETAIL_MULTIPLIER,DETAIL_MULTIPLIER,DETAIL_MULTIPLIER};
-                                wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], is_obstacle ? Vector4{1,0,0,0.5} : Vector4{0,1,0,0.5});
+                                wb.draw_model(wb.g_models["cube_model"], cell_pos, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
                             }
                             l+=1;
                         }
@@ -376,6 +378,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 	if g_current_negative_slicemap[z][x] & height_check_bit != 0 ||
                                 	   g_current_slicemap[z][x] & height_check_bit != 0 {
                                 		is_obstacle = true;
+                                		break;
                                 	}
 	                            }
 	                            
@@ -434,7 +437,6 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     		pixels := wb.get_texture_pixels(&g_cutting_shape_read_texture);
 	                        defer wb.return_texture_pixels(&g_cutting_shape_read_texture, pixels);
 
-	                        g_current_floorplan = {};
 	                        _pixels := transmute([]Vector4)pixels;
 	                        max := len(pixels)/16;
 	                        for i in 0..<max {
@@ -453,18 +455,22 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 
 	                            	// this might not be right
 	                            	// if we start on an obstacle then it may be a bit weird
-	                            	neighbour_pos := Vector3{_pixels[neighbour_idx].x ,_pixels[neighbour_idx].y ,_pixels[neighbour_idx].z};
+	                            	neighbour_pos := Vector3{ _pixels[neighbour_idx].x, _pixels[neighbour_idx].y, _pixels[neighbour_idx].z };
 	                            	neighbour_depth_val := neighbour_pos.y;
 	                            	is_void := neighbour_depth_val <= -999;
 	                            	is_obstacle := abs(depth_val - neighbour_depth_val) > PLAYER_STEP_HEIGHT;
 
+	                            	// y := cast(int) (_pixels[neighbour_idx].y*DETAIL_MULTIPLIER + 0.5 + SLICEMAP_SIZE/2);
+	                            	// for yi := y; yi <= y+int(PLAYER_HEIGHT); yi += 1 {
+	                            	// 	height_check_bit := cast(u128)1 << cast(u128)yi;
+	                            	// 	is_obstacle |= g_current_negative_slicemap[z][x] & height_check_bit != 0;
+	                            	// }
+
 	                            	//round_to_int(_pixels[neighbour_idx].w) == 2
 	                            	if is_void {
-	                            		g_current_floorplan[nx][nz] = 1;
 	                            		append(&layer.floor_plan, Floor_Vertex{pos, false, nx, nz});
 	                            		break;
 	                            	} else if is_obstacle {
-	                            		g_current_floorplan[nx][nz] = 2;
 	                            		append(&layer.floor_plan, Floor_Vertex{pos, true, nx, nz});
 	                            		break;
 	                            	} 
@@ -484,9 +490,10 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         pass.depth_buffer = &debug_depth_buffer;
                         wb.BEGIN_RENDER_PASS(&pass);
                         for layer, i in layers {
+                        	if i != cast(int)layer_to_debug do continue;
                         	for vert, j in layer.floor_plan {
-                        		a := f32(j)/f32(len(layer.floor_plan));
-                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], vert.is_obstacle ? {1,0,0,a} : {1,1,1,a});
+                        		// a := f32(j)/f32(len(layer.floor_plan));
+                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], vert.is_obstacle ? {1,0,0,0.5} : {1,1,1,0.5});
                         	}
                         }
                     }
@@ -505,10 +512,10 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 		defer delete(processed);
 
                 		_recurse_to_next_vert :: proc(current_vert: ^Floor_Vertex, processed: ^[dynamic]int, object: ^Layer_Object, floor_plan: ^[dynamic]Floor_Vertex) {
-                			object_distance_threshold := f32(1) / (DETAIL_MULTIPLIER/2) + 0.01; // size of cell
+                			object_distance_threshold := f32(1) / DETAIL_MULTIPLIER + 0.01; // size of cell
                 			for vert, i in floor_plan {
                 				if slice.contains(processed[:], i) do continue;
-                				if distance(vert.position, current_vert.position) > object_distance_threshold do continue;
+                				if distance(Vector3{vert.position.x, 0, vert.position.z}, Vector3{current_vert.position.x, 0, current_vert.position.z}) > object_distance_threshold do continue;
 
                 				append(&object.verts, vert);
                 				append(processed, i);
@@ -590,14 +597,17 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     				}
 
                     				cur_dir := norm(vert.position - current_vert.position);
-                    				d := dot(prev_dir, cur_dir);
+                    				d := dot_2d(prev_dir, cur_dir);
 
                     				if d < 0.99999 { // different enough
-                    					current_vert = vert;
-                    					prev_set = false;
+                    					current_vert = obj.ordered_verts[i-1];
+                    					prev_dir = norm(vert.position - current_vert.position);
                     				} else {
                     					append(&to_remove, i-1);
                     				}
+                    			}
+                    			if dot_2d(norm(obj.ordered_verts[0].position - obj.ordered_verts[len(obj.ordered_verts)-1].position), prev_dir) >= 0.99999 {
+                    				append(&to_remove, len(obj.ordered_verts)-1);
                     			}
 
                     			clear(&obj.verts);
@@ -606,6 +616,9 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     				append(&obj.verts, vert);
                     				if vert.is_obstacle do obj.is_obstacle = true;
                     			}
+                    		}
+                    		dot_2d :: proc(a,b: Vector3) -> f32 {
+                    			return dot(norm(Vector3{a.x, 0, a.z}), norm(Vector3{b.x, 0, b.z}));
                     		}
                     	}
 
@@ -644,54 +657,44 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         notch_vertices: [dynamic]Notch_Vertex;
                         defer delete(notch_vertices);
 
-                        layer_verts: [dynamic]Floor_Vertex;
-                        defer delete(layer_verts);
-	                    for obj in &layer.objects {
-	                    	if !obj.is_obstacle {
-	                    		for i := len(obj.verts)-1; i>=0; i-=1 {
-	                        		append(&layer_verts, obj.verts[i]);
-	                        	}
+                     //    layer_verts: [dynamic]Floor_Vertex;
+                     //    defer delete(layer_verts);
+	                    // for obj in &layer.objects {
+	                    // 	if !obj.is_obstacle {
+	                    // 		for i := len(obj.verts)-1; i>=0; i-=1 {
+	                    //     		append(&layer_verts, obj.verts[i]);
+	                    //     	}
 	                        	
-	                        } else {
-	                        	for v0, j in obj.verts do append(&layer_verts, v0);
-	                        }
-                        }
+	                    //     } else {
+	                    //     	for v0, j in obj.verts do append(&layer_verts, v0);
+	                    //     }
+                     //    }
 
                         {
-                    		pass: wb.Render_Pass;
-                    		if layer_id == cast(int)layer_to_debug {
-		                        pass.camera = &g_editor_camera;
-		                        pass.color_buffers[0] = &debug_color_buffer;
-		                        pass.depth_buffer = &debug_depth_buffer;
-		                        wb.begin_render_pass(&pass);
-		                    }
-	                     
-	                        for v0, j in layer_verts {
-                        		v1 := layer_verts[(j+1) % len(layer_verts)];
-                        		v2 := layer_verts[(j+2) % len(layer_verts)];
+	                        for obj in &layer.objects {
+	                        	for v0, j in obj.verts {
+	                        		v1 := obj.verts[(j+1) % len(obj.verts)];
+	                        		v2 := obj.verts[(j+2) % len(obj.verts)];
 
-                        		a := ((v0.position.x * v1.position.x) / (v0.position.y * v1.position.y)) * ((v1.position.x * v2.position.x) / (v1.position.y * v2.position.y)) * 0.5;
+	                        		a := (v0.x * (v1.y-v2.y) + v1.x * (v2.y-v0.y) + v2.x * (v0.y-v1.y)) / 2;
 
-                        		if a > 0 {
-                        			append(&notch_vertices, Notch_Vertex{v1.position, v0.position, v2.position});
+	                        		if a > 0 || true {
+	                        			append(&notch_vertices, Notch_Vertex{v1.position, v0.position, v2.position});
 
-                        			colour := len(notch_vertices)-1>=len(colours) ? Vector4{0.5,0,0,0.5} : colours[len(notch_vertices)-1];
-	                        		wb.draw_model(wb.g_models["cube_model"], v1.position, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
-	                        		wb.im_line(render_context.editor_im_context, .World, v1.position, v0.position, colour);
-	                        		wb.im_line(render_context.editor_im_context, .World, v2.position, v0.position, colour);
-	                        		wb.im_line(render_context.editor_im_context, .World, v1.position, v2.position, colour);
-	                        	}
-	                        }
-
-	                        if layer_id == cast(int)layer_to_debug {
-	                        	wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
-	                        	wb.end_render_pass(&pass);
+	                        			// colour := len(notch_vertices)-1>=len(colours) ? Vector4{0.5,0,0,0.5} : colours[len(notch_vertices)-1];
+		                        		// wb.draw_model(wb.g_models["cube_model"], v1.position, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
+		                        		// wb.im_line(render_context.editor_im_context, .World, v1.position, v0.position, colour);
+		                        		// wb.im_line(render_context.editor_im_context, .World, v2.position, v0.position, colour);
+		                        		// wb.im_line(render_context.editor_im_context, .World, v1.position, v2.position, colour);
+		                        	}
+		                        }
 	                        }
 	                    }
 
                         Near_Point :: struct {
                         	point: Vector3,
                         	distance: f32,
+                            set: bool,
                         };
 
                         Portal :: struct {
@@ -699,141 +702,225 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         };
                         portals: [dynamic]Portal;
 
-                        for nv in notch_vertices {
+                        for nv, nv_id in notch_vertices {
 
                         	// AOI (Are of Interest) stuff
                 			d1 := norm(nv.position - nv.vm1);
                 			d2 := norm(nv.position - nv.vm2);
-                			p1 := d1 * 1000; p2 := d2 * 1000;
+                			p1 := nv.position + {d1.x, 0, d1.z} * 50; 
+                			p2 := nv.position + {d2.x, 0, d2.z} * 50;
 
-                        	nearest_point := Near_Point{ {}, 1000000000 };
-                        	for vert, i in layer_verts {
-                    			if distance(vert.position, nv.position) <= 0.001 do continue;
+                        	pass: wb.Render_Pass;
+                    		if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+		                        pass.camera = &g_editor_camera;
+		                        pass.color_buffers[0] = &debug_color_buffer;
+		                        pass.depth_buffer = &debug_depth_buffer;
+		                        wb.begin_render_pass(&pass);
 
-                    			// get vert, skip if not in aoi
-                    			{
-                        			if point_in_triangle({vert.position.x, vert.position.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
-                        				dist := distance(vert.position, nv.position);
-                        				if dist < nearest_point.distance {
-			                    			nearest_point.distance = dist;
-			                    			nearest_point.point = vert.position;
+		                        wb.draw_model(wb.g_models["cube_model"], nv.position, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,1,0,1});
+		                        wb.draw_model(wb.g_models["cube_model"], nv.vm1, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0.5,0.5,0.5,1});
+		                        wb.draw_model(wb.g_models["cube_model"], nv.vm2, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0.5,0.5,0.5,1});
+		                        wb.im_line(render_context.editor_im_context, .World, nv.position, p1, {0,1,0,1});
+                        		wb.im_line(render_context.editor_im_context, .World, nv.position, p2, {0,1,0,1});
+                        		wb.im_line(render_context.editor_im_context, .World, p1, p2, {0,1,0,1});
+		                    }
+
+                        	nearest_point := Near_Point{ {}, 1000000000, false };
+                        	for obj, j in &layer.objects {
+	                        	for vert, i in obj.verts {
+
+	                    			// get vert, skip if not in aoi
+	                    			{
+	                    				vert_in_aoi := point_in_triangle({vert.position.x, vert.position.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+	                        			if vert_in_aoi {
+	                        				dist := distance(vert.position, nv.position);
+	                        				if dist > 0.001 && dist < nearest_point.distance {
+				                    			nearest_point.distance = dist;
+				                    			nearest_point.point = vert.position;
+                                                nearest_point.set = true;
+				                    		}
 			                    		}
-		                    		}
-		                    	}
 
-                    			// get edge, skip if not in aoi
-                    			{
-                    				edge0 := vert.position;
-                        			edge1 := layer_verts[(i+1) % len(layer_verts)].position;
-                        			// project nv.position onto line(edge0 and edge1)
-                        			ap := nv.position - edge0;
-                        			ab := edge1 - edge0;
-                        			edge_projection := edge0 + dot(ap, ab) / dot(ab, ab) * ab;
-                        			// does point fall in aoi?
-                        			if !point_in_triangle({edge_projection.x, edge_projection.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
-                        				// dist to edge0
-                        				edge0_dist := distance(edge0, nv.position);
-                        				
-                        				// dist to edge1
-                        				edge1_dist := distance(edge1, nv.position);
-                        				
-                        				// dist to qr (project line vm1 onto edge)
-                        				_qr, hitr := get_line_intersection(v3_to_v2(edge0), v3_to_v2(edge1), v3_to_v2(nv.position), v3_to_v2(nv.vm1));
-                        				qr := Vector3{_qr.x, edge0.y, _qr.y}; // TODO figure out y
-                        				qr_dist := distance(qr, nv.position);
-                        				if !hitr do qr_dist = 10000000;
-                        				
-                        				// dist to ql (project line vm2 onto edge)
-                        				_ql, hitl := get_line_intersection(v3_to_v2(edge0), v3_to_v2(edge1), v3_to_v2(nv.position), v3_to_v2(nv.vm2));
-                        				ql := Vector3{_ql.x, edge0.y, _ql.y};
-                        				ql_dist := distance(ql, nv.position);
-                        				if !hitl do ql_dist = 10000000;
+			                    		if pathing_debug_state == .Portal_Creation && j == 0 && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+			                    			wb.draw_model(wb.g_models["cube_model"], vert.position, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], vert_in_aoi ? Vector4{0,1,0,1} : Vector4{1,0,0,1});
+			                    		}
+			                    	}
 
-                        				if is_smallest(edge0_dist, edge1_dist, qr_dist, ql_dist) {
-                        					dist := distance(edge0, nv.position);
-	                        				if dist < nearest_point.distance {
-	                        					nearest_point.distance = dist;
-	                        					nearest_point.point = edge0;
-	                        				}
-                        				} else if is_smallest(edge1_dist, edge0_dist, qr_dist, ql_dist) {
-                        					dist := distance(edge1, nv.position);
-	                        				if dist < nearest_point.distance {
-	                        					nearest_point.distance = dist;
-	                        					nearest_point.point = edge1;
-	                        				}
-                        				} else if is_smallest(qr_dist, edge0_dist, edge1_dist, ql_dist) {
-                        					dist := distance(qr, nv.position);
-	                        				if dist < nearest_point.distance {
-	                        					nearest_point.distance = dist;
-	                        					nearest_point.point = qr;
-	                        				}
-                        				} else if is_smallest(ql_dist, edge0_dist, edge1_dist, qr_dist) {
-                        					dist := distance(ql, nv.position);
-	                        				if dist < nearest_point.distance {
-	                        					nearest_point.distance = dist;
-	                        					nearest_point.point = ql;
-	                        				}
-                        				} else {
-                        					panic("This should not happen");
-                        				}              				
-                        				
-                        				// take smallest distance ^^^^
-                        			} else {
-                        				dist := distance(edge_projection, nv.position);
-                        				if dist < nearest_point.distance {
-                        					nearest_point.distance = dist;
-                        					nearest_point.point = edge_projection;
-                        				}
-                        			}
-                        		}
+									// check against edge
+									{
+										edge0 := vert.position;
+										edge1 := obj.verts[(i+1) % len(obj.verts)].position;
+										
+										if distance(edge0, nv.position) > 0.01 &&
+										   distance(edge1, nv.position) > 0.01 {
+
+											// project nv.position onto edge(edge0 and edge1)
+											ap := nv.position - edge0;
+											ab := edge1 - edge0;
+											edge_projection := edge0 + dot(ap, ab) / dot(ab, ab) * ab;
+
+											// does point fall in aoi?
+											edge_projection_in_aoi := point_in_triangle({edge_projection.x, edge_projection.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+											projection_on_line := is_on_line(edge_projection, edge0, edge1);
+
+                                            if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+                                                wb.im_line(render_context.editor_im_context, .World, edge0, edge1, {0,0,1,1});
+                                            }
+
+											// TODO figure out what is going on here
+											if edge_projection_in_aoi && projection_on_line {
+												dist := distance(edge_projection, nv.position);
+												if dist > 0.001 && dist < nearest_point.distance {
+													nearest_point.distance = dist;
+													nearest_point.point = edge_projection;
+                                                    nearest_point.set = true;
+
+                                                    if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+                                                        wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,0,1,1});
+                                                    }
+												}
+											} else {
+												// dist to edge0
+												edge0_dist := distance(edge0, nv.position);
+												edge0_in_tri := point_in_triangle({edge0.x, edge0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+												
+												// dist to edge1
+												edge1_dist := distance(edge1, nv.position);
+												edge1_in_tri := point_in_triangle({edge0.x, edge0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+												
+												// dist to qr (project line vm1 onto edge)
+												_qr, hitr := get_line_intersection(v3_to_v2(edge0), v3_to_v2(edge1), v3_to_v2(nv.position), v3_to_v2(nv.vm1));
+												qr := Vector3{_qr.x, edge0.y, _qr.y}; // TODO figure out y
+												qr_dist := distance(qr, nv.position);
+												qr_in_tri := point_in_triangle({qr.x, qr.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+												if !hitr do qr_dist = 10000000;
+												
+												// dist to ql (project line vm2 onto edge)
+												_ql, hitl := get_line_intersection(v3_to_v2(edge0), v3_to_v2(edge1), v3_to_v2(nv.position), v3_to_v2(nv.vm2));
+												ql := Vector3{_ql.x, edge0.y, _ql.y};
+												ql_dist := distance(ql, nv.position);
+												ql_in_tri := point_in_triangle({ql.x, ql.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+												if !hitl do ql_dist = 10000000;
+
+												if edge0_in_tri && is_smallest(edge0_dist, edge1_dist, qr_dist, ql_dist) {
+													if edge0_dist > 0.001 && edge0_dist < nearest_point.distance {
+														nearest_point.distance = edge0_dist;
+														nearest_point.point = edge0;
+                                                        nearest_point.set = true;
+
+                                                        if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1});
+                                                        }
+													}
+												} else if edge1_in_tri && is_smallest(edge1_dist, edge0_dist, qr_dist, ql_dist) {
+													if edge1_dist > 0.001 && edge1_dist < nearest_point.distance {
+														nearest_point.distance = edge1_dist;
+														nearest_point.point = edge1;
+                                                        nearest_point.set = true;
+
+                                                        if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,1,0,1});
+                                                        }
+													}
+												} else if qr_in_tri && is_smallest(qr_dist, edge0_dist, edge1_dist, ql_dist) {
+													dist := distance(qr, nv.position);
+													if dist > 0.001 && dist < nearest_point.distance {
+														nearest_point.distance = dist;
+														nearest_point.point = qr;
+                                                        nearest_point.set = true;
+
+                                                        if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,1,1});
+                                                        }
+													}
+												} else if ql_in_tri && is_smallest(ql_dist, edge0_dist, edge1_dist, qr_dist) {
+													dist := distance(ql, nv.position);
+													if dist > 0.001 && dist < nearest_point.distance {
+														nearest_point.distance = dist;
+														nearest_point.point = ql;
+                                                        nearest_point.set = true;
+
+                                                        if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
+                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,1,1,1});
+                                                        }
+													}
+												}
+											}
+										}
+									}
+	                        	}
                         	}
 
                         	// get nearest portal
                         	closest_portal: Portal;
                         	closest_portal_dist: f32 = 1000000000;
-                        	for portal in portals {
-                        		ap := nv.position - portal.p0;
-                    			ab := portal.p0 - portal.p1;
-                    			portal_projection := portal.p0 + dot(ap, ab) / dot(ab, ab) * ab;
-                    			dist := distance(nv.position, portal_projection);
-                    			if dist < closest_portal_dist {
-                    				closest_portal = portal;
-                    				closest_portal_dist = dist;
-                    			}
-                        	}
+                        	portal_in_tri := false;
+                       //  	for portal in portals {
+                       //  		ap := nv.position - portal.p0;
+                    			// ab := portal.p0 - portal.p1;
+                    			// portal_projection := portal.p0 + dot(ap, ab) / dot(ab, ab) * ab;
+                    			// dist := distance(nv.position, portal_projection);
+                    			// if dist < closest_portal_dist {
+                    			// 	closest_portal = portal;
+                    			// 	closest_portal_dist = dist;
+                    			// }
+                    			// portal_in_tri |= point_in_triangle({portal_projection.x, portal_projection.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+                    			// portal_in_tri |= point_in_triangle({portal.p0.x, portal.p0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+                    			// portal_in_tri |= point_in_triangle({portal.p1.x, portal.p1.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+                       //  	}
 
-                        	if nearest_point.distance < closest_portal_dist {
-                        		append(&portals, Portal{ nearest_point.point, nv.position });
-                    		} else {
+                        	if portal_in_tri && closest_portal_dist < nearest_point.distance {
                     			// TODO merge portals
                     			if point_in_triangle({closest_portal.p0.x, closest_portal.p0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
                     				append(&portals, Portal{ closest_portal.p0, nv.position });
+                    				if nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+	                        			wb.im_line(render_context.editor_im_context, .World, closest_portal.p0, nv.position, {1,0,1,1});
+	                        		}
                         		} else if point_in_triangle({closest_portal.p1.x, closest_portal.p1.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
                         			append(&portals, Portal{ closest_portal.p1, nv.position });
+                        			if nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+	                        			wb.im_line(render_context.editor_im_context, .World, closest_portal.p1, nv.position, {1,0,1,1});
+	                        		}
                         		} else {
                         			append(&portals, Portal{ closest_portal.p0, nv.position });
                         			append(&portals, Portal{ closest_portal.p1, nv.position });
+                        			if nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+	                        			wb.im_line(render_context.editor_im_context, .World, closest_portal.p0, nv.position, {1,1,1,1});
+	                        		}
+	                        		if nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+	                        			wb.im_line(render_context.editor_im_context, .World, closest_portal.p1, nv.position, {1,1,1,1});
+	                        		}
+                        		}
+                    		} else if nearest_point.set && point_in_triangle({nearest_point.point.x, nearest_point.point.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z}) {
+                        		append(&portals, Portal{ nearest_point.point, nv.position });
+                        		if nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+                        			wb.im_line(render_context.editor_im_context, .World, nearest_point.point, nv.position, {1,0,0,1});
                         		}
                     		}
+
+                    		if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && cast(int) layer_to_debug == layer_id {
+	                        	wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
+	                        	wb.end_render_pass(&pass);
+	                        }
                         }
 
-                     //    if cast(int) layer_to_debug == layer_id && pathing_debug_state == .Portal_Creation {
-                    	// 	pass: wb.Render_Pass;
-	                    //     pass.camera = &g_editor_camera;
-	                    //     pass.color_buffers[0] = &debug_color_buffer;
-	                    //     pass.depth_buffer = &debug_depth_buffer;
-	                    //     wb.BEGIN_RENDER_PASS(&pass);
+                        if cast(int) layer_to_debug == layer_id && pathing_debug_state == .Portals {
+                    		pass: wb.Render_Pass;
+	                        pass.camera = &g_editor_camera;
+	                        pass.color_buffers[0] = &debug_color_buffer;
+	                        pass.depth_buffer = &debug_depth_buffer;
+	                        wb.BEGIN_RENDER_PASS(&pass);
 	                        
-	                    //     for portal in portals {
-                     //    		colour := Vector4{0,1,0,0.5};
-                     //    		// wb.im_line(render_context.editor_im_context, .World, portal.p0, portal.p1, colour);
-                     //    		rot := la.quaternion_between_two_vector3(portal.p0, portal.p1);
-                     //    		dist := min(0.1, distance(portal.p0, portal.p1));
-                     //    		wb.draw_model(wb.g_models["cube_model"], (portal.p0 + portal.p1) / 2, {0.05, 0.05, dist}, rot, wb.g_materials["simple_rgba_mtl"], colour);
-	                    //     }
+	                        for portal in portals {
+                        		colour := Vector4{0,1,1,1};
+                        		wb.im_line(render_context.editor_im_context, .World, portal.p0, portal.p1, colour);
+                        		// rot := la.quaternion_between_two_vector3(portal.p0, portal.p1);
+                        		// dist := min(0.1, distance(portal.p0, portal.p1));
+                        		// wb.draw_model(wb.g_models["cube_model"], (portal.p0 + portal.p1) / 2, {0.05, 0.05, dist}, rot, wb.g_materials["simple_rgba_mtl"], colour);
+	                        }
 
-	                    //     wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
-                    	// }
+	                        wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
+                    	}
                 	}
 
 	                // Convexity relaxation
@@ -866,22 +953,18 @@ round_to_int :: proc(a: f32) -> int {
 	return cast(int) (a + 0.5);
 }
 
-sign :: proc(p1, p2, p3: Vector2) -> f32 {
-    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
-}
-
 point_in_triangle :: proc(pt, v1, v2, v3: Vector2) -> bool {
-    d1, d2, d3: f32;
-    has_neg, has_pos: bool;
+    dX   := pt.x-v3.x;
+    dY   := pt.y-v3.y;
+    dX21 := v3.x-v2.x;
+    dY12 := v2.y-v3.y;
+    D    := dY12*(v1.x-v3.x) + dX21*(v1.y-v3.y);
+    s    := dY12*dX + dX21*dY;
+    t    := (v3.y-v1.y)*dX + (v1.x-v3.x)*dY;
+    
+    if D<0 do return s<=0 && t<=0 && s+t>=D;
 
-    d1 = sign(pt, v1, v2);
-    d2 = sign(pt, v2, v3);
-    d3 = sign(pt, v3, v1);
-
-    has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-    has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-
-    return !(has_neg && has_pos);
+    return s>=0 && t>=0 && s+t<=D;
 }
 
 get_line_intersection :: proc(p0, p1, p2, p3: Vector2) -> (Vector2, bool) {
@@ -895,6 +978,10 @@ get_line_intersection :: proc(p0, p1, p2, p3: Vector2) -> (Vector2, bool) {
 	}
 
 	return {}, false;
+}
+
+is_on_line :: proc(pt, p0, p1: Vector3) -> bool {
+	return abs(distance(p0, pt) + distance(p1, pt) - distance(p0, p1)) <= 0.00001;
 }
 
 v3_to_v2 :: proc(v3: Vector3) -> Vector2 {

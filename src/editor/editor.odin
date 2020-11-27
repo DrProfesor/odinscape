@@ -839,18 +839,21 @@ draw_console :: proc(userdata: rawptr, open: ^bool) {
 
 Pathing_Debug_State :: enum {
     None,
-    Layers,
     Layer_Construction,
+    Layers,
     Vertices,
     Vertex_Construction,
     Layer_Objects,
     Layer_Objects_Decimated,
     Portal_Creation,
+    Portals,
 }
 
 should_regen_nav_mesh := false;
 pathing_debug_state: Pathing_Debug_State;
 layer_to_debug : i32 = 0;
+debug_id : i32 = 0;
+debug_id2 : i32 = 0;
 draw_pathing :: proc(userdata: rawptr, open: ^bool) {
     using imgui;
 
@@ -865,6 +868,8 @@ draw_pathing :: proc(userdata: rawptr, open: ^bool) {
     wb.imgui_struct_ti("Debug State", &pathing_debug_state, type_info_of(Pathing_Debug_State));
 
     input_int("Layer To Debug", &layer_to_debug);
+    input_int("Debug Id", &debug_id);
+    input_int("Debug Id2", &debug_id2);
 
     input_float("MAX_WALK_ANGLE", &MAX_WALK_ANGLE);
     slider_float("PLAYER_HEIGHT", &PLAYER_HEIGHT, 0.1, 10);

@@ -6,8 +6,8 @@
                 material_id "default_material"
                 tint [
                     1.000
-                    1.000
-                    1.000
+                    0.973
+                    0.581
                     1.000
                 ]
 
@@ -18,16 +18,16 @@
         name "New Entity (7)"
         tags ""
         position [
-            2.422
-            -4.283
-            -1.050
+            1.572
+            -4.412
+            -9.616
         ]
 
         rotation quat -0.002 0.000 0.000 1.000
 
         scale [
             1.890
-            1.351
+            4.005
             1.156
         ]
 

@@ -5,9 +5,9 @@
                 model_id "cube_model"
                 material_id "default_material"
                 tint [
+                    0.775
                     1.000
-                    1.000
-                    1.000
+                    0.419
                     1.000
                 ]
 
@@ -20,7 +20,7 @@
         position [
             -0.551
             -4.855
-            -3.380
+            -4.028
         ]
 
         rotation quat 0.951 0.000 0.000 -0.310

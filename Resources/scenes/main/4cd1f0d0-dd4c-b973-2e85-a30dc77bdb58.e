@@ -5,9 +5,9 @@
                 model_id "cube_model"
                 material_id "default_material"
                 tint [
-                    1.000
-                    1.000
-                    1.000
+                    0.623
+                    0.715
+                    0.496
                     1.000
                 ]
 
