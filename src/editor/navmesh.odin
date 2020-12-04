@@ -455,8 +455,9 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 
 	                            	// this might not be right
 	                            	// if we start on an obstacle then it may be a bit weird
-	                            	neighbour_pos := Vector3{ _pixels[neighbour_idx].x, _pixels[neighbour_idx].y, _pixels[neighbour_idx].z };
-	                            	neighbour_depth_val := neighbour_pos.y;
+	                            	
+                                    // neighbour_pos := pos + {oc.x / DETAIL_MULTIPLIER, 0, oc.z / DETAIL_MULTIPLIER};
+                                    neighbour_depth_val := _pixels[neighbour_idx].y;
 	                            	is_void := neighbour_depth_val <= -999;
 	                            	is_obstacle := abs(depth_val - neighbour_depth_val) > PLAYER_STEP_HEIGHT;
 
@@ -501,6 +502,8 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     if !single_frame do return;
                 }
 
+
+
                 // Object classification
                 if single_frame || current_gen_state == .Object_Classification {
                 	layer_id := 0;
@@ -534,10 +537,10 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 			append(&layer.objects, obj);
                 		}
 
+                        object_distance_threshold := f32(1) / DETAIL_MULTIPLIER + 0.01; // size of cell
+
                 		// order the objects vertices
                 		for obj in &layer.objects {
-                			stack: [dynamic]Floor_Vertex;
-
                 			prev_vert := obj.verts[0];
                 			append(&obj.ordered_verts, prev_vert);
                 			unordered_remove(&obj.verts, 0);
@@ -545,6 +548,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 			for len(obj.verts) > 0 {
                 				closest_idx := 0;
                 				closest_vert: Floor_Vertex;
+                                found := false;
                 				for vert, i in obj.verts {
                 					if i == 0 {
                 						closest_vert = vert;
@@ -554,13 +558,39 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 					if distance(vert.position, prev_vert.position) < distance(closest_vert.position, prev_vert.position) {
                 						closest_vert = vert;
                 						closest_idx = i;
+                                        found = true;
                 					}
                 				}
 
-                				append(&obj.ordered_verts, closest_vert);
+                                if found {
+                    				append(&obj.ordered_verts, closest_vert);
+                                }
 	                			prev_vert = closest_vert;
 	                			unordered_remove(&obj.verts, closest_idx);
                 			}
+
+                            for i := 0; i < len(obj.ordered_verts); i+=1 {
+                                vert := obj.ordered_verts[i];
+
+                                should_add := i == 0;
+
+                                if i != 0 {
+                                    orth_dist_to_prev := distance(v3_to_v2(vert.position), v3_to_v2(obj.ordered_verts[i-1].position));
+                                    orth_dist_to_next := distance(v3_to_v2(vert.position), v3_to_v2(obj.ordered_verts[(i+1) % len(obj.ordered_verts)].position)); 
+
+                                    close_to_prev := orth_dist_to_prev <= object_distance_threshold;
+                                    close_to_next := orth_dist_to_next <= object_distance_threshold;
+
+                                    should_add = close_to_prev && close_to_next;
+                                }
+
+                                if !should_add {
+                                    ordered_remove(&obj.ordered_verts, i);
+                                    i -= 1;
+                                } else {
+                                    append(&obj.verts, vert);
+                                }
+                            }
                 		}
 
                     	if cast(int) layer_to_debug == layer_id && pathing_debug_state == .Layer_Objects {
@@ -571,9 +601,9 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        wb.BEGIN_RENDER_PASS(&pass);
 
 	                        for obj, i in layer.objects {
-	                        	for vert, j in obj.ordered_verts {
+	                        	for vert, j in obj.verts {
 	                        		colour := i>=len(colours) ? Vector4{1,0,0,0.3} : colours[i];
-	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.ordered_verts)) + 0.1};
+	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.verts)) + 0.1};
 	                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
 	                        	}
 	                        }
@@ -582,13 +612,16 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     	// decimate unused vertices
                     	{
                     		for obj in &layer.objects {
+
+                                if len(obj.verts) == 0 do continue;
+
                     			to_remove: [dynamic]int;
                     			defer delete(to_remove);
                     			
-                    			current_vert := obj.ordered_verts[0];
+                    			current_vert := obj.verts[0];
                     			prev_dir: Vector3;
                     			prev_set := false;
-                    			for vert, i in obj.ordered_verts {
+                    			for vert, i in obj.verts {
                     				if i == 0 do continue;
                     				if !prev_set {
                     					prev_dir = norm(vert.position - current_vert.position);
@@ -600,20 +633,20 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     				d := dot_2d(prev_dir, cur_dir);
 
                     				if d < 0.99999 { // different enough
-                    					current_vert = obj.ordered_verts[i-1];
+                    					current_vert = obj.verts[i-1];
                     					prev_dir = norm(vert.position - current_vert.position);
                     				} else {
                     					append(&to_remove, i-1);
                     				}
                     			}
-                    			if dot_2d(norm(obj.ordered_verts[0].position - obj.ordered_verts[len(obj.ordered_verts)-1].position), prev_dir) >= 0.99999 {
-                    				append(&to_remove, len(obj.ordered_verts)-1);
+                    			if dot_2d(norm(obj.verts[0].position - obj.verts[len(obj.verts)-1].position), prev_dir) >= 0.99999 {
+                    				append(&to_remove, len(obj.verts)-1);
                     			}
 
-                    			clear(&obj.verts);
-                    			for vert, i in obj.ordered_verts {
+                    			clear(&obj.ordered_verts);
+                    			for vert, i in obj.verts {
                     				if slice.contains(to_remove[:], i) do continue;
-                    				append(&obj.verts, vert);
+                    				append(&obj.ordered_verts, vert);
                     				if vert.is_obstacle do obj.is_obstacle = true;
                     			}
                     		}
@@ -630,9 +663,9 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        wb.BEGIN_RENDER_PASS(&pass);
 	                        
 	                        for obj, i in layer.objects {
-	                        	for vert, j in obj.verts {
+	                        	for vert, j in obj.ordered_verts {
 	                        		colour := i>=len(colours) ? Vector4{1,0,0,0.3} : colours[i];
-	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.verts)) + 0.1};
+	                        		colour = {colour.x, colour.y, colour.z, f32(j)/f32(len(obj.ordered_verts)) + 0.1};
 	                        		wb.draw_model(wb.g_models["cube_model"], vert.position, {0.9,0.9,0.9}/DETAIL_MULTIPLIER, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
 	                        	}
 	                        }
@@ -641,6 +674,8 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                     current_gen_state = .Mesh_Generation;
                     if !single_frame do return;
                 }
+
+
 
                 if single_frame || current_gen_state == .Mesh_Generation {
                 	// Nav Mesh Generation
@@ -657,39 +692,19 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         notch_vertices: [dynamic]Notch_Vertex;
                         defer delete(notch_vertices);
 
-                     //    layer_verts: [dynamic]Floor_Vertex;
-                     //    defer delete(layer_verts);
-	                    // for obj in &layer.objects {
-	                    // 	if !obj.is_obstacle {
-	                    // 		for i := len(obj.verts)-1; i>=0; i-=1 {
-	                    //     		append(&layer_verts, obj.verts[i]);
-	                    //     	}
-	                        	
-	                    //     } else {
-	                    //     	for v0, j in obj.verts do append(&layer_verts, v0);
-	                    //     }
-                     //    }
+                        for obj in &layer.objects {
+                        	for v0, j in obj.ordered_verts {
+                        		v1 := obj.ordered_verts[(j+1) % len(obj.ordered_verts)];
+                        		v2 := obj.ordered_verts[(j+2) % len(obj.ordered_verts)];
 
-                        {
-	                        for obj in &layer.objects {
-	                        	for v0, j in obj.verts {
-	                        		v1 := obj.verts[(j+1) % len(obj.verts)];
-	                        		v2 := obj.verts[(j+2) % len(obj.verts)];
+                        		a := (v0.x * (v1.y-v2.y) + v1.x * (v2.y-v0.y) + v2.x * (v0.y-v1.y)) / 2;
 
-	                        		a := (v0.x * (v1.y-v2.y) + v1.x * (v2.y-v0.y) + v2.x * (v0.y-v1.y)) / 2;
-
-	                        		if a > 0 || true {
-	                        			append(&notch_vertices, Notch_Vertex{v1.position, v0.position, v2.position});
-
-	                        			// colour := len(notch_vertices)-1>=len(colours) ? Vector4{0.5,0,0,0.5} : colours[len(notch_vertices)-1];
-		                        		// wb.draw_model(wb.g_models["cube_model"], v1.position, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], colour);
-		                        		// wb.im_line(render_context.editor_im_context, .World, v1.position, v0.position, colour);
-		                        		// wb.im_line(render_context.editor_im_context, .World, v2.position, v0.position, colour);
-		                        		// wb.im_line(render_context.editor_im_context, .World, v1.position, v2.position, colour);
-		                        	}
-		                        }
-	                        }
-	                    }
+                                // TODO proper notches?
+                        		if a > 0 || true {
+                        			append(&notch_vertices, Notch_Vertex{v1.position, v0.position, v2.position});
+                            	}
+                            }
+                        }
 
                         Near_Point :: struct {
                         	point: Vector3,
@@ -727,7 +742,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 
                         	nearest_point := Near_Point{ {}, 1000000000, false };
                         	for obj, j in &layer.objects {
-	                        	for vert, i in obj.verts {
+	                        	for vert, i in obj.ordered_verts {
 
 	                    			// get vert, skip if not in aoi
 	                    			{
@@ -749,7 +764,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 									// check against edge
 									{
 										edge0 := vert.position;
-										edge1 := obj.verts[(i+1) % len(obj.verts)].position;
+										edge1 := obj.ordered_verts[(i+1) % len(obj.ordered_verts)].position;
 										
 										if distance(edge0, nv.position) > 0.01 &&
 										   distance(edge1, nv.position) > 0.01 {
@@ -809,7 +824,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                                         nearest_point.set = true;
 
                                                         if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
-                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1});
+                                                            wb.draw_model(wb.g_models["cube_model"], edge0, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,0,1});
                                                         }
 													}
 												} else if edge1_in_tri && is_smallest(edge1_dist, edge0_dist, qr_dist, ql_dist) {
@@ -819,7 +834,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                                         nearest_point.set = true;
 
                                                         if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
-                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,1,0,1});
+                                                            wb.draw_model(wb.g_models["cube_model"], edge1, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,1,0,1});
                                                         }
 													}
 												} else if qr_in_tri && is_smallest(qr_dist, edge0_dist, edge1_dist, ql_dist) {
@@ -830,7 +845,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                                         nearest_point.set = true;
 
                                                         if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
-                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,1,1});
+                                                            wb.draw_model(wb.g_models["cube_model"], qr, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {1,0,1,1});
                                                         }
 													}
 												} else if ql_in_tri && is_smallest(ql_dist, edge0_dist, edge1_dist, qr_dist) {
@@ -841,7 +856,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                                         nearest_point.set = true;
 
                                                         if pathing_debug_state == .Portal_Creation && nv_id == cast(int)debug_id && i == cast(int)debug_id2 && cast(int) layer_to_debug == layer_id {
-                                                            wb.draw_model(wb.g_models["cube_model"], edge_projection, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,1,1,1});
+                                                            wb.draw_model(wb.g_models["cube_model"], ql, {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], {0,1,1,1});
                                                         }
 													}
 												}
@@ -855,19 +870,20 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                         	closest_portal: Portal;
                         	closest_portal_dist: f32 = 1000000000;
                         	portal_in_tri := false;
-                       //  	for portal in portals {
-                       //  		ap := nv.position - portal.p0;
-                    			// ab := portal.p0 - portal.p1;
-                    			// portal_projection := portal.p0 + dot(ap, ab) / dot(ab, ab) * ab;
-                    			// dist := distance(nv.position, portal_projection);
-                    			// if dist < closest_portal_dist {
-                    			// 	closest_portal = portal;
-                    			// 	closest_portal_dist = dist;
-                    			// }
-                    			// portal_in_tri |= point_in_triangle({portal_projection.x, portal_projection.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
-                    			// portal_in_tri |= point_in_triangle({portal.p0.x, portal.p0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
-                    			// portal_in_tri |= point_in_triangle({portal.p1.x, portal.p1.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
-                       //  	}
+                            // TODO vertex-portal portal creation
+                           //  	for portal in portals {
+                           //  		ap := nv.position - portal.p0;
+                        			// ab := portal.p0 - portal.p1;
+                        			// portal_projection := portal.p0 + dot(ap, ab) / dot(ab, ab) * ab;
+                        			// dist := distance(nv.position, portal_projection);
+                        			// if dist < closest_portal_dist {
+                        			// 	closest_portal = portal;
+                        			// 	closest_portal_dist = dist;
+                        			// }
+                        			// portal_in_tri |= point_in_triangle({portal_projection.x, portal_projection.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+                        			// portal_in_tri |= point_in_triangle({portal.p0.x, portal.p0.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+                        			// portal_in_tri |= point_in_triangle({portal.p1.x, portal.p1.z}, {p1.x, p1.z}, {nv.position.x, nv.position.z}, {p2.x, p2.z});
+                           //  	}
 
                         	if portal_in_tri && closest_portal_dist < nearest_point.distance {
                     			// TODO merge portals
@@ -914,18 +930,302 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 	                        for portal in portals {
                         		colour := Vector4{0,1,1,1};
                         		wb.im_line(render_context.editor_im_context, .World, portal.p0, portal.p1, colour);
-                        		// rot := la.quaternion_between_two_vector3(portal.p0, portal.p1);
-                        		// dist := min(0.1, distance(portal.p0, portal.p1));
-                        		// wb.draw_model(wb.g_models["cube_model"], (portal.p0 + portal.p1) / 2, {0.05, 0.05, dist}, rot, wb.g_materials["simple_rgba_mtl"], colour);
 	                        }
+
+                            for obj in layer.objects {
+                                prev_pos: Vector3;
+                                for vert, i in obj.verts {
+                                    if i == 0 {
+                                        prev_pos = vert.position;
+                                        continue;
+                                    }
+                                    wb.im_line(render_context.editor_im_context, .World, prev_pos, vert.position, Vector4{1,0,0,1});
+                                    prev_pos = vert.position;
+                                }
+                                wb.im_line(render_context.editor_im_context, .World, prev_pos, obj.verts[0], Vector4{1,0,0,1});
+                            }
 
 	                        wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
                     	}
+
+                        {
+                            Line :: struct { p0,p1: Vector3, is_portal: bool };
+                            layer_lines: [dynamic]Line;
+                            defer delete(layer_lines);
+
+                            for portal in portals {
+                                append(&layer_lines, Line{ portal.p0, portal.p1, true });
+                            }
+
+                            for obj in layer.objects {
+                                if len(obj.verts) == 0 do continue;
+                                prev_pos: Vector3;
+                                for vert, i in obj.verts {
+                                    if i == 0 {
+                                        prev_pos = vert.position;
+                                        continue;
+                                    }
+                                    append(&layer_lines, Line{ prev_pos, vert.position, false });
+                                    prev_pos = vert.position;
+                                }
+                                append(&layer_lines, Line{ prev_pos, obj.verts[0], false });
+                            }
+
+                            // This is very noisy to not be an O(n^2) operation
+                            intersections: [dynamic]Vector3;
+                            _min, _max: Vector3;
+                            for l0, i in layer_lines {
+                                for l1, j in layer_lines {
+                                    pt, intersects := get_line_intersection_3d(l0.p0, l0.p1, l1.p0, l1.p1);
+                                    if !intersects do continue;
+
+                                    contains := false;
+                                    for inter in intersections {
+                                        if distance(inter, pt) < 0.001 {
+                                            contains = true;
+                                            break;
+                                        }
+                                    }
+                                    if contains do continue;
+
+                                    append(&intersections, pt);
+
+                                    if len(intersections) == 1 {
+                                        _min = pt;
+                                        _max = pt;
+                                    }
+
+                                    if pt.x < _min.x do _min.x = pt.x;
+                                    if pt.z < _min.z do _min.z = pt.z;
+                                    if pt.x > _max.x do _max.x = pt.x;
+                                    if pt.z > _max.z do _max.z = pt.z;
+                                }
+                            }
+
+                            // delaunay triangulation
+                            triangles: [dynamic][3]Vector3;
+
+                            dx := _max.x - _min.x;
+                            dy := _max.z - _min.z;
+                            delta_max := max(dx, dy);
+                            midx := (_min.x + _max.x) / 2;
+                            midy := (_min.z + _max.z) / 2;
+
+                            p1 := Vector3{midx - 2 * delta_max, 0, midy - delta_max};
+                            p2 := Vector3{midx, 0, midy + 2 * delta_max};
+                            p3 := Vector3{midx + 2 * delta_max, 0, midy - delta_max};
+                            append(&triangles, [3]Vector3{p1, p2, p3});
+
+                            for vert, did in intersections {
+                                polygon: [dynamic][2]Vector3; defer delete(polygon);
+
+                                to_remove: [dynamic]int; defer delete(to_remove);
+                                for triangle, i in triangles {
+                                    if circum_circle_contains(triangle, vert) {
+                                        append(&to_remove, i);
+
+                                        if cast(int)debug_id == did {
+                                            // wb.im_line(render_context.editor_im_context, .World, triangle[0], triangle[1], {0,1,1,1});
+                                            // wb.im_line(render_context.editor_im_context, .World, triangle[1], triangle[2], {0,1,1,1});
+                                            // wb.im_line(render_context.editor_im_context, .World, triangle[2], triangle[0], {0,1,1,1});
+
+                                            // log_info(triangle, "   ", vert);
+                                        }
+                                        append(&polygon, [2]Vector3{ triangle[0], triangle[1] });
+                                        append(&polygon, [2]Vector3{ triangle[1], triangle[2] });
+                                        append(&polygon, [2]Vector3{ triangle[2], triangle[0] });
+                                    } else {
+                                        if cast(int)debug_id == did {
+                                            // wb.im_line(render_context.editor_im_context, .World, triangle[0], triangle[1], {1,1,1,0.5});
+                                            // wb.im_line(render_context.editor_im_context, .World, triangle[1], triangle[2], {1,1,1,0.5});
+                                            // wb.im_line(render_context.editor_im_context, .World, triangle[2], triangle[0], {1,1,1,0.5});
+
+                                            // log_info(triangle, "   ", vert);
+                                        }
+                                    }
+                                }
+
+                                for i := len(triangles)-1; i >= 0 ; i -= 1 {
+                                    if !slice.contains(to_remove[:], i) do continue;
+                                    unordered_remove(&triangles, i);
+                                }
+
+                                bad_edges: [dynamic]int; defer delete(bad_edges);
+                                for edge0, i in polygon {
+                                    for j := i+1; j < len(polygon); j+=1 {
+                                        edge1 := polygon[j];
+                                        if almost_equal(edge0, edge1) {
+                                            append(&bad_edges, i);
+                                            append(&bad_edges, j);
+                                        }
+                                    }
+                                }
+
+                                for edge, i in polygon {
+                                    if slice.contains(bad_edges[:], i) do continue;
+                                    append(&triangles, [3]Vector3 {
+                                        edge[0], edge[1], vert,
+                                    });
+
+                                    if cast(int)debug_id == did && cast(int)debug_id2 == 1 {
+                                        // wb.im_line(render_context.editor_im_context, .World, vert, edge[0], {0,1,0,1});
+                                        // wb.im_line(render_context.editor_im_context, .World, edge[0], edge[1], {0,1,0,1});
+                                        // wb.im_line(render_context.editor_im_context, .World, edge[1], vert, {0,1,0,1});
+                                    }
+                                }
+                            }
+
+                            for i := len(triangles)-1; i >= 0; i-=1 {
+                                tri := triangles[i];
+                                extreme_in_super := false;
+                                for vert in tri {
+                                    extreme_in_super = distance(vert, p1) < 0.001;
+                                    if extreme_in_super do break;
+                                    extreme_in_super = distance(vert, p2) < 0.001;
+                                    if extreme_in_super do break;
+                                    extreme_in_super = distance(vert, p3) < 0.001;
+                                    if extreme_in_super do break;
+                                }
+                                if extreme_in_super {
+                                    unordered_remove(&triangles, i);
+                                }
+                            }
+
+                            almost_equal :: proc(e0, e1: [2]Vector3) -> bool {
+                                ret := distance(e0[0], e1[0]) <= 0.0001 && distance(e0[1], e1[1]) <= 0.0001;
+                                ret |= distance(e0[1], e1[0]) <= 0.0001 && distance(e0[0], e1[1]) <= 0.0001;
+                                return ret;
+                            }
+
+                            circum_circle_contains :: proc(tri: [3]Vector3, v: Vector3) -> bool {
+                                x1 := tri[0].x;
+                                x2 := tri[1].x;
+                                x3 := tri[2].x;
+                                y1 := tri[0].z;
+                                y2 := tri[1].z;
+                                y3 := tri[2].z;
+                                EPSILON : f32 = 0.00001;
+                                
+                                m1, m2, mx1, mx2, my1, my2: f32;
+                                dx, dy, rsqr, drsqr, xc, yc, r: f32;
+
+                                if abs(y1 - y2) < EPSILON && abs(y2 - y3) < EPSILON do return(false);
+                                if abs(y2-y1) < EPSILON { 
+                                    m2 = - (x3 - x2) / (y3 - y2);
+                                    mx2 = (x2 + x3) / 2.0;
+                                    my2 = (y2 + y3) / 2.0;
+                                    xc = (x2 + x1) / 2.0;
+                                    yc = m2 * (xc - mx2) + my2;
+                                } else if abs(y3 - y2) < EPSILON { 
+                                    m1 = - (x2 - x1) / (y2 - y1);
+                                    mx1 = (x1 + x2) / 2.0;
+                                    my1 = (y1 + y2) / 2.0;
+                                    xc = (x3 + x2) / 2.0;
+                                    yc = m1 * (xc - mx1) + my1;
+                                }else{
+                                    m1 = - (x2 - x1) / (y2 - y1); 
+                                    m2 = - (x3 - x2) / (y3 - y2); 
+                                    mx1 = (x1 + x2) / 2.0; 
+                                    mx2 = (x2 + x3) / 2.0;
+                                    my1 = (y1 + y2) / 2.0;
+                                    my2 = (y2 + y3) / 2.0;
+                                    xc = (m1 * mx1 - m2 * mx2 + my2 - my1) / (m1 - m2); 
+                                    yc = m1 * (xc - mx1) + my1; 
+                                }
+                                dx = x2 - xc;
+                                dy = y2 - yc;
+                                rsqr = dx * dx + dy * dy;
+                                r = sqrt(rsqr); 
+                                dx = v.x - xc;
+                                dy = v.z - yc;
+                                drsqr = dx * dx + dy * dy;
+                                //return (drsqr <= rsqr) ? true : false, {xc, 0, yc}, r;
+                                return (drsqr <= rsqr) ? true : false;
+
+                                // dx := tri[0].x - v.x;
+                                // dy := tri[0].z - v.z;
+                                // ex := tri[1].x - v.x;
+                                // ey := tri[1].z - v.z;
+                                // fx := tri[2].x - v.x;
+                                // fy := tri[2].z - v.z;
+
+                                // ap := dx * dx + dy * dy;
+                                // bp := ex * ex + ey * ey;
+                                // cp := fx * fx + fy * fy;
+
+                                // return (dx * (ey * cp - bp * fy) -
+                                //         dy * (ex * cp - bp * fx) +
+                                //         ap * (ex * fy - ey * fx)) < 0.0001;
+
+                                // norm2 :: proc(v: Vector3) -> f32 {
+                                //     return v.x * v.x + v.z * v.z;
+                                // }
+                                // dist2 :: proc(v0, v1: Vector3) -> f32 {
+                                //     dx := v0.x - v1.x;
+                                //     dy := v0.z - v1.z;
+                                //     return dx * dx + dy * dy;
+                                // }
+
+                                // a := tri[0];
+                                // b := tri[1];
+                                // c := tri[2];
+
+                                // ab := norm2(a);
+                                // cd := norm2(b);
+                                // ef := norm2(c);
+
+                                // ax := a.x;
+                                // ay := a.z;
+                                // bx := b.x;
+                                // by := b.z;
+                                // cx := c.x;
+                                // cy := c.z;
+
+                                // circum_x := (ab * (cy - by) + cd * (ay - cy) + ef * (by - ay)) / (ax * (cy - by) + bx * (ay - cy) + cx * (by - ay));
+                                // circum_y := (ab * (cx - bx) + cd * (ax - cx) + ef * (bx - ax)) / (ay * (cx - bx) + by * (ax - cx) + cy * (bx - ax));
+
+                                // circum := Vector3{circum_x / 2, 0, circum_y / 2};
+                                // circum_radius := dist2(a, circum);
+                                // dist := dist2(v, circum);
+                                // return dist <= circum_radius;
+                            }
+
+                            if cast(int) layer_to_debug == layer_id && pathing_debug_state == .NavMesh_Creation {
+                                pass: wb.Render_Pass;
+                                pass.camera = &g_editor_camera;
+                                pass.color_buffers[0] = &debug_color_buffer;
+                                pass.depth_buffer = &debug_depth_buffer;
+                                wb.BEGIN_RENDER_PASS(&pass);
+
+                                for triangle, i in triangles {
+                                    extreme_in_super := false;
+                                    for vert in triangle {
+                                        extreme_in_super = distance(vert, p1) < 0.001;
+                                        if extreme_in_super do break;
+                                        extreme_in_super = distance(vert, p2) < 0.001;
+                                        if extreme_in_super do break;
+                                        extreme_in_super = distance(vert, p3) < 0.001;
+                                        if extreme_in_super do break;
+                                    }
+                                    if extreme_in_super do continue;
+                                    wb.im_line(render_context.editor_im_context, .World, triangle.x, triangle.y, {0,1,0,1});
+                                    wb.im_line(render_context.editor_im_context, .World, triangle.y, triangle.z, {0,1,0,1});
+                                    wb.im_line(render_context.editor_im_context, .World, triangle.z, triangle.x, {0,1,0,1});
+                                }
+
+                                // for line in layer_lines {
+                                //     colour := line.is_portal ? Vector4{0,1,1,1} : Vector4{1,0,0,1};
+                                //     wb.im_line(render_context.editor_im_context, .World, line.p0, line.p1, colour);
+                                // }
+
+                                for pt, i in intersections {
+                                    wb.draw_model(wb.g_models["cube_model"], pt, cast(int)debug_id==i ? {0.1,0.1,0.1} : {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], cast(int)debug_id==i ? {1,0,0,1} : {0,1,0,1});
+                                }
+
+                                wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
+                            }
+                        }
                 	}
-
-	                // Convexity relaxation
-
-	                // Merging layers
 
                 	current_gen_state = .Coarse_Voxalization;
                 	if !single_frame do return;
@@ -978,6 +1278,53 @@ get_line_intersection :: proc(p0, p1, p2, p3: Vector2) -> (Vector2, bool) {
 	}
 
 	return {}, false;
+}
+
+get_line_intersection_3d :: proc(p1, p2, p3, p4: Vector3) -> (Vector3, bool) {
+    EPS :: 0.0001;
+
+    p13,p43,p21: Vector3;
+    p13.x = p1.x - p3.x;
+    p13.y = p1.y - p3.y;
+    p13.z = p1.z - p3.z;
+    p43.x = p4.x - p3.x;
+    p43.y = p4.y - p3.y;
+    p43.z = p4.z - p3.z;
+    if abs(p43.x) < EPS && abs(p43.y) < EPS && abs(p43.z) < EPS do return {}, false;
+    p21.x = p2.x - p1.x;
+    p21.y = p2.y - p1.y;
+    p21.z = p2.z - p1.z;
+    if abs(p21.x) < EPS && abs(p21.y) < EPS && abs(p21.z) < EPS do return {}, false;
+
+    d1343 := p13.x * p43.x + p13.y * p43.y + p13.z * p43.z;
+    d4321 := p43.x * p21.x + p43.y * p21.y + p43.z * p21.z;
+    d1321 := p13.x * p21.x + p13.y * p21.y + p13.z * p21.z;
+    d4343 := p43.x * p43.x + p43.y * p43.y + p43.z * p43.z;
+    d2121 := p21.x * p21.x + p21.y * p21.y + p21.z * p21.z;
+
+    denom := d2121 * d4343 - d4321 * d4321;
+    if abs(denom) < EPS do return {}, false;
+    numer := d1343 * d4321 - d1321 * d4343;
+
+    mua := numer / denom;
+    mub := (d1343 + d4321 * mua) / d4343;
+
+    if mua > 1 || mua < 0 || mub > 1 || mub < 0 do return {}, false;
+
+    pa, pb: Vector3;
+    pa.x = p1.x + mua * p21.x;
+    pa.y = p1.y + mua * p21.y;
+    pa.z = p1.z + mua * p21.z;
+
+    pb.x = p3.x + mub * p43.x;
+    pb.y = p3.y + mub * p43.y;
+    pb.z = p3.z + mub * p43.z;
+
+    if length(pa-pb) < 0.001 {
+        return pa, true;
+    }
+
+    return {}, false;
 }
 
 is_on_line :: proc(pt, p0, p1: Vector3) -> bool {

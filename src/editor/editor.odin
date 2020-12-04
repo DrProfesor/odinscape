@@ -847,6 +847,7 @@ Pathing_Debug_State :: enum {
     Layer_Objects_Decimated,
     Portal_Creation,
     Portals,
+    NavMesh_Creation,
 }
 
 should_regen_nav_mesh := false;

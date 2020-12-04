@@ -62,7 +62,7 @@ main_render :: proc() {
 
     wb.init_im_context(&g_screen_context);
     wb.init_im_context(&g_world_context);
-    wb.init_im_context(&g_editor_context);
+    wb.init_im_context(ctx = &g_editor_context, max_commands = 4096);
 
     render_graph: wb.Render_Graph;
     wb.init_render_graph(&render_graph, graphics_memory);

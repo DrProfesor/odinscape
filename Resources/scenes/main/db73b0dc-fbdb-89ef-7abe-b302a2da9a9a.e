@@ -18,9 +18,9 @@
         name "New Entity (7)"
         tags ""
         position [
-            1.572
-            -4.412
-            -9.616
+            0.755
+            -5.916
+            -5.007
         ]
 
         rotation quat -0.002 0.000 0.000 1.000

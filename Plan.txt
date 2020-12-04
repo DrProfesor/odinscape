@@ -28,15 +28,13 @@ Tasks
       x headless server
       x shadows
       x physics raycasting
+      x animator entity component
       - pathing
-      - animations
-        x animator entity component
-        - animation node graph
-          - transition between animations (no blending)
-    - editor work:
-      - prefab editor
-      - logger
+        - multi thread
     - game work:
+      - player movement
+        - click on thing (probs use rtree)
+        - A* with nav mesh
       - enemy spawning
       - enemy behaviours
       - enemy health
@@ -45,7 +43,7 @@ Tasks
       - player health
 
   v0.0.3
-    - renderer setup
+    - renderer setup (pipeliney stuff)
     - pcss shadows / look into other kinds of shadow mapping techniques
     - debug rendering (unity gizmos)
     - transparent walls when it is between player and camera
@@ -55,7 +53,11 @@ Tasks
 
   v0.0.4
     - particle emitter
-    - entity graph
+    - editor work:
+      - prefab editor
+      - logger
+      - animation node graph
+      - entity graph (maybe)
     - abilites:
       - simple "fireball type"
       - magic missile

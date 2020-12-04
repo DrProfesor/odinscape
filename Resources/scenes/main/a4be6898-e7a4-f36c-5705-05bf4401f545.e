@@ -18,8 +18,8 @@
         name "New Entity (6)"
         tags ""
         position [
-            -2.675
-            -3.701
+            -2.533
+            -3.858
             -3.719
         ]
 
