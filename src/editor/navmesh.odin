@@ -191,8 +191,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                 // Layer extraction
                 if single_frame || current_gen_state == .Layer_Extraction {
                 	layers = {};
-                    cells: map[u64]int;
-                    defer delete(cells);
+                    cells: map[u64]int; defer delete(cells);
                     current_layer_id := 0;
                     last_y := 0;
 
@@ -934,7 +933,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
 
                             for obj in layer.objects {
                                 prev_pos: Vector3;
-                                for vert, i in obj.verts {
+                                for vert, i in obj.ordered_verts {
                                     if i == 0 {
                                         prev_pos = vert.position;
                                         continue;
@@ -942,7 +941,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                     wb.im_line(render_context.editor_im_context, .World, prev_pos, vert.position, Vector4{1,0,0,1});
                                     prev_pos = vert.position;
                                 }
-                                wb.im_line(render_context.editor_im_context, .World, prev_pos, obj.verts[0], Vector4{1,0,0,1});
+                                wb.im_line(render_context.editor_im_context, .World, prev_pos, obj.ordered_verts[0], Vector4{1,0,0,1});
                             }
 
 	                        wb.draw_im_context(render_context.editor_im_context, &g_editor_camera);
@@ -958,21 +957,23 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                             }
 
                             for obj in layer.objects {
-                                if len(obj.verts) == 0 do continue;
+                                if len(obj.ordered_verts) == 0 do continue;
                                 prev_pos: Vector3;
-                                for vert, i in obj.verts {
+                                for vert, i in obj.ordered_verts {
                                     if i == 0 {
                                         prev_pos = vert.position;
                                         continue;
                                     }
+
                                     append(&layer_lines, Line{ prev_pos, vert.position, false });
                                     prev_pos = vert.position;
                                 }
-                                append(&layer_lines, Line{ prev_pos, obj.verts[0], false });
+
+                                append(&layer_lines, Line{ prev_pos, obj.ordered_verts[0], false });
                             }
 
                             // This is very noisy to not be an O(n^2) operation
-                            intersections: [dynamic]Vector3;
+                            intersections: [dynamic]Vector3; defer delete(intersections);
                             _min, _max: Vector3;
                             for l0, i in layer_lines {
                                 for l1, j in layer_lines {
@@ -1003,7 +1004,7 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                             }
 
                             // delaunay triangulation
-                            triangles: [dynamic][3]Vector3;
+                            triangles: [dynamic][3]Vector3; defer delete(triangles);
 
                             dx := _max.x - _min.x;
                             dy := _max.z - _min.z;
@@ -1023,25 +1024,9 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 for triangle, i in triangles {
                                     if circum_circle_contains(triangle, vert) {
                                         append(&to_remove, i);
-
-                                        if cast(int)debug_id == did {
-                                            // wb.im_line(render_context.editor_im_context, .World, triangle[0], triangle[1], {0,1,1,1});
-                                            // wb.im_line(render_context.editor_im_context, .World, triangle[1], triangle[2], {0,1,1,1});
-                                            // wb.im_line(render_context.editor_im_context, .World, triangle[2], triangle[0], {0,1,1,1});
-
-                                            // log_info(triangle, "   ", vert);
-                                        }
                                         append(&polygon, [2]Vector3{ triangle[0], triangle[1] });
                                         append(&polygon, [2]Vector3{ triangle[1], triangle[2] });
                                         append(&polygon, [2]Vector3{ triangle[2], triangle[0] });
-                                    } else {
-                                        if cast(int)debug_id == did {
-                                            // wb.im_line(render_context.editor_im_context, .World, triangle[0], triangle[1], {1,1,1,0.5});
-                                            // wb.im_line(render_context.editor_im_context, .World, triangle[1], triangle[2], {1,1,1,0.5});
-                                            // wb.im_line(render_context.editor_im_context, .World, triangle[2], triangle[0], {1,1,1,0.5});
-
-                                            // log_info(triangle, "   ", vert);
-                                        }
                                     }
                                 }
 
@@ -1066,12 +1051,6 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                     append(&triangles, [3]Vector3 {
                                         edge[0], edge[1], vert,
                                     });
-
-                                    if cast(int)debug_id == did && cast(int)debug_id2 == 1 {
-                                        // wb.im_line(render_context.editor_im_context, .World, vert, edge[0], {0,1,0,1});
-                                        // wb.im_line(render_context.editor_im_context, .World, edge[0], edge[1], {0,1,0,1});
-                                        // wb.im_line(render_context.editor_im_context, .World, edge[1], vert, {0,1,0,1});
-                                    }
                                 }
                             }
 
@@ -1098,96 +1077,94 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                             }
 
                             circum_circle_contains :: proc(tri: [3]Vector3, v: Vector3) -> bool {
-                                x1 := tri[0].x;
-                                x2 := tri[1].x;
-                                x3 := tri[2].x;
-                                y1 := tri[0].z;
-                                y2 := tri[1].z;
-                                y3 := tri[2].z;
-                                EPSILON : f32 = 0.00001;
-                                
-                                m1, m2, mx1, mx2, my1, my2: f32;
-                                dx, dy, rsqr, drsqr, xc, yc, r: f32;
-
-                                if abs(y1 - y2) < EPSILON && abs(y2 - y3) < EPSILON do return(false);
-                                if abs(y2-y1) < EPSILON { 
-                                    m2 = - (x3 - x2) / (y3 - y2);
-                                    mx2 = (x2 + x3) / 2.0;
-                                    my2 = (y2 + y3) / 2.0;
-                                    xc = (x2 + x1) / 2.0;
-                                    yc = m2 * (xc - mx2) + my2;
-                                } else if abs(y3 - y2) < EPSILON { 
-                                    m1 = - (x2 - x1) / (y2 - y1);
-                                    mx1 = (x1 + x2) / 2.0;
-                                    my1 = (y1 + y2) / 2.0;
-                                    xc = (x3 + x2) / 2.0;
-                                    yc = m1 * (xc - mx1) + my1;
-                                }else{
-                                    m1 = - (x2 - x1) / (y2 - y1); 
-                                    m2 = - (x3 - x2) / (y3 - y2); 
-                                    mx1 = (x1 + x2) / 2.0; 
-                                    mx2 = (x2 + x3) / 2.0;
-                                    my1 = (y1 + y2) / 2.0;
-                                    my2 = (y2 + y3) / 2.0;
-                                    xc = (m1 * mx1 - m2 * mx2 + my2 - my1) / (m1 - m2); 
-                                    yc = m1 * (xc - mx1) + my1; 
+                                norm2 :: proc(v: Vector3) -> f32 {
+                                    return v.x * v.x + v.z * v.z;
                                 }
-                                dx = x2 - xc;
-                                dy = y2 - yc;
-                                rsqr = dx * dx + dy * dy;
-                                r = sqrt(rsqr); 
-                                dx = v.x - xc;
-                                dy = v.z - yc;
-                                drsqr = dx * dx + dy * dy;
-                                //return (drsqr <= rsqr) ? true : false, {xc, 0, yc}, r;
-                                return (drsqr <= rsqr) ? true : false;
+                                dist2 :: proc(v0, v1: Vector3) -> f32 {
+                                    dx := v0.x - v1.x;
+                                    dy := v0.z - v1.z;
+                                    return dx * dx + dy * dy;
+                                }
 
-                                // dx := tri[0].x - v.x;
-                                // dy := tri[0].z - v.z;
-                                // ex := tri[1].x - v.x;
-                                // ey := tri[1].z - v.z;
-                                // fx := tri[2].x - v.x;
-                                // fy := tri[2].z - v.z;
+                                a := tri[0];
+                                b := tri[1];
+                                c := tri[2];
 
-                                // ap := dx * dx + dy * dy;
-                                // bp := ex * ex + ey * ey;
-                                // cp := fx * fx + fy * fy;
+                                ab := norm2(a);
+                                cd := norm2(b);
+                                ef := norm2(c);
 
-                                // return (dx * (ey * cp - bp * fy) -
-                                //         dy * (ex * cp - bp * fx) +
-                                //         ap * (ex * fy - ey * fx)) < 0.0001;
+                                ax := a.x;
+                                ay := a.z;
+                                bx := b.x;
+                                by := b.z;
+                                cx := c.x;
+                                cy := c.z;
 
-                                // norm2 :: proc(v: Vector3) -> f32 {
-                                //     return v.x * v.x + v.z * v.z;
-                                // }
-                                // dist2 :: proc(v0, v1: Vector3) -> f32 {
-                                //     dx := v0.x - v1.x;
-                                //     dy := v0.z - v1.z;
-                                //     return dx * dx + dy * dy;
-                                // }
+                                circum_x := (ab * (cy - by) + cd * (ay - cy) + ef * (by - ay)) / (ax * (cy - by) + bx * (ay - cy) + cx * (by - ay));
+                                circum_y := (ab * (cx - bx) + cd * (ax - cx) + ef * (bx - ax)) / (ay * (cx - bx) + by * (ax - cx) + cy * (bx - ax));
 
-                                // a := tri[0];
-                                // b := tri[1];
-                                // c := tri[2];
+                                circum := Vector3{circum_x / 2, 0, circum_y / 2};
+                                circum_radius := dist2(a, circum);
+                                dist := dist2(v, circum);
+                                return dist <= circum_radius;
+                            }
 
-                                // ab := norm2(a);
-                                // cd := norm2(b);
-                                // ef := norm2(c);
+                            Cell :: struct {
+                                points: [3]Vector3,
+                                edge_passable: [3]bool,
+                                adjacents: [3]int,
+                            };
+                            nav_graph: [dynamic]Cell;
+                            for tri in triangles {
+                                extreme_in_super := false;
+                                for vert in tri {
+                                    extreme_in_super = distance(vert, p1) < 0.001;
+                                    if extreme_in_super do break;
+                                    extreme_in_super = distance(vert, p2) < 0.001;
+                                    if extreme_in_super do break;
+                                    extreme_in_super = distance(vert, p3) < 0.001;
+                                    if extreme_in_super do break;
+                                }
+                                if extreme_in_super do continue;
 
-                                // ax := a.x;
-                                // ay := a.z;
-                                // bx := b.x;
-                                // by := b.z;
-                                // cx := c.x;
-                                // cy := c.z;
+                                edge0_not_passable := false;
+                                edge1_not_passable := false;
+                                edge2_not_passable := false;
+                                for line in layer_lines {
+                                    if line.is_portal do continue;
 
-                                // circum_x := (ab * (cy - by) + cd * (ay - cy) + ef * (by - ay)) / (ax * (cy - by) + bx * (ay - cy) + cx * (by - ay));
-                                // circum_y := (ab * (cx - bx) + cd * (ax - cx) + ef * (bx - ax)) / (ay * (cx - bx) + by * (ax - cx) + cy * (bx - ax));
+                                    edge0_not_passable |= is_on_line(tri[0], line.p0, line.p1) && is_on_line(tri[1], line.p0, line.p1);
+                                    edge1_not_passable |= is_on_line(tri[1], line.p0, line.p1) && is_on_line(tri[2], line.p0, line.p1);
+                                    edge2_not_passable |= is_on_line(tri[2], line.p0, line.p1) && is_on_line(tri[0], line.p0, line.p1);
+                                }
 
-                                // circum := Vector3{circum_x / 2, 0, circum_y / 2};
-                                // circum_radius := dist2(a, circum);
-                                // dist := dist2(v, circum);
-                                // return dist <= circum_radius;
+                                append(&nav_graph, Cell{tri, {!edge0_not_passable, !edge1_not_passable, !edge2_not_passable}, {-1,-1,-1}});
+                            }
+
+                            for cell0, i in &nav_graph {
+                                neighbour_count := 0;
+                                for cell1, j in nav_graph {
+                                    if i == j do continue;
+
+                                    is_neighbour := false;
+                                    for pt0, p0i in cell0.points {
+                                        edge0 := [2]Vector3{pt0, cell0.points[p0i%3]};
+                                        for pt1, p1i in cell1.points {
+                                            edge1 := [2]Vector3{pt1, cell1.points[p1i%3]};
+
+                                            is_neighbour = almost_equal(edge0, edge1);
+                                            
+                                            if is_neighbour {
+                                                cell0.adjacents[p0i] = j;
+                                                break;
+                                            }
+                                        }
+                                        if is_neighbour do break;
+                                    }
+
+
+                                } 
                             }
 
                             if cast(int) layer_to_debug == layer_id && pathing_debug_state == .NavMesh_Creation {
@@ -1197,26 +1174,18 @@ render_navmesh :: proc(render_graph: ^wb.Render_Graph, ctxt: ^shared.Render_Grap
                                 pass.depth_buffer = &debug_depth_buffer;
                                 wb.BEGIN_RENDER_PASS(&pass);
 
-                                for triangle, i in triangles {
-                                    extreme_in_super := false;
-                                    for vert in triangle {
-                                        extreme_in_super = distance(vert, p1) < 0.001;
-                                        if extreme_in_super do break;
-                                        extreme_in_super = distance(vert, p2) < 0.001;
-                                        if extreme_in_super do break;
-                                        extreme_in_super = distance(vert, p3) < 0.001;
-                                        if extreme_in_super do break;
+                                if cast(int) debug_id == 1 {
+                                    for cell in nav_graph {
+                                        wb.im_line(render_context.editor_im_context, .World, cell.points[0], cell.points[1], cell.edge_passable[0] ? {0,1,0,1} : {1,0,0,1});
+                                        wb.im_line(render_context.editor_im_context, .World, cell.points[1], cell.points[2], cell.edge_passable[1] ? {0,1,0,1} : {1,0,0,1});
+                                        wb.im_line(render_context.editor_im_context, .World, cell.points[2], cell.points[0], cell.edge_passable[2] ? {0,1,0,1} : {1,0,0,1});
                                     }
-                                    if extreme_in_super do continue;
-                                    wb.im_line(render_context.editor_im_context, .World, triangle.x, triangle.y, {0,1,0,1});
-                                    wb.im_line(render_context.editor_im_context, .World, triangle.y, triangle.z, {0,1,0,1});
-                                    wb.im_line(render_context.editor_im_context, .World, triangle.z, triangle.x, {0,1,0,1});
+                                } else if cast(int) debug_id == 2 {
+                                    for line in layer_lines {
+                                        colour := line.is_portal ? Vector4{0,1,1,1} : Vector4{1,0,0,1};
+                                        wb.im_line(render_context.editor_im_context, .World, line.p0, line.p1, colour);
+                                    }
                                 }
-
-                                // for line in layer_lines {
-                                //     colour := line.is_portal ? Vector4{0,1,1,1} : Vector4{1,0,0,1};
-                                //     wb.im_line(render_context.editor_im_context, .World, line.p0, line.p1, colour);
-                                // }
 
                                 for pt, i in intersections {
                                     wb.draw_model(wb.g_models["cube_model"], pt, cast(int)debug_id==i ? {0.1,0.1,0.1} : {0.05, 0.05, 0.05}, Quaternion(1), wb.g_materials["simple_rgba_mtl"], cast(int)debug_id==i ? {1,0,0,1} : {0,1,0,1});
@@ -1328,7 +1297,7 @@ get_line_intersection_3d :: proc(p1, p2, p3, p4: Vector3) -> (Vector3, bool) {
 }
 
 is_on_line :: proc(pt, p0, p1: Vector3) -> bool {
-	return abs(distance(p0, pt) + distance(p1, pt) - distance(p0, p1)) <= 0.00001;
+	return abs(distance(p0, pt) + distance(p1, pt) - distance(p0, p1)) <= 0.01;
 }
 
 v3_to_v2 :: proc(v3: Vector3) -> Vector2 {
